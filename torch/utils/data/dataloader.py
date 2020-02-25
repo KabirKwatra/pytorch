@@ -4,19 +4,22 @@ To support these two classes, in `./_utils` we define many utility methods and
 functions to be run in multiprocessing. E.g., the data loading worker loop is
 in `./_utils/worker.py`.
 """
-
-import threading
 import itertools
+import multiprocessing as python_multiprocessing
+import threading
 import warnings
 
-import multiprocessing as python_multiprocessing
 import torch
 import torch.multiprocessing as multiprocessing
-from torch._utils import ExceptionWrapper
-from torch._six import queue, string_classes
-
-from . import IterableDataset, Sampler, SequentialSampler, RandomSampler, BatchSampler
 from . import _utils
+from . import BatchSampler
+from . import IterableDataset
+from . import RandomSampler
+from . import Sampler
+from . import SequentialSampler
+from torch._six import queue
+from torch._six import string_classes
+from torch._utils import ExceptionWrapper
 
 
 get_worker_info = _utils.worker.get_worker_info

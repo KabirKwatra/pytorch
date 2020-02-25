@@ -3,14 +3,17 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from caffe2.python import core, workspace
-from hypothesis import given, assume
-import caffe2.python.hypothesis_test_util as hu
+import os
+import unittest
+
 import hypothesis.strategies as st
 import numpy as np
+from hypothesis import assume
+from hypothesis import given
 
-import unittest
-import os
+import caffe2.python.hypothesis_test_util as hu
+from caffe2.python import core
+from caffe2.python import workspace
 
 
 class TestElementwiseOps(hu.HypothesisTestCase):
