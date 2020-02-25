@@ -16,39 +16,39 @@ namespace native {
 
 template <uint32_t PreGuardBytes, uint32_t PostGuardBytes>
 class GuardingAllocator final : public at::Allocator {
- public:
-  GuardingAllocator() = default;
-  virtual ~GuardingAllocator() override = default;
+public:
+    GuardingAllocator() = default;
+    virtual ~GuardingAllocator() override = default;
 
-  static void deleter(void* pointer) {
-    const Cast memory{pointer};
-    c10::free_cpu(memory.as_byte_ptr - kPreGuardBytes);
-  }
+    static void deleter(void* pointer) {
+        const Cast memory{pointer};
+        c10::free_cpu(memory.as_byte_ptr - kPreGuardBytes);
+    }
 
-  virtual DataPtr allocate(size_t nbytes) const override {
-    Cast memory{c10::alloc_cpu(kPreGuardBytes + nbytes + kPostGuardBytes)};
-    memory.as_byte_ptr += kPreGuardBytes;
+    virtual DataPtr allocate(size_t nbytes) const override {
+        Cast memory{c10::alloc_cpu(kPreGuardBytes + nbytes + kPostGuardBytes)};
+        memory.as_byte_ptr += kPreGuardBytes;
 
-    return {
-      memory.as_void_ptr,
-      memory.as_void_ptr,
-      &deleter,
-      at::Device(DeviceType::CPU),
+        return {
+            memory.as_void_ptr,
+            memory.as_void_ptr,
+            &deleter,
+            at::Device(DeviceType::CPU),
+        };
+    }
+
+    virtual DeleterFnPtr raw_deleter() const override {
+        return deleter;
+    }
+
+private:
+    static constexpr uint32_t kPreGuardBytes = PreGuardBytes;
+    static constexpr uint32_t kPostGuardBytes = PostGuardBytes;
+
+    union Cast final {
+        void * const as_void_ptr;
+        uint8_t * as_byte_ptr;
     };
-  }
-
-  virtual DeleterFnPtr raw_deleter() const override {
-    return deleter;
-  }
-
- private:
-  static constexpr uint32_t kPreGuardBytes = PreGuardBytes;
-  static constexpr uint32_t kPostGuardBytes = PostGuardBytes;
-
-  union Cast final {
-    void * const as_void_ptr;
-    uint8_t * as_byte_ptr;
-  };
 };
 
 } // namespace native

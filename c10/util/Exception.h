@@ -26,69 +26,69 @@ namespace c10 {
 /// NB: c10::Error is handled specially by the default torch to suppress the
 /// backtrace, see torch/csrc/Exceptions.h
 class C10_API Error : public std::exception {
-  std::vector<std::string> msg_stack_;
-  std::string backtrace_;
+    std::vector<std::string> msg_stack_;
+    std::string backtrace_;
 
-  // These two are derived fields from msg_stack_ and backtrace_, but we need
-  // fields for the strings so that we can return a const char* (as the
-  // signature of std::exception requires).
-  std::string msg_;
-  std::string msg_without_backtrace_;
+    // These two are derived fields from msg_stack_ and backtrace_, but we need
+    // fields for the strings so that we can return a const char* (as the
+    // signature of std::exception requires).
+    std::string msg_;
+    std::string msg_without_backtrace_;
 
-  // This is a little debugging trick: you can stash a relevant pointer
-  // in caller, and then when you catch the exception, you can compare
-  // against pointers you have on hand to get more information about
-  // where the exception came from.  In Caffe2, this is used to figure
-  // out which operator raised an exception.
-  const void* caller_;
+    // This is a little debugging trick: you can stash a relevant pointer
+    // in caller, and then when you catch the exception, you can compare
+    // against pointers you have on hand to get more information about
+    // where the exception came from.  In Caffe2, this is used to figure
+    // out which operator raised an exception.
+    const void* caller_;
 
- public:
-  Error(
-      const std::string& msg,
-      const std::string& backtrace,
-      const void* caller = nullptr);
-  Error(SourceLocation source_location, const std::string& msg);
-  Error(
-      const char* file,
-      const uint32_t line,
-      const char* condition,
-      const std::string& msg,
-      const std::string& backtrace,
-      const void* caller = nullptr);
+public:
+    Error(
+        const std::string& msg,
+        const std::string& backtrace,
+        const void* caller = nullptr);
+    Error(SourceLocation source_location, const std::string& msg);
+    Error(
+        const char* file,
+        const uint32_t line,
+        const char* condition,
+        const std::string& msg,
+        const std::string& backtrace,
+        const void* caller = nullptr);
 
-  void AppendMessage(const std::string& msg);
+    void AppendMessage(const std::string& msg);
 
-  // Compute the full message from msg_ and msg_without_backtrace_
-  // TODO: Maybe this should be private
-  std::string msg() const;
-  std::string msg_without_backtrace() const;
+    // Compute the full message from msg_ and msg_without_backtrace_
+    // TODO: Maybe this should be private
+    std::string msg() const;
+    std::string msg_without_backtrace() const;
 
-  const std::vector<std::string>& msg_stack() const {
-    return msg_stack_;
-  }
+    const std::vector<std::string>& msg_stack() const {
+        return msg_stack_;
+    }
 
-  /// Returns the complete error message, including the source location.
-  const char* what() const noexcept override {
-    return msg_.c_str();
-  }
+    /// Returns the complete error message, including the source location.
+    const char* what() const noexcept override {
+        return msg_.c_str();
+    }
 
-  const void* caller() const noexcept {
-    return caller_;
-  }
+    const void* caller() const noexcept {
+        return caller_;
+    }
 
-  /// Returns only the error message string, without source location.
-  const char* what_without_backtrace() const noexcept {
-    return msg_without_backtrace_.c_str();
-  }
+    /// Returns only the error message string, without source location.
+    const char* what_without_backtrace() const noexcept {
+        return msg_without_backtrace_.c_str();
+    }
 };
 
 class C10_API WarningHandler {
-  public:
-  virtual ~WarningHandler() noexcept(false) {}
-  /// The default warning handler. Prints the message to stderr.
-  virtual void process(
-      const SourceLocation& source_location,
-      const std::string& msg);
+public:
+    virtual ~WarningHandler() noexcept(false) {}
+    /// The default warning handler. Prints the message to stderr.
+    virtual void process(
+        const SourceLocation& source_location,
+        const std::string& msg);
 };
 
 namespace Warning {
@@ -111,19 +111,19 @@ C10_API WarningHandler* get_warning_handler() noexcept(true);
 // lazily inside a kernel (See: advanced indexing).  These turn into
 // IndexError when they cross to Python.
 class C10_API IndexError : public Error {
-  using Error::Error;
+    using Error::Error;
 };
 
 // Used in ATen for invalid values.  These turn into
 // ValueError when they cross to Python.
 class C10_API ValueError : public Error {
-  using Error::Error;
+    using Error::Error;
 };
 
 // Used in ATen for non finite indices.  These turn into
 // ExitException when they cross to Python.
 class C10_API EnforceFiniteError : public Error {
-  using Error::Error;
+    using Error::Error;
 };
 
 // A utility function to return an exception std::string by prepending its
@@ -134,11 +134,11 @@ namespace detail {
 
 // Return x if it is non-empty; otherwise return y.
 inline std::string if_empty_then(std::string x, std::string y) {
-  if (x.empty()) {
-    return y;
-  } else {
-    return x;
-  }
+    if (x.empty()) {
+        return y;
+    } else {
+        return x;
+    }
 }
 
 }
@@ -354,7 +354,8 @@ inline std::string if_empty_then(std::string x, std::string y) {
 // Deprecated macros
 // ----------------------------------------------------------------------------
 
-namespace c10 { namespace detail {
+namespace c10 {
+namespace detail {
 
 /*
 // Deprecation disabled until we fix sites in our codebase
@@ -393,7 +394,8 @@ C10_DEPRECATED_MESSAGE("AT_ASSERTM is deprecated, if you mean to indicate an int
 */
 inline void deprecated_AT_ASSERTM() {}
 
-}} // namespace c10::detail
+}
+} // namespace c10::detail
 
 // Deprecated alias; this alias was deprecated because it wasn't clear to
 // people that you should use a macro with AT_ prefix inside the torch/csrc

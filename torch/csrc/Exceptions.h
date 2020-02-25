@@ -113,108 +113,108 @@ extern PyObject *THPException_FatalError;
 // Throwing this exception means that the python error flags have been already
 // set and control should be immediately returned to the interpreter.
 struct python_error : public std::exception {
-  python_error() : type(nullptr), value(nullptr), traceback(nullptr) {}
+    python_error() : type(nullptr), value(nullptr), traceback(nullptr) {}
 
-  python_error(const python_error& other)
-      : type(other.type),
-        value(other.value),
-        traceback(other.traceback),
-        message(other.message) {
-    pybind11::gil_scoped_acquire gil;
-    Py_XINCREF(type);
-    Py_XINCREF(value);
-    Py_XINCREF(traceback);
-  }
-
-  python_error(python_error&& other) {
-    type = other.type;
-    value = other.value;
-    traceback = other.traceback;
-    message = std::move(other.message);
-    other.type = nullptr;
-    other.value = nullptr;
-    other.traceback = nullptr;
-  }
-
-  ~python_error() override {
-    if (type || value || traceback) {
-      pybind11::gil_scoped_acquire gil;
-      Py_XDECREF(type);
-      Py_XDECREF(value);
-      Py_XDECREF(traceback);
+    python_error(const python_error& other)
+        : type(other.type),
+          value(other.value),
+          traceback(other.traceback),
+          message(other.message) {
+        pybind11::gil_scoped_acquire gil;
+        Py_XINCREF(type);
+        Py_XINCREF(value);
+        Py_XINCREF(traceback);
     }
-  }
 
-  virtual const char* what() const noexcept override {
-    return message.c_str();
-  }
+    python_error(python_error&& other) {
+        type = other.type;
+        value = other.value;
+        traceback = other.traceback;
+        message = std::move(other.message);
+        other.type = nullptr;
+        other.value = nullptr;
+        other.traceback = nullptr;
+    }
 
-  void build_message() {
-    // Ensure we have the GIL.
-    pybind11::gil_scoped_acquire gil;
-
-    // No errors should be set when we enter the function since PyErr_Fetch
-    // clears the error indicator.
-    TORCH_INTERNAL_ASSERT(!PyErr_Occurred());
-
-    // Default message.
-    message = "python_error";
-
-    // Try to retrieve the error message from the value.
-    if (value != nullptr) {
-      // Reference count should not be zero.
-      TORCH_INTERNAL_ASSERT(Py_REFCNT(value) > 0);
-
-      PyObject* pyStr = PyObject_Str(value);
-      if (pyStr != nullptr) {
-        PyObject* encodedString =
-            PyUnicode_AsEncodedString(pyStr, "utf-8", "strict");
-        if (encodedString != nullptr) {
-          char* bytes = PyBytes_AS_STRING(encodedString);
-          if (bytes != nullptr) {
-            // Set the message.
-            message = std::string(bytes);
-          }
-          Py_XDECREF(encodedString);
+    ~python_error() override {
+        if (type || value || traceback) {
+            pybind11::gil_scoped_acquire gil;
+            Py_XDECREF(type);
+            Py_XDECREF(value);
+            Py_XDECREF(traceback);
         }
-        Py_XDECREF(pyStr);
-      }
     }
 
-    // Clear any errors since we don't want to propagate errors for functions
-    // that are trying to build a string for the error message.
-    PyErr_Clear();
-  }
+    virtual const char* what() const noexcept override {
+        return message.c_str();
+    }
 
-  /** Saves the exception so that it can be re-thrown on a different thread */
-  inline void persist() {
-    if (type) return; // Don't overwrite exceptions
-    // PyErr_Fetch overwrites the pointers
-    pybind11::gil_scoped_acquire gil;
-    Py_XDECREF(type);
-    Py_XDECREF(value);
-    Py_XDECREF(traceback);
-    PyErr_Fetch(&type, &value, &traceback);
-    build_message();
-  }
+    void build_message() {
+        // Ensure we have the GIL.
+        pybind11::gil_scoped_acquire gil;
 
-  /** Sets the current Python error from this exception */
-  inline void restore() {
-    if (!type) return;
-    // PyErr_Restore steals references
-    pybind11::gil_scoped_acquire gil;
-    Py_XINCREF(type);
-    Py_XINCREF(value);
-    Py_XINCREF(traceback);
-    PyErr_Restore(type, value, traceback);
-  }
+        // No errors should be set when we enter the function since PyErr_Fetch
+        // clears the error indicator.
+        TORCH_INTERNAL_ASSERT(!PyErr_Occurred());
 
-  PyObject* type;
-  PyObject* value;
-  PyObject* traceback;
+        // Default message.
+        message = "python_error";
 
-  // Message to return to the user when 'what()' is invoked.
-  std::string message;
+        // Try to retrieve the error message from the value.
+        if (value != nullptr) {
+            // Reference count should not be zero.
+            TORCH_INTERNAL_ASSERT(Py_REFCNT(value) > 0);
+
+            PyObject* pyStr = PyObject_Str(value);
+            if (pyStr != nullptr) {
+                PyObject* encodedString =
+                    PyUnicode_AsEncodedString(pyStr, "utf-8", "strict");
+                if (encodedString != nullptr) {
+                    char* bytes = PyBytes_AS_STRING(encodedString);
+                    if (bytes != nullptr) {
+                        // Set the message.
+                        message = std::string(bytes);
+                    }
+                    Py_XDECREF(encodedString);
+                }
+                Py_XDECREF(pyStr);
+            }
+        }
+
+        // Clear any errors since we don't want to propagate errors for functions
+        // that are trying to build a string for the error message.
+        PyErr_Clear();
+    }
+
+    /** Saves the exception so that it can be re-thrown on a different thread */
+    inline void persist() {
+        if (type) return; // Don't overwrite exceptions
+        // PyErr_Fetch overwrites the pointers
+        pybind11::gil_scoped_acquire gil;
+        Py_XDECREF(type);
+        Py_XDECREF(value);
+        Py_XDECREF(traceback);
+        PyErr_Fetch(&type, &value, &traceback);
+        build_message();
+    }
+
+    /** Sets the current Python error from this exception */
+    inline void restore() {
+        if (!type) return;
+        // PyErr_Restore steals references
+        pybind11::gil_scoped_acquire gil;
+        Py_XINCREF(type);
+        Py_XINCREF(value);
+        Py_XINCREF(traceback);
+        PyErr_Restore(type, value, traceback);
+    }
+
+    PyObject* type;
+    PyObject* value;
+    PyObject* traceback;
+
+    // Message to return to the user when 'what()' is invoked.
+    std::string message;
 };
 
 bool THPException_init(PyObject *module);
@@ -225,65 +225,65 @@ THP_CLASS std::string processErrorMsg(std::string str);
 
 // Abstract base class for exceptions which translate to specific Python types
 struct PyTorchError : public std::exception {
-  virtual PyObject* python_type() = 0;
-  const char* what() const noexcept override {
-    return msg.c_str();
-  }
-  std::string msg;
+    virtual PyObject* python_type() = 0;
+    const char* what() const noexcept override {
+        return msg.c_str();
+    }
+    std::string msg;
 };
 
 // Translates to Python IndexError
 struct IndexError : public PyTorchError {
-  IndexError(const char *format, ...);
-  PyObject* python_type() override {
-    return PyExc_IndexError;
-  }
+    IndexError(const char *format, ...);
+    PyObject* python_type() override {
+        return PyExc_IndexError;
+    }
 };
 
 // Translates to Python TypeError
 struct TypeError : public PyTorchError {
-  TORCH_API TypeError(const char *format, ...);
-  PyObject* python_type() override {
-    return PyExc_TypeError;
-  }
+    TORCH_API TypeError(const char *format, ...);
+    PyObject* python_type() override {
+        return PyExc_TypeError;
+    }
 };
 
 // Translates to Python ValueError
 struct ValueError : public PyTorchError {
-  ValueError(const char *format, ...);
-  PyObject* python_type() override {
-    return PyExc_ValueError;
-  }
+    ValueError(const char *format, ...);
+    PyObject* python_type() override {
+        return PyExc_ValueError;
+    }
 };
 
 // ATen warning handler for Python
 struct PyWarningHandler: at::WarningHandler {
 public:
 /// See NOTE [ Conversion Cpp Python Warning ] for noexcept justification
-  TORCH_API PyWarningHandler() noexcept(true);
-  TORCH_API ~PyWarningHandler() noexcept(false) override;
+    TORCH_API PyWarningHandler() noexcept(true);
+    TORCH_API ~PyWarningHandler() noexcept(false) override;
 
-  void process(const at::SourceLocation &source_location,
-               const std::string &msg) override;
+    void process(const at::SourceLocation &source_location,
+                 const std::string &msg) override;
 
-  /** Call if an exception has been thrown
+    /** Call if an exception has been thrown
 
-   *  Necessary to determine if it is safe to throw from the desctructor since
-   *  std::uncaught_exception is buggy on some platforms and generally
-   *  unreliable across dynamic library calls.
-   */
-  void set_in_exception() {
-    in_exception_ = true;
-  }
+     *  Necessary to determine if it is safe to throw from the desctructor since
+     *  std::uncaught_exception is buggy on some platforms and generally
+     *  unreliable across dynamic library calls.
+     */
+    void set_in_exception() {
+        in_exception_ = true;
+    }
 
 private:
-  using warning_buffer_t =
-    std::vector<std::pair<c10::SourceLocation, std::string>>;
+    using warning_buffer_t =
+        std::vector<std::pair<c10::SourceLocation, std::string>>;
 
-  warning_buffer_t warning_buffer_;
+    warning_buffer_t warning_buffer_;
 
-  at::WarningHandler* prev_handler_;
-  bool in_exception_;
+    at::WarningHandler* prev_handler_;
+    bool in_exception_;
 };
 
 namespace detail {
@@ -292,15 +292,15 @@ using Arg = typename function_traits<Func>::template arg<i>::type;
 
 template <typename Func, size_t ...Is>
 auto wrap_pybind_function_impl_(Func&& f, std::index_sequence<Is...>) {
-  using traits = function_traits<Func>;
-  namespace py = pybind11;
+    using traits = function_traits<Func>;
+    namespace py = pybind11;
 
-  // f=f is needed to handle function references on older compilers
-  return [f=f](Arg<Func, Is> ...args) -> typename traits::result_type {
-    HANDLE_TH_ERRORS
-    return f(std::forward<Arg<Func, Is>>(args)...);
-    END_HANDLE_TH_ERRORS_PYBIND
-  };
+    // f=f is needed to handle function references on older compilers
+    return [f=f](Arg<Func, Is> ...args) -> typename traits::result_type {
+        HANDLE_TH_ERRORS
+        return f(std::forward<Arg<Func, Is>>(args)...);
+        END_HANDLE_TH_ERRORS_PYBIND
+    };
 }
 }  // namespace detail
 
@@ -308,9 +308,9 @@ auto wrap_pybind_function_impl_(Func&& f, std::index_sequence<Is...>) {
 // Returns a function object suitable for registering with pybind11.
 template <typename Func>
 auto wrap_pybind_function(Func&& f) {
-  using traits = function_traits<Func>;
-  return torch::detail::wrap_pybind_function_impl_(
-    std::forward<Func>(f), std::make_index_sequence<traits::arity>{});
+    using traits = function_traits<Func>;
+    return torch::detail::wrap_pybind_function_impl_(
+               std::forward<Func>(f), std::make_index_sequence<traits::arity> {});
 }
 
 } // namespace torch

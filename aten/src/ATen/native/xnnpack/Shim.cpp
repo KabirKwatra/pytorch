@@ -27,7 +27,7 @@ bool use_convolution2d(
     const IntArrayRef,
     const int64_t,
     const bool) {
-  return false;
+    return false;
 }
 
 Tensor convolution2d(
@@ -39,21 +39,21 @@ Tensor convolution2d(
     const IntArrayRef,
     const int64_t,
     const bool) {
-  TORCH_CHECK(false, internal::kError);
+    TORCH_CHECK(false, internal::kError);
 }
 
 bool use_linear(
     const Tensor&,
     const Tensor&,
     const Tensor&) {
-  return false;
+    return false;
 }
 
 Tensor linear(
     const Tensor&,
     const Tensor&,
     const Tensor&) {
-  TORCH_CHECK(false, internal::kError);
+    TORCH_CHECK(false, internal::kError);
 }
 
 } // namespace xnnpack
@@ -67,13 +67,13 @@ at::Tensor _conv2d_prepack(
     const int64_t,
     const c10::optional<double>,
     const c10::optional<double>) {
-  TORCH_CHECK(false, xnnpack::internal::kError);
+    TORCH_CHECK(false, xnnpack::internal::kError);
 }
 
 at::Tensor _conv2d_packed(
     const Tensor&,
     const Tensor&) {
-  TORCH_CHECK(false, xnnpack::internal::kError);
+    TORCH_CHECK(false, xnnpack::internal::kError);
 }
 
 Tensor _linear_prepack(
@@ -81,13 +81,13 @@ Tensor _linear_prepack(
     const Tensor&,
     const c10::optional<double>,
     const c10::optional<double>) {
-  TORCH_CHECK(false, xnnpack::internal::kError);
+    TORCH_CHECK(false, xnnpack::internal::kError);
 }
 
 Tensor _linear_packed(
     const Tensor&,
     const Tensor&) {
-  TORCH_CHECK(false, xnnpack::internal::kError);
+    TORCH_CHECK(false, xnnpack::internal::kError);
 }
 
 } // namespace native
