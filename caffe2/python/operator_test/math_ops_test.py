@@ -21,6 +21,7 @@ class TestMathOps(serial.SerializedTestCase):
     def test_elementwise_power(self, X, exponent, gc, dc):
         # negative integer raised with non-integer exponent is domain error
         X = np.abs(X)
+
         def powf(X):
             return (X ** exponent,)
 
@@ -36,8 +37,8 @@ class TestMathOps(serial.SerializedTestCase):
                                    ensure_outputs_are_inferred=True)
 
     @serial.given(X=hu.tensor(),
-           exponent=st.floats(min_value=-3.0, max_value=3.0),
-           **hu.gcs)
+                  exponent=st.floats(min_value=-3.0, max_value=3.0),
+                  **hu.gcs)
     def test_sign(self, X, exponent, gc, dc):
         def signf(X):
             return [np.sign(X)]

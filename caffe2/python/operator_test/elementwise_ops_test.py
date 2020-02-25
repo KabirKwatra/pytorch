@@ -12,6 +12,7 @@ import numpy as np
 import unittest
 import os
 
+
 class TestElementwiseOps(hu.HypothesisTestCase):
 
     @given(X=hu.tensor(dtype=np.float32), **hu.gcs)
@@ -92,7 +93,7 @@ class TestElementwiseOps(hu.HypothesisTestCase):
         def powt_op(X, Y):
             return [np.power(X, Y)]
 
-        #two gradients Y*X^(Y-1) and X^Y * ln(X)
+        # two gradients Y*X^(Y-1) and X^Y * ln(X)
         def powt_grad(g_out, outputs, fwd_inputs):
             [X, Y] = fwd_inputs
             Z = outputs[0]
@@ -476,7 +477,7 @@ class TestElementwiseOps(hu.HypothesisTestCase):
                 inputs=inputs,
                 reference=ref,
                 ensure_outputs_are_inferred=True,
-           )
+            )
             self.assertDeviceChecks(dc, op, inputs, [0])
             if test_grad:
                 for i in range(len(inputs)):
