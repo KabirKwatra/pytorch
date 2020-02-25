@@ -11,7 +11,7 @@ struct TensorIterator;
 namespace at {
 namespace native {
 
-using reduce_fn = void(*)(TensorIterator &);
+using reduce_fn = void (*)(TensorIterator&);
 
 DECLARE_DISPATCH(reduce_fn, sum_stub);
 DECLARE_DISPATCH(reduce_fn, prod_stub);
@@ -31,12 +31,12 @@ using reduce_norm_fn =
     void (*)(Tensor&, const Tensor&, Scalar, c10::optional<int64_t>);
 DECLARE_DISPATCH(reduce_norm_fn, norm_kernel);
 
-using reduce_fn_flag = void(*)(TensorIterator &, Scalar);
+using reduce_fn_flag = void (*)(TensorIterator&, Scalar);
 DECLARE_DISPATCH(reduce_fn_flag, norm_stub);
 
-using cum_fn = void (*)(Tensor & result, const Tensor & self, int64_t dim);
+using cum_fn = void (*)(Tensor& result, const Tensor& self, int64_t dim);
 DECLARE_DISPATCH(cum_fn, cumsum_stub);
 DECLARE_DISPATCH(cum_fn, cumprod_stub);
 
-}
-} // namespace at::native
+} // namespace native
+} // namespace at
