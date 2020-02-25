@@ -1,18 +1,16 @@
 from collections import defaultdict
-import numpy as np
-import torch
 
 import hypothesis
+import numpy as np
 from hypothesis import assume
 from hypothesis import settings
 from hypothesis import strategies as st
 from hypothesis.extra import numpy as stnp
 from hypothesis.strategies import SearchStrategy
 
-from torch.testing._internal.common_quantized import (
-    _calculate_dynamic_qparams,
-    _calculate_dynamic_per_channel_qparams,
-)
+import torch
+from torch.testing._internal.common_quantized import _calculate_dynamic_per_channel_qparams
+from torch.testing._internal.common_quantized import _calculate_dynamic_qparams
 
 # Setup for the hypothesis tests.
 # The tuples are (torch_quantized_dtype, zero_point_enforce), where the last
