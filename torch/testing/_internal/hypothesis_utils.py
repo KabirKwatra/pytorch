@@ -31,6 +31,7 @@ _ENFORCED_ZERO_POINT = defaultdict(lambda: None, {
     torch.qint32: 0
 })
 
+
 def _get_valid_min_max(qparams):
     scale, zero_point, quantized_type = qparams
     adjustment = 1 + torch.finfo(torch.float).eps
@@ -44,15 +45,19 @@ def _get_valid_min_max(qparams):
 # This wrapper wraps around `st.floats` and checks the version of `hypothesis`, if
 # it is too old, removes the `width` parameter (which was introduced)
 # in 3.67.0
+
+
 def _floats_wrapper(*args, **kwargs):
     if 'width' in kwargs and hypothesis.version.__version_info__ < (3, 67, 0):
         kwargs.pop('width')
     return st.floats(*args, **kwargs)
 
+
 def floats(*args, **kwargs):
     if 'width' not in kwargs:
         kwargs['width'] = 32
     return _floats_wrapper(*args, **kwargs)
+
 
 """Hypothesis filter to avoid overflows with quantized tensors.
 
@@ -69,11 +74,14 @@ Raises:
 Note: This filter is slow. Use it only when filtering of the test cases is
       absolutely necessary!
 """
+
+
 def assume_not_overflowing(tensor, qparams):
     min_value, max_value = _get_valid_min_max(qparams)
     assume(tensor.min() >= min_value)
     assume(tensor.max() <= max_value)
     return True
+
 
 """Strategy for generating the quantization parameters.
 
@@ -118,6 +126,7 @@ def qparams(draw, dtypes=None, scale_min=None, scale_max=None,
     scale = draw(floats(min_value=scale_min, max_value=scale_max, width=32))
 
     return scale, zero_point, quantized_type
+
 
 """Strategy to create different shapes.
 Args:
@@ -188,6 +197,7 @@ def tensor(draw, shapes=None, elements=None, qparams=None):
         zp = enforced_zp
     return X, (scale, zp, qparams[2])
 
+
 @st.composite
 def per_channel_tensor(draw, shapes=None, elements=None, qparams=None):
     if isinstance(shapes, SearchStrategy):
@@ -219,6 +229,7 @@ def per_channel_tensor(draw, shapes=None, elements=None, qparams=None):
     X = np.transpose(X, permute_axes)
 
     return X, (scale, zp, axis, qparams[2])
+
 
 """Strategy for generating test cases for tensors used in Conv.
 The resulting tensors is in float32 format.
@@ -310,6 +321,7 @@ def tensor_conv(
 
     return X, W, b, groups
 
+
 # We set the deadline in the currently loaded profile.
 # Creating (and loading) a separate profile overrides any settings the user
 # already specified.
@@ -318,6 +330,8 @@ current_settings = settings._profiles[settings._current_profile].__dict__
 current_settings['deadline'] = None
 if hypothesis_version >= (3, 16, 0) and hypothesis_version < (5, 0, 0):
     current_settings['timeout'] = hypothesis.unlimited
+
+
 def assert_deadline_disabled():
     if hypothesis_version < (3, 27, 0):
         import warnings

@@ -371,6 +371,7 @@ def _fractional_max_pool2d(input, kernel_size, output_size=None,
                                               output_ratio, return_indices,
                                               _random_samples)[0]
 
+
 fractional_max_pool2d = boolean_dispatch(
     arg_name='return_indices',
     arg_index=4,
@@ -450,6 +451,7 @@ def _fractional_max_pool3d(input, kernel_size, output_size=None,
                                               output_ratio, return_indices,
                                               _random_samples)[0]
 
+
 fractional_max_pool3d = boolean_dispatch(
     arg_name='return_indices',
     arg_index=4,
@@ -494,6 +496,7 @@ def _max_pool1d(input, kernel_size, stride=None, padding=0, dilation=1,
     return torch.max_pool1d(
         input, kernel_size, stride, padding, dilation, ceil_mode)
 
+
 max_pool1d = boolean_dispatch(
     arg_name='return_indices',
     arg_index=6,
@@ -536,6 +539,7 @@ def _max_pool2d(input, kernel_size, stride=None, padding=0, dilation=1,
         stride = torch.jit.annotate(List[int], [])
     return torch.max_pool2d(
         input, kernel_size, stride, padding, dilation, ceil_mode)
+
 
 max_pool2d = boolean_dispatch(
     arg_name='return_indices',
@@ -580,6 +584,7 @@ def _max_pool3d(input, kernel_size, stride=None, padding=0, dilation=1,
     return torch.max_pool3d(
         input, kernel_size, stride, padding, dilation, ceil_mode)
 
+
 max_pool3d = boolean_dispatch(
     arg_name='return_indices',
     arg_index=6,
@@ -595,8 +600,8 @@ def _unpool_output_size(input, kernel_size, stride, padding, output_size):
     input_size = input.size()
     default_size = torch.jit.annotate(List[int], [])
     for d in range(len(kernel_size)):
-        default_size.append((input_size[d + 2] - 1) * stride[d] +
-                            kernel_size[d] - 2 * padding[d])
+        default_size.append((input_size[d + 2] - 1) * stride[d]
+                            + kernel_size[d] - 2 * padding[d])
     if output_size is None:
         ret = default_size
     else:
@@ -765,6 +770,7 @@ def _adaptive_max_pool1d(input, output_size, return_indices=False):
                 return_indices=return_indices)
     return adaptive_max_pool1d_with_indices(input, output_size)[0]
 
+
 adaptive_max_pool1d = boolean_dispatch(
     arg_name='return_indices',
     arg_index=2,
@@ -805,6 +811,7 @@ def _adaptive_max_pool2d(input, output_size, return_indices=False):
                 return_indices=return_indices)
     return adaptive_max_pool2d_with_indices(input, output_size)[0]
 
+
 adaptive_max_pool2d = boolean_dispatch(
     arg_name='return_indices',
     arg_index=2,
@@ -844,6 +851,7 @@ def _adaptive_max_pool3d(input, output_size, return_indices=False):
                 adaptive_max_pool3d, (input,), input, output_size,
                 return_indices=return_indices)
     return adaptive_max_pool3d_with_indices(input, output_size)[0]
+
 
 adaptive_max_pool3d = boolean_dispatch(
     arg_name='return_indices',
@@ -1210,6 +1218,7 @@ def celu(input, alpha=1., inplace=False):
         result = torch.celu(input, alpha)
     return result
 
+
 celu_ = _add_docstr(torch.celu_, r"""
 celu_(input, alpha=1.) -> Tensor
 
@@ -1295,6 +1304,7 @@ Applies element-wise :math:`\text{LogSigmoid}(x_i) = \log \left(\frac{1}{1 + \ex
 
 See :class:`~torch.nn.LogSigmoid` for more details.
 """)
+
 
 def gelu(input):
     r"""gelu(input) -> Tensor
@@ -1492,7 +1502,8 @@ def gumbel_softmax(logits, tau=1, hard=False, eps=1e-10, dim=-1):
     if eps != 1e-10:
         warnings.warn("`eps` parameter is deprecated and has no effect.")
 
-    gumbels = -torch.empty_like(logits, memory_format=torch.legacy_contiguous_format).exponential_().log()  # ~Gumbel(0,1)
+    # ~Gumbel(0,1)
+    gumbels = -torch.empty_like(logits, memory_format=torch.legacy_contiguous_format).exponential_().log()
     gumbels = (logits + gumbels) / tau  # ~Gumbel(logits,tau)
     y_soft = gumbels.softmax(dim)
 
@@ -1820,7 +1831,7 @@ def embedding_bag(input, weight, offsets=None, max_norm=None, norm_type=2,
         if offsets is None:
             raise ValueError("offsets has to be a 1D Tensor but got None")
         if offsets.dim() != 1:
-            raise ValueError("offsets has to be a 1D Tensor")        
+            raise ValueError("offsets has to be a 1D Tensor")
     else:
         raise ValueError("input has to be 1D or 2D Tensor,"
                          " but got Tensor of dimension {}".format(input.dim()))
@@ -1948,8 +1959,8 @@ def group_norm(input, num_groups, weight=None, bias=None, eps=1e-5):
             return handle_torch_function(
                 group_norm, (input,), input, num_groups, weight=weight, bias=bias, eps=eps)
     _verify_batch_size([
-        input.size(0) * input.size(1) // num_groups, num_groups]
-        + list(input.size()[2:]))
+        input.size(0) * input.size(1) // num_groups, num_groups] +
+        list(input.size()[2:]))
     return torch.group_norm(input, num_groups, weight, bias, eps,
                             torch.backends.cudnn.enabled)
 
@@ -2875,7 +2886,7 @@ def interpolate(input, size=None, scale_factor=None, mode='nearest', align_corne
         # make scale_factor a tensor in tracing so constant doesn't get baked in
         if torch._C._get_tracing_state():
             return [(torch.floor((input.size(i + 2).float() * torch.tensor(scale_factors[i],
-                     dtype=torch.float32)).float())) for i in range(dim)]
+                                                                           dtype=torch.float32)).float())) for i in range(dim)]
         else:
             return [int(math.floor(float(input.size(i + 2)) * scale_factors[i])) for i in range(dim)]
 
@@ -3306,6 +3317,7 @@ def _pad(input, pad, mode='constant', value=0):
                 raise NotImplementedError
         else:
             raise NotImplementedError("Only 3D, 4D, 5D padding with non-constant padding are supported for now")
+
 
 # We define this function as _pad because it takes an argument
 # named pad, which clobbers the recursive reference to the pad

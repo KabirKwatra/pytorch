@@ -8,6 +8,7 @@ from ._torch_docs import parse_kwargs
 def add_docstr_all(method, docstr):
     add_docstr(getattr(torch._C._TensorBase, method), docstr)
 
+
 new_common_args = parse_kwargs("""
     size (int...): a list, tuple, or :class:`torch.Size` of integers defining the
         shape of the output tensor.
