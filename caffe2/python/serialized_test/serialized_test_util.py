@@ -30,9 +30,8 @@ _output_context = threading.local()
 def given(*given_args, **given_kwargs):
     def wrapper(f):
         hyp_func = hy.given(*given_args, **given_kwargs)(f)
-        fixed_seed_func = hy.seed(0)(
-            hy.settings(max_examples=1)(hy.given(*given_args, **given_kwargs)(f))
-        )
+        fixed_seed_func = hy.seed(0)(hy.settings(max_examples=1)(hy.given(
+            *given_args, **given_kwargs)(f)))
 
         def func(self, *args, **kwargs):
             self.should_serialize = True
@@ -120,9 +119,10 @@ class SerializedTestCase(hu.HypothesisTestCase):
             with open(grad_path, "wb") as f:
                 f.write(grad.SerializeToString())
 
-        np.savez_compressed(
-            inout_path, inputs=inputs, outputs=outputs, device_type=device_type
-        )
+        np.savez_compressed(inout_path,
+                            inputs=inputs,
+                            outputs=outputs,
+                            device_type=device_type)
 
         with ZipFile(os.path.join(output_dir, test_name + ".zip"), "w") as z:
             z.write(op_path, "op.pb")
@@ -164,7 +164,8 @@ class SerializedTestCase(hu.HypothesisTestCase):
 
             op_proto = parse_proto(loaded_op)
             device_type = loaded["device_type"]
-            device_option = caffe2_pb2.DeviceOption(device_type=int(device_type))
+            device_option = caffe2_pb2.DeviceOption(
+                device_type=int(device_type))
 
             outputs = hu.runOpOnInput(device_option, op_proto, loaded_inputs)
             grad_ops = _getGradientOrNone(op_proto)
@@ -195,40 +196,39 @@ class SerializedTestCase(hu.HypothesisTestCase):
         self.assertEqual(op1_, op2_)
 
     def assertSerializedOperatorChecks(
-        self,
-        inputs,
-        outputs,
-        gradient_operator,
-        op,
-        device_option,
-        atol=1e-7,
-        rtol=1e-7,
+            self,
+            inputs,
+            outputs,
+            gradient_operator,
+            op,
+            device_option,
+            atol=1e-7,
+            rtol=1e-7,
     ):
         if self.should_serialize:
             if getattr(_output_context, "should_generate_output", False):
-                self.serialize_test(
-                    inputs, outputs, gradient_operator, op, device_option
-                )
+                self.serialize_test(inputs, outputs, gradient_operator, op,
+                                    device_option)
                 if not getattr(_output_context, "disable_gen_coverage", False):
                     coverage.gen_serialized_test_coverage(
-                        self.get_output_dir(), TOP_DIR
-                    )
+                        self.get_output_dir(), TOP_DIR)
             else:
-                self.compare_test(inputs, outputs, gradient_operator, atol, rtol)
+                self.compare_test(inputs, outputs, gradient_operator, atol,
+                                  rtol)
 
     def assertReferenceChecks(
-        self,
-        device_option,
-        op,
-        inputs,
-        reference,
-        input_device_options=None,
-        threshold=1e-4,
-        output_to_grad=None,
-        grad_reference=None,
-        atol=None,
-        outputs_to_check=None,
-        ensure_outputs_are_inferred=False,
+            self,
+            device_option,
+            op,
+            inputs,
+            reference,
+            input_device_options=None,
+            threshold=1e-4,
+            output_to_grad=None,
+            grad_reference=None,
+            atol=None,
+            outputs_to_check=None,
+            ensure_outputs_are_inferred=False,
     ):
         outs = super(SerializedTestCase, self).assertReferenceChecks(
             device_option,
@@ -249,7 +249,13 @@ class SerializedTestCase(hu.HypothesisTestCase):
             if atol is None:
                 atol = threshold
             self.assertSerializedOperatorChecks(
-                inputs, outs, grad_ops, op, device_option, atol, rtol,
+                inputs,
+                outs,
+                grad_ops,
+                op,
+                device_option,
+                atol,
+                rtol,
             )
 
 
