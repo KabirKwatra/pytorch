@@ -7,9 +7,9 @@ from torch.testing._internal.common_utils import TEST_WITH_ASAN
 from torch.testing._internal.distributed.rpc.dist_autograd_test import DistAutogradTest
 
 
-@unittest.skipIf(
-    TEST_WITH_ASAN, "Skip ASAN as torch + multiprocessing spawn have known issues"
-)
+@unittest.skipIf(TEST_WITH_ASAN,
+                 "Skip ASAN as torch + multiprocessing spawn have known issues"
+                 )
 class DistAutogradTestWithSpawn(MultiProcessTestCase, DistAutogradTest):
     def setUp(self):
         super(DistAutogradTestWithSpawn, self).setUp()

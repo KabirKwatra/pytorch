@@ -26,9 +26,11 @@ _ALL_QINT_TYPES = (
 
 # Enforced zero point for every quantized data type.
 # If None, any zero_point point within the range of the data type is OK.
-_ENFORCED_ZERO_POINT = defaultdict(
-    lambda: None, {torch.quint8: None, torch.qint8: None, torch.qint32: 0}
-)
+_ENFORCED_ZERO_POINT = defaultdict(lambda: None, {
+    torch.quint8: None,
+    torch.qint8: None,
+    torch.qint32: 0
+})
 
 
 def _get_valid_min_max(qparams):
@@ -40,8 +42,10 @@ def _get_valid_min_max(qparams):
         _long_type_info.max / adjustment,
     )
     # make sure intermediate results are within the range of long
-    min_value = max((long_min - zero_point) * scale, (long_min / scale + zero_point))
-    max_value = min((long_max - zero_point) * scale, (long_max / scale + zero_point))
+    min_value = max((long_min - zero_point) * scale,
+                    (long_min / scale + zero_point))
+    max_value = min((long_max - zero_point) * scale,
+                    (long_max / scale + zero_point))
     return np.float32(min_value), np.float32(max_value)
 
 
@@ -105,17 +109,17 @@ Generates:
 
 @st.composite
 def qparams(
-    draw,
-    dtypes=None,
-    scale_min=None,
-    scale_max=None,
-    zero_point_min=None,
-    zero_point_max=None,
+        draw,
+        dtypes=None,
+        scale_min=None,
+        scale_max=None,
+        zero_point_min=None,
+        zero_point_max=None,
 ):
     if dtypes is None:
         dtypes = _ALL_QINT_TYPES
     if not isinstance(dtypes, (list, tuple)):
-        dtypes = (dtypes,)
+        dtypes = (dtypes, )
     quantized_type = draw(st.sampled_from(dtypes))
 
     _type_info = torch.iinfo(quantized_type)
@@ -164,10 +168,9 @@ def array_shapes(draw, min_dims=1, max_dims=None, min_side=1, max_side=None):
     if max_side is None:
         max_side = min_side + 5
     return draw(
-        st.lists(
-            st.integers(min_side, max_side), min_size=min_dims, max_size=max_dims
-        ).map(tuple)
-    )
+        st.lists(st.integers(min_side, max_side),
+                 min_size=min_dims,
+                 max_size=max_dims).map(tuple))
 
 
 """Strategy for generating test cases for tensors.
@@ -198,15 +201,18 @@ def tensor(draw, shapes=None, elements=None, qparams=None):
     if qparams is None:
         if elements is None:
             elements = floats(-1e6, 1e6, allow_nan=False, width=32)
-        X = draw(stnp.arrays(dtype=np.float32, elements=elements, shape=_shape))
+        X = draw(stnp.arrays(dtype=np.float32, elements=elements,
+                             shape=_shape))
         assume(not (np.isnan(X).any() or np.isinf(X).any()))
         return X, None
     qparams = draw(qparams)
     if elements is None:
         min_value, max_value = _get_valid_min_max(qparams)
-        elements = floats(
-            min_value, max_value, allow_infinity=False, allow_nan=False, width=32
-        )
+        elements = floats(min_value,
+                          max_value,
+                          allow_infinity=False,
+                          allow_nan=False,
+                          width=32)
     X = draw(stnp.arrays(dtype=np.float32, elements=elements, shape=_shape))
     # Recompute the scale and zero_points according to the X statistics.
     scale, zp = _calculate_dynamic_qparams(X, qparams[2])
@@ -225,15 +231,18 @@ def per_channel_tensor(draw, shapes=None, elements=None, qparams=None):
     if qparams is None:
         if elements is None:
             elements = floats(-1e6, 1e6, allow_nan=False, width=32)
-        X = draw(stnp.arrays(dtype=np.float32, elements=elements, shape=_shape))
+        X = draw(stnp.arrays(dtype=np.float32, elements=elements,
+                             shape=_shape))
         assume(not (np.isnan(X).any() or np.isinf(X).any()))
         return X, None
     qparams = draw(qparams)
     if elements is None:
         min_value, max_value = _get_valid_min_max(qparams)
-        elements = floats(
-            min_value, max_value, allow_infinity=False, allow_nan=False, width=32
-        )
+        elements = floats(min_value,
+                          max_value,
+                          allow_infinity=False,
+                          allow_nan=False,
+                          width=32)
     X = draw(stnp.arrays(dtype=np.float32, elements=elements, shape=_shape))
     # Recompute the scale and zero_points according to the X statistics.
     scale, zp = _calculate_dynamic_per_channel_qparams(X, qparams[2])
@@ -300,22 +309,24 @@ Example:
 
 @st.composite
 def tensor_conv(
-    draw,
-    spatial_dim=2,
-    batch_size_range=(1, 4),
-    input_channels_per_group_range=(3, 7),
-    output_channels_per_group_range=(3, 7),
-    feature_map_range=(6, 12),
-    kernel_range=(3, 7),
-    max_groups=1,
-    elements=None,
-    qparams=None,
+        draw,
+        spatial_dim=2,
+        batch_size_range=(1, 4),
+        input_channels_per_group_range=(3, 7),
+        output_channels_per_group_range=(3, 7),
+        feature_map_range=(6, 12),
+        kernel_range=(3, 7),
+        max_groups=1,
+        elements=None,
+        qparams=None,
 ):
 
     # Resolve the minibatch, in_channels, out_channels, iH/iW, iK/iW
     batch_size = draw(st.integers(*batch_size_range))
-    input_channels_per_group = draw(st.integers(*input_channels_per_group_range))
-    output_channels_per_group = draw(st.integers(*output_channels_per_group_range))
+    input_channels_per_group = draw(
+        st.integers(*input_channels_per_group_range))
+    output_channels_per_group = draw(
+        st.integers(*output_channels_per_group_range))
     groups = draw(st.integers(1, max_groups))
     input_channels = input_channels_per_group * groups
     output_channels = output_channels_per_group * groups
@@ -337,19 +348,21 @@ def tensor_conv(
 
     X = draw(
         tensor(
-            shapes=((batch_size, input_channels) + tuple(feature_map_shape),),
+            shapes=((batch_size, input_channels) + tuple(feature_map_shape), ),
             elements=elements,
             qparams=qparams[0],
-        )
-    )
+        ))
     W = draw(
         tensor(
-            shapes=((output_channels, input_channels_per_group) + tuple(kernels),),
+            shapes=((output_channels, input_channels_per_group) +
+                    tuple(kernels), ),
             elements=elements,
             qparams=qparams[1],
-        )
-    )
-    b = draw(tensor(shapes=(output_channels,), elements=elements, qparams=qparams[2]))
+        ))
+    b = draw(
+        tensor(shapes=(output_channels, ),
+               elements=elements,
+               qparams=qparams[2]))
 
     return X, W, b, groups
 
@@ -371,8 +384,7 @@ def assert_deadline_disabled():
         warning_message = (
             "Your version of hypothesis is outdated. "
             "To avoid `DeadlineExceeded` errors, please update. "
-            "Current hypothesis version: {}".format(hypothesis.__version__)
-        )
+            "Current hypothesis version: {}".format(hypothesis.__version__))
         warnings.warn(warning_message)
     else:
         assert settings().deadline is None

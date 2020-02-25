@@ -7,9 +7,9 @@ from torch.testing._internal.common_utils import TEST_WITH_ASAN
 from torch.testing._internal.distributed.rpc.rpc_test import RpcTest
 
 
-@unittest.skipIf(
-    TEST_WITH_ASAN, "Skip ASAN as torch + multiprocessing spawn have known issues"
-)
+@unittest.skipIf(TEST_WITH_ASAN,
+                 "Skip ASAN as torch + multiprocessing spawn have known issues"
+                 )
 class RpcTestWithSpawn(MultiProcessTestCase, RpcTest):
     def setUp(self):
         super(RpcTestWithSpawn, self).setUp()

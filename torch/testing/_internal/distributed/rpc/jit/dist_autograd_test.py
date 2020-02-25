@@ -5,13 +5,12 @@ import torch.distributed.autograd as dist_autograd
 from torch.testing import FileCheck
 from torch.testing._internal.dist_utils import dist_init
 from torch.testing._internal.distributed.rpc.rpc_agent_test_fixture import (
-    RpcAgentTestFixture,
-)
+    RpcAgentTestFixture, )
 
 
 @unittest.skipIf(
-    not torch._six.PY3, "Pytorch distributed autograd package does not support python2"
-)
+    not torch._six.PY3,
+    "Pytorch distributed autograd package does not support python2")
 class JitDistAutogradTest(RpcAgentTestFixture):
     @dist_init
     def test_get_gradients(self):
