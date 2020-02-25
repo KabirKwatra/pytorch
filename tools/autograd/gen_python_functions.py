@@ -87,6 +87,7 @@ NATIVE_NAMESPACE_MAPPING = {
     "torch.nn": "THPNNVariableFunctionsModule"
 }
 
+
 def should_generate_python_binding(declaration):
     name = declaration['name']
     for pattern in SKIP_PYTHON_BINDINGS:
@@ -104,6 +105,7 @@ def should_generate_python_binding(declaration):
 #
 # top-level codegen functions, called from gen_autograd
 #
+
 
 def get_py_variable_methods(declarations):
     """
@@ -252,6 +254,7 @@ UNPACK_WITH_DEFAULT_METHODS = {
     'const Device &': 'deviceWithDefault',
 }
 
+
 def parsed_arg_expr(arg, arg_index):
     # e.g. for arg name 'foo', arg type 'bool', arg_index = 2, returns '_r.toBool(2)'
     typename = arg['type']
@@ -324,6 +327,7 @@ TEMP_SAFE_CPP_DECL_TYPE = {
     'Tensor &': 'Tensor',
 }
 
+
 def get_cpp_decl_type(typename, ensure_temp_safe=True):
     if ensure_temp_safe:
         typename = TEMP_SAFE_CPP_DECL_TYPE.get(typename, typename)
@@ -355,6 +359,7 @@ SUPPORTED_RETURN_TYPES = {
     'ScalarType'
 }
 
+
 def get_simple_return_type(declaration):
     # Use the simple_return_type (Tensor) rather than the fancy return type
     # (Tensor &).  This is important because the dispatch lambdas take
@@ -385,6 +390,7 @@ def get_simple_return_type(declaration):
 #
 # dispatch codegen
 #
+
 
 def get_dispatch_callee(declaration):
     # format the name of the receiving function or method
@@ -535,6 +541,7 @@ TENSOR_OPTIONS_FIELDS = {
     'pin_memory': 'bool',
     'requires_grad': 'bool',
 }
+
 
 def handle_python_binding_args(declaration, output_gap):
     # map synthetic python binding args to op args and misc other stuff
@@ -699,6 +706,7 @@ def emit_dispatch_case(i, dictionary, is_python_method):
 # named tuple codegen
 #
 
+
 def namedtuple_fieldnames(declaration):
     returns = declaration['returns']
     if len(returns) <= 1 or all(['field_name' not in x for x in returns]):
@@ -720,6 +728,7 @@ def namedtuple_fieldnames(declaration):
             else:
                 return x['field_name']
         return [get_field_name(x) for x in returns]
+
 
 PY_NAMEDTUPLE_FIELDSDEF = CodeTemplate("""\
 static PyStructSequence_Field ${fieldsname}[] = { ${fields,} {nullptr} };
@@ -786,6 +795,7 @@ def emit_namedtuple_typedefs(declarations):
 #
 # method impl codegen
 #
+
 
 def get_pycname(name):
     return 'THPVariable_{}'.format(name)
@@ -1021,6 +1031,7 @@ def method_def(name, declarations, is_python_method, module):
 # overload sorting and grouping
 #
 
+
 def group_overloads(declarations, is_python_method):
     """Returns a list of dictionaries containing the optional keys:
 
@@ -1135,6 +1146,7 @@ SCHEMA_DEFAULT_CONVERSION_HACKS = {
     '{}': 'None',
 }
 
+
 def get_schema_formal(arg, is_python_method):
     name = arg['name']
     typename = arg['simple_type']
@@ -1201,6 +1213,7 @@ def get_python_signature(declaration, is_python_method, skip_outputs=False):
 #
 # op args to python parsed args transform
 #
+
 
 def get_python_args(decl):
     arglists = decl['python_arglists']
@@ -1302,6 +1315,8 @@ def make_python_arglists(declaration, is_python_method):
 #
 
 # TODO blowtorch
+
+
 def dtype_default_type_hack(name):
     if name.startswith('randperm') or name == 'tril_indices' or name == 'triu_indices':
         return 'torch.int64'
@@ -1341,7 +1356,8 @@ def make_python_binding_args(declaration):
     is_new_function = name.startswith('new_') or category_override == 'new'
     is_new_function_with_options = is_new_function and has_options_arg
     is_factory_function = has_tensor_return and not has_tensor_input_arg or category_override == 'factory'
-    is_factory_or_like_or_new_function = has_tensor_return and (is_factory_function or is_like_function or is_new_function)
+    is_factory_or_like_or_new_function = has_tensor_return and (
+        is_factory_function or is_like_function or is_new_function)
     is_like_or_new_function_with_options = is_like_function_with_options or is_new_function_with_options
 
     if is_factory_function or has_options_arg:
@@ -1410,6 +1426,7 @@ def make_python_binding_args(declaration):
 # passed to our codegen methods by callers in gen_autograd
 #
 
+
 def is_tensor_self(arg):
     return arg['name'] == 'self' and arg['simple_type'] == 'Tensor'
 
@@ -1420,6 +1437,7 @@ def is_tensor_options(arg):
 
 def is_scatter(arg):
     return arg.get('scatter_args') is not None
+
 
 def is_output(arg):
     return arg.get('output', False)

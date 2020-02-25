@@ -18,6 +18,8 @@ except ImportError:
 # type translations to continue to emit the legacy func schema for further
 # processing by downstream tools. This will helps us avoid having to prematurely
 # change all downstream tools to detect these new types.
+
+
 def type_argument_translations(arg):
     type_and_name = [a.strip() for a in arg.rsplit(' ', 1)]
     name = ''
@@ -379,6 +381,7 @@ def propagate_field_names(output_arguments, return_arguments):
         for i, r in enumerate(return_arguments):
             if 'field_name' in r:
                 output_arguments[i]['field_name'] = r['field_name']
+
 
 def is_named_tensor_only(declaration):
     return any(['Dimname' in arg['type'] for arg in declaration['arguments']])
