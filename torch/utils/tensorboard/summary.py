@@ -4,22 +4,23 @@ from __future__ import print_function
 
 import json
 import logging
-import numpy as np
 import os
 
-# pylint: disable=unused-import
+import numpy as np
 from six.moves import range
-
-from tensorboard.compat.proto.summary_pb2 import Summary
 from tensorboard.compat.proto.summary_pb2 import HistogramProto
+from tensorboard.compat.proto.summary_pb2 import Summary
 from tensorboard.compat.proto.summary_pb2 import SummaryMetadata
 from tensorboard.compat.proto.tensor_pb2 import TensorProto
 from tensorboard.compat.proto.tensor_shape_pb2 import TensorShapeProto
-from tensorboard.plugins.text.plugin_data_pb2 import TextPluginData
-from tensorboard.plugins.pr_curve.plugin_data_pb2 import PrCurvePluginData
 from tensorboard.plugins.custom_scalar import layout_pb2
+from tensorboard.plugins.pr_curve.plugin_data_pb2 import PrCurvePluginData
+from tensorboard.plugins.text.plugin_data_pb2 import TextPluginData
+
 from ._convert_np import make_np
-from ._utils import _prepare_video, convert_to_HWC
+from ._utils import _prepare_video
+from ._utils import convert_to_HWC
+# pylint: disable=unused-import
 
 
 def _calc_scale_factor(tensor):

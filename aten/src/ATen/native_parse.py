@@ -1,9 +1,11 @@
 from __future__ import print_function
-import re
-import yaml
-import pprint
-import sys
+
 import copy
+import pprint
+import re
+import sys
+
+import yaml
 
 try:
     # use faster C loader if available

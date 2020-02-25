@@ -1,7 +1,5 @@
 #!/usr/bin/env python
-
 """Downloads the clang-format binary appropriate for the host platform."""
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -11,8 +9,8 @@ import argparse
 import os
 import platform
 import sys
-import urllib.request
 import urllib.error
+import urllib.request
 
 
 def report_download_progress(chunk_number, chunk_size, file_size):
