@@ -24,20 +24,21 @@ from ._utils import convert_to_HWC
 
 
 def _calc_scale_factor(tensor):
-    converted = tensor.numpy() if not isinstance(tensor, np.ndarray) else tensor
+    converted = tensor.numpy() if not isinstance(tensor,
+                                                 np.ndarray) else tensor
     return 1 if converted.dtype == np.uint8 else 255
 
 
 def _draw_single_box(
-    image,
-    xmin,
-    ymin,
-    xmax,
-    ymax,
-    display_str,
-    color="black",
-    color_text="black",
-    thickness=2,
+        image,
+        xmin,
+        ymin,
+        xmax,
+        ymax,
+        display_str,
+        color="black",
+        color_text="black",
+        thickness=2,
 ):
     from PIL import ImageDraw, ImageFont
 
@@ -45,7 +46,8 @@ def _draw_single_box(
     draw = ImageDraw.Draw(image)
     (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
     draw.line(
-        [(left, top), (left, bottom), (right, bottom), (right, top), (left, top)],
+        [(left, top), (left, bottom), (right, bottom), (right, top),
+         (left, top)],
         width=thickness,
         fill=color,
     )
@@ -120,18 +122,14 @@ def hparams(hparam_dict=None, metric_dict=None):
 
     if not isinstance(hparam_dict, dict):
         logging.warning(
-            "parameter: hparam_dict should be a dictionary, nothing logged."
-        )
+            "parameter: hparam_dict should be a dictionary, nothing logged.")
         raise TypeError(
-            "parameter: hparam_dict should be a dictionary, nothing logged."
-        )
+            "parameter: hparam_dict should be a dictionary, nothing logged.")
     if not isinstance(metric_dict, dict):
         logging.warning(
-            "parameter: metric_dict should be a dictionary, nothing logged."
-        )
+            "parameter: metric_dict should be a dictionary, nothing logged.")
         raise TypeError(
-            "parameter: metric_dict should be a dictionary, nothing logged."
-        )
+            "parameter: metric_dict should be a dictionary, nothing logged.")
 
     hps = [HParamInfo(name=k) for k in hparam_dict.keys()]
     mts = [MetricInfo(name=MetricName(tag=k)) for k in metric_dict.keys()]
@@ -139,11 +137,8 @@ def hparams(hparam_dict=None, metric_dict=None):
     exp = Experiment(hparam_infos=hps, metric_infos=mts)
 
     content = HParamsPluginData(experiment=exp, version=PLUGIN_DATA_VERSION)
-    smd = SummaryMetadata(
-        plugin_data=SummaryMetadata.PluginData(
-            plugin_name=PLUGIN_NAME, content=content.SerializeToString()
-        )
-    )
+    smd = SummaryMetadata(plugin_data=SummaryMetadata.PluginData(
+        plugin_name=PLUGIN_NAME, content=content.SerializeToString()))
     exp = Summary(value=[Summary.Value(tag=EXPERIMENT_TAG, metadata=smd)])
 
     ssi = SessionStartInfo()
@@ -165,25 +160,22 @@ def hparams(hparam_dict=None, metric_dict=None):
             ssi.hparams[k].number_value = v
             continue
         raise ValueError(
-            "value should be one of int, float, str, bool, or torch.Tensor"
-        )
+            "value should be one of int, float, str, bool, or torch.Tensor")
 
-    content = HParamsPluginData(session_start_info=ssi, version=PLUGIN_DATA_VERSION)
-    smd = SummaryMetadata(
-        plugin_data=SummaryMetadata.PluginData(
-            plugin_name=PLUGIN_NAME, content=content.SerializeToString()
-        )
-    )
-    ssi = Summary(value=[Summary.Value(tag=SESSION_START_INFO_TAG, metadata=smd)])
+    content = HParamsPluginData(session_start_info=ssi,
+                                version=PLUGIN_DATA_VERSION)
+    smd = SummaryMetadata(plugin_data=SummaryMetadata.PluginData(
+        plugin_name=PLUGIN_NAME, content=content.SerializeToString()))
+    ssi = Summary(
+        value=[Summary.Value(tag=SESSION_START_INFO_TAG, metadata=smd)])
 
     sei = SessionEndInfo(status=Status.Value("STATUS_SUCCESS"))
-    content = HParamsPluginData(session_end_info=sei, version=PLUGIN_DATA_VERSION)
-    smd = SummaryMetadata(
-        plugin_data=SummaryMetadata.PluginData(
-            plugin_name=PLUGIN_NAME, content=content.SerializeToString()
-        )
-    )
-    sei = Summary(value=[Summary.Value(tag=SESSION_END_INFO_TAG, metadata=smd)])
+    content = HParamsPluginData(session_end_info=sei,
+                                version=PLUGIN_DATA_VERSION)
+    smd = SummaryMetadata(plugin_data=SummaryMetadata.PluginData(
+        plugin_name=PLUGIN_NAME, content=content.SerializeToString()))
+    sei = Summary(
+        value=[Summary.Value(tag=SESSION_END_INFO_TAG, metadata=smd)])
 
     return exp, ssi, sei
 
@@ -208,7 +200,8 @@ def scalar(name, scalar, collections=None):
     return Summary(value=[Summary.Value(tag=name, simple_value=scalar)])
 
 
-def histogram_raw(name, min, max, num, sum, sum_squares, bucket_limits, bucket_counts):
+def histogram_raw(name, min, max, num, sum, sum_squares, bucket_limits,
+                  bucket_counts):
     # pylint: disable=line-too-long
     """Outputs a `Summary` protocol buffer with a histogram.
     The generated
@@ -279,14 +272,15 @@ def make_histogram(values, bins, max_bins=None):
                 constant_values=0,
             )
         counts = counts.reshape(-1, subsampling).sum(axis=-1)
-        new_limits = np.empty((counts.size + 1,), limits.dtype)
+        new_limits = np.empty((counts.size + 1, ), limits.dtype)
         new_limits[:-1] = limits[:-1:subsampling]
         new_limits[-1] = limits[-1]
         limits = new_limits
 
     # Find the first and the last bin defining the support of the histogram:
     cum_counts = np.cumsum(np.greater(counts, 0, dtype=np.int32))
-    start, end = np.searchsorted(cum_counts, [0, cum_counts[-1] - 1], side="right")
+    start, end = np.searchsorted(cum_counts, [0, cum_counts[-1] - 1],
+                                 side="right")
     start = int(start)
     end = int(end) + 1
     del cum_counts
@@ -295,10 +289,9 @@ def make_histogram(values, bins, max_bins=None):
     # included, we include an empty bin left.
     # If start == 0, we need to add an empty one left, otherwise we can just include the bin left to the
     # first nonzero-count bin:
-    counts = (
-        counts[start - 1 : end] if start > 0 else np.concatenate([[0], counts[:end]])
-    )
-    limits = limits[start : end + 1]
+    counts = (counts[start - 1:end]
+              if start > 0 else np.concatenate([[0], counts[:end]]))
+    limits = limits[start:end + 1]
 
     if counts.size == 0 or limits.size == 0:
         raise ValueError("The histogram is empty, please file a bug report.")
@@ -355,10 +348,11 @@ def image_boxes(tag, tensor_image, tensor_boxes, rescale=1, dataformats="CHW"):
     tensor_image = make_np(tensor_image)
     tensor_image = convert_to_HWC(tensor_image, dataformats)
     tensor_boxes = make_np(tensor_boxes)
-    tensor_image = tensor_image.astype(np.float32) * _calc_scale_factor(tensor_image)
-    image = make_image(
-        tensor_image.astype(np.uint8), rescale=rescale, rois=tensor_boxes
-    )
+    tensor_image = tensor_image.astype(
+        np.float32) * _calc_scale_factor(tensor_image)
+    image = make_image(tensor_image.astype(np.uint8),
+                       rescale=rescale,
+                       rois=tensor_boxes)
     return Summary(value=[Summary.Value(tag=tag, image=image)])
 
 
@@ -451,11 +445,13 @@ def make_video(tensor, fps):
     try:
         os.remove(filename)
     except OSError:
-        logging.warning("The temporary file used by moviepy cannot be deleted.")
+        logging.warning(
+            "The temporary file used by moviepy cannot be deleted.")
 
-    return Summary.Image(
-        height=h, width=w, colorspace=c, encoded_image_string=tensor_string
-    )
+    return Summary.Image(height=h,
+                         width=w,
+                         colorspace=c,
+                         encoded_image_string=tensor_string)
 
 
 def audio(tag, tensor, sample_rate=44100):
@@ -502,13 +498,10 @@ def custom_scalars(layout):
             tags = chart_meatadata[1]
             if chart_meatadata[0] == "Margin":
                 assert len(tags) == 3
-                mgcc = layout_pb2.MarginChartContent(
-                    series=[
-                        layout_pb2.MarginChartContent.Series(
-                            value=tags[0], lower=tags[1], upper=tags[2]
-                        )
-                    ]
-                )
+                mgcc = layout_pb2.MarginChartContent(series=[
+                    layout_pb2.MarginChartContent.Series(
+                        value=tags[0], lower=tags[1], upper=tags[2])
+                ])
                 chart = layout_pb2.Chart(title=chart_name, margin=mgcc)
             else:
                 mlcc = layout_pb2.MultilineChartContent(tag=tags)
@@ -524,50 +517,51 @@ def custom_scalars(layout):
         string_val=[layout.SerializeToString()],
         tensor_shape=TensorShapeProto(),
     )
-    return Summary(
-        value=[
-            Summary.Value(tag="custom_scalars__config__", tensor=tensor, metadata=smd)
-        ]
-    )
+    return Summary(value=[
+        Summary.Value(
+            tag="custom_scalars__config__", tensor=tensor, metadata=smd)
+    ])
 
 
 def text(tag, text):
     plugin_data = SummaryMetadata.PluginData(
-        plugin_name="text", content=TextPluginData(version=0).SerializeToString()
-    )
+        plugin_name="text",
+        content=TextPluginData(version=0).SerializeToString())
     smd = SummaryMetadata(plugin_data=plugin_data)
     tensor = TensorProto(
         dtype="DT_STRING",
         string_val=[text.encode(encoding="utf_8")],
         tensor_shape=TensorShapeProto(dim=[TensorShapeProto.Dim(size=1)]),
     )
-    return Summary(
-        value=[Summary.Value(tag=tag + "/text_summary", metadata=smd, tensor=tensor)]
-    )
+    return Summary(value=[
+        Summary.Value(tag=tag + "/text_summary", metadata=smd, tensor=tensor)
+    ])
 
 
-def pr_curve_raw(
-    tag, tp, fp, tn, fn, precision, recall, num_thresholds=127, weights=None
-):
+def pr_curve_raw(tag,
+                 tp,
+                 fp,
+                 tn,
+                 fn,
+                 precision,
+                 recall,
+                 num_thresholds=127,
+                 weights=None):
     if num_thresholds > 127:  # weird, value > 127 breaks protobuf
         num_thresholds = 127
     data = np.stack((tp, fp, tn, fn, precision, recall))
     pr_curve_plugin_data = PrCurvePluginData(
-        version=0, num_thresholds=num_thresholds
-    ).SerializeToString()
-    plugin_data = SummaryMetadata.PluginData(
-        plugin_name="pr_curves", content=pr_curve_plugin_data
-    )
+        version=0, num_thresholds=num_thresholds).SerializeToString()
+    plugin_data = SummaryMetadata.PluginData(plugin_name="pr_curves",
+                                             content=pr_curve_plugin_data)
     smd = SummaryMetadata(plugin_data=plugin_data)
     tensor = TensorProto(
         dtype="DT_FLOAT",
         float_val=data.reshape(-1).tolist(),
-        tensor_shape=TensorShapeProto(
-            dim=[
-                TensorShapeProto.Dim(size=data.shape[0]),
-                TensorShapeProto.Dim(size=data.shape[1]),
-            ]
-        ),
+        tensor_shape=TensorShapeProto(dim=[
+            TensorShapeProto.Dim(size=data.shape[0]),
+            TensorShapeProto.Dim(size=data.shape[1]),
+        ]),
     )
     return Summary(value=[Summary.Value(tag=tag, metadata=smd, tensor=tensor)])
 
@@ -575,25 +569,22 @@ def pr_curve_raw(
 def pr_curve(tag, labels, predictions, num_thresholds=127, weights=None):
     # weird, value > 127 breaks protobuf
     num_thresholds = min(num_thresholds, 127)
-    data = compute_curve(
-        labels, predictions, num_thresholds=num_thresholds, weights=weights
-    )
+    data = compute_curve(labels,
+                         predictions,
+                         num_thresholds=num_thresholds,
+                         weights=weights)
     pr_curve_plugin_data = PrCurvePluginData(
-        version=0, num_thresholds=num_thresholds
-    ).SerializeToString()
-    plugin_data = SummaryMetadata.PluginData(
-        plugin_name="pr_curves", content=pr_curve_plugin_data
-    )
+        version=0, num_thresholds=num_thresholds).SerializeToString()
+    plugin_data = SummaryMetadata.PluginData(plugin_name="pr_curves",
+                                             content=pr_curve_plugin_data)
     smd = SummaryMetadata(plugin_data=plugin_data)
     tensor = TensorProto(
         dtype="DT_FLOAT",
         float_val=data.reshape(-1).tolist(),
-        tensor_shape=TensorShapeProto(
-            dim=[
-                TensorShapeProto.Dim(size=data.shape[0]),
-                TensorShapeProto.Dim(size=data.shape[1]),
-            ]
-        ),
+        tensor_shape=TensorShapeProto(dim=[
+            TensorShapeProto.Dim(size=data.shape[0]),
+            TensorShapeProto.Dim(size=data.shape[1]),
+        ]),
     )
     return Summary(value=[Summary.Value(tag=tag, metadata=smd, tensor=tensor)])
 
@@ -632,9 +623,8 @@ def compute_curve(labels, predictions, num_thresholds=None, weights=None):
     return np.stack((tp, fp, tn, fn, precision, recall))
 
 
-def _get_tensor_summary(
-    name, display_name, description, tensor, content_type, components, json_config
-):
+def _get_tensor_summary(name, display_name, description, tensor, content_type,
+                        components, json_config):
     """Creates a tensor summary with summary metadata.
 
     Args:
@@ -673,13 +663,11 @@ def _get_tensor_summary(
     tensor = TensorProto(
         dtype="DT_FLOAT",
         float_val=tensor.reshape(-1).tolist(),
-        tensor_shape=TensorShapeProto(
-            dim=[
-                TensorShapeProto.Dim(size=tensor.shape[0]),
-                TensorShapeProto.Dim(size=tensor.shape[1]),
-                TensorShapeProto.Dim(size=tensor.shape[2]),
-            ]
-        ),
+        tensor_shape=TensorShapeProto(dim=[
+            TensorShapeProto.Dim(size=tensor.shape[0]),
+            TensorShapeProto.Dim(size=tensor.shape[1]),
+            TensorShapeProto.Dim(size=tensor.shape[2]),
+        ]),
     )
 
     tensor_summary = Summary.Value(
@@ -700,9 +688,13 @@ def _get_json_config(config_dict):
 
 
 # https://github.com/tensorflow/tensorboard/blob/master/tensorboard/plugins/mesh/summary.py
-def mesh(
-    tag, vertices, colors, faces, config_dict, display_name=None, description=None
-):
+def mesh(tag,
+         vertices,
+         colors,
+         faces,
+         config_dict,
+         display_name=None,
+         description=None):
     """Outputs a merged `Summary` protocol buffer with a mesh/point cloud.
 
       Args:
@@ -735,8 +727,7 @@ def mesh(
     ]
     tensors = [tensor for tensor in tensors if tensor[0] is not None]
     components = metadata.get_components_bitmask(
-        [content_type for (tensor, content_type) in tensors]
-    )
+        [content_type for (tensor, content_type) in tensors])
 
     for tensor, content_type in tensors:
         summaries.append(
@@ -748,7 +739,6 @@ def mesh(
                 content_type,
                 components,
                 json_config,
-            )
-        )
+            ))
 
     return Summary(value=summaries)

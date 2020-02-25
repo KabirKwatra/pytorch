@@ -25,8 +25,10 @@ def download_clang_format(path):
     """Downloads a clang-format binary appropriate for the host platform and stores it at the given location."""
     # This dictionary maps each platform to the S3 object URL for its clang-format binary.
     PLATFORM_TO_URL = {
-        "Darwin": "https://oss-clang-format.s3.us-east-2.amazonaws.com/mac/clang-format-mojave",
-        "Linux": "https://oss-clang-format.s3.us-east-2.amazonaws.com/linux64/clang-format-linux64",
+        "Darwin":
+        "https://oss-clang-format.s3.us-east-2.amazonaws.com/mac/clang-format-mojave",
+        "Linux":
+        "https://oss-clang-format.s3.us-east-2.amazonaws.com/linux64/clang-format-linux64",
     }
 
     plat = platform.system()
@@ -40,9 +42,9 @@ def download_clang_format(path):
 
     # Try to download clang-format.
     try:
-        urllib.request.urlretrieve(
-            cf_url, filename, reporthook=report_download_progress
-        )
+        urllib.request.urlretrieve(cf_url,
+                                   filename,
+                                   reporthook=report_download_progress)
     except urllib.error.URLError as e:
         print("Error downloading {}: {}".format(filename, str(e)))
         return False
@@ -55,11 +57,12 @@ def download_clang_format(path):
 def parse_args(args):
     """Parse and return command-line arguments."""
     parser = argparse.ArgumentParser(
-        description="Install a platform-appropriate clang-format binary for use during PyTorch development."
+        description=
+        "Install a platform-appropriate clang-format binary for use during PyTorch development."
     )
-    parser.add_argument(
-        "--path", required=True, help="Path where clang-format should be stored"
-    )
+    parser.add_argument("--path",
+                        required=True,
+                        help="Path where clang-format should be stored")
 
     return parser.parse_args(args)
 

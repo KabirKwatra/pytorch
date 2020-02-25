@@ -68,13 +68,11 @@ def type_argument_translations(arg):
     elif t == "int?":
         t = "int64_t?"
     elif t == "int64_t":
-        raise RuntimeError(
-            "Please use int and not int64_t. " "See [temp translations] for details."
-        )
+        raise RuntimeError("Please use int and not int64_t. "
+                           "See [temp translations] for details.")
     elif t == "int64_t?":
-        raise RuntimeError(
-            "Please use int? and not int64_t?. " "See [temp translations] for details."
-        )
+        raise RuntimeError("Please use int? and not int64_t?. "
+                           "See [temp translations] for details.")
     # Enables Dimname[] by translating to legacy DimnameList.
     elif t == "Dimname[]":
         t = "DimnameList"
@@ -89,9 +87,8 @@ def type_argument_translations(arg):
     elif t == "str":
         t = "std::string"
     elif t == "double":
-        raise RuntimeError(
-            "Please use float and not double. " "See [temp translations] for details."
-        )
+        raise RuntimeError("Please use float and not double. "
+                           "See [temp translations] for details.")
     # Enables int[x] by translating to legacy IntArrayRef[x]. See [temp translations]
     elif re.match(r"int\[(\d+)\]", t):
         match = re.match(r"int\[(\d+)\]", t)
@@ -104,8 +101,7 @@ def type_argument_translations(arg):
     elif re.match(r"std::array", t):
         raise RuntimeError(
             "Please use array notation, e.g. bool[3] and not std::array."
-            "See [temp translations] for details."
-        )
+            "See [temp translations] for details.")
     # Enables Dimname[x] by translating to DimnameList[x]. See [temp translations]
     elif re.match(r"Dimname\[(\d+)\]", t):
         match = re.match(r"Dimname\[(\d+)\]", t)
@@ -127,13 +123,11 @@ def type_argument_translations(arg):
     elif default == "False":
         default = False
     elif default == "true":
-        raise RuntimeError(
-            "Please use True and not true. " "See [temp translations] for details."
-        )
+        raise RuntimeError("Please use True and not true. "
+                           "See [temp translations] for details.")
     elif default == "false":
-        raise RuntimeError(
-            "Please use False and not false. " "See [temp translations] for details."
-        )
+        raise RuntimeError("Please use False and not false. "
+                           "See [temp translations] for details.")
     # Enables default argument [] by translating to legacy {}.
     # See [temp translations]
     elif default == "[]":
@@ -181,7 +175,8 @@ def parse_arguments(args, func_variants, declaration, func_return):
             kwarg_only = True
             continue
 
-        t, name, default, nullable, size, annotation = type_argument_translations(arg)
+        t, name, default, nullable, size, annotation = type_argument_translations(
+            arg)
 
         argument_dict = {
             "type": t.rstrip("?"),
@@ -201,12 +196,9 @@ def parse_arguments(args, func_variants, declaration, func_return):
     arguments_out = []
     arguments_other = []
     for argument in arguments:
-        if (
-            argument["type"] == "Tensor"
-            and argument["annotation"]
-            and re.match(r"^(.*!)$", argument["annotation"])
-            and argument.get("kwarg_only")
-        ):
+        if (argument["type"] == "Tensor" and argument["annotation"]
+                and re.match(r"^(.*!)$", argument["annotation"])
+                and argument.get("kwarg_only")):
             argument["output"] = True
             argument["kwarg_only"] = False
             arguments_out.append(argument)
@@ -230,35 +222,33 @@ def parse_arguments(args, func_variants, declaration, func_return):
     # less on the content of Declarations.yaml. If you want to support more than this you'll
     # potentially have to extend the JIT.
 
-    supported_topt_arguments = [
-        [
-            {
-                "name": "dtype",
-                "type": "ScalarType",
-                "is_nullable": False,
-                "annotation": None,
-            },
-            {
-                "name": "layout",
-                "type": "Layout",
-                "is_nullable": False,
-                "annotation": None,
-            },
-            {
-                "name": "device",
-                "type": "Device",
-                "is_nullable": False,
-                "annotation": None,
-            },
-            {
-                "name": "pin_memory",
-                "type": "bool",
-                "is_nullable": False,
-                "annotation": None,
-                "default": False,
-            },
-        ]
-    ]
+    supported_topt_arguments = [[
+        {
+            "name": "dtype",
+            "type": "ScalarType",
+            "is_nullable": False,
+            "annotation": None,
+        },
+        {
+            "name": "layout",
+            "type": "Layout",
+            "is_nullable": False,
+            "annotation": None,
+        },
+        {
+            "name": "device",
+            "type": "Device",
+            "is_nullable": False,
+            "annotation": None,
+        },
+        {
+            "name": "pin_memory",
+            "type": "bool",
+            "is_nullable": False,
+            "annotation": None,
+            "default": False,
+        },
+    ]]
     supported_topt_arguments.append(copy.deepcopy(supported_topt_arguments[0]))
     for arg in supported_topt_arguments[1]:
         arg.update({"kwarg_only": True})
@@ -266,42 +256,40 @@ def parse_arguments(args, func_variants, declaration, func_return):
     for arg in supported_topt_arguments[2]:
         arg.update({"default": "c10::nullopt", "is_nullable": True})
     # add explicit support for what is needed for tril_indices / triu_indices
-    supported_topt_arguments.append(
-        [
-            {
-                "name": "dtype",
-                "type": "ScalarType",
-                "annotation": None,
-                "kwarg_only": True,
-                "default": "long",
-                "is_nullable": True,
-            },
-            {
-                "name": "layout",
-                "type": "Layout",
-                "annotation": None,
-                "kwarg_only": True,
-                "default": "c10::nullopt",
-                "is_nullable": True,
-            },
-            {
-                "name": "device",
-                "type": "Device",
-                "annotation": None,
-                "kwarg_only": True,
-                "default": "c10::nullopt",
-                "is_nullable": True,
-            },
-            {
-                "name": "pin_memory",
-                "type": "bool",
-                "annotation": None,
-                "kwarg_only": True,
-                "default": "c10::nullopt",
-                "is_nullable": True,
-            },
-        ]
-    )
+    supported_topt_arguments.append([
+        {
+            "name": "dtype",
+            "type": "ScalarType",
+            "annotation": None,
+            "kwarg_only": True,
+            "default": "long",
+            "is_nullable": True,
+        },
+        {
+            "name": "layout",
+            "type": "Layout",
+            "annotation": None,
+            "kwarg_only": True,
+            "default": "c10::nullopt",
+            "is_nullable": True,
+        },
+        {
+            "name": "device",
+            "type": "Device",
+            "annotation": None,
+            "kwarg_only": True,
+            "default": "c10::nullopt",
+            "is_nullable": True,
+        },
+        {
+            "name": "pin_memory",
+            "type": "bool",
+            "annotation": None,
+            "kwarg_only": True,
+            "default": "c10::nullopt",
+            "is_nullable": True,
+        },
+    ])
 
     corresponding_topts = [
         {
@@ -315,22 +303,19 @@ def parse_arguments(args, func_variants, declaration, func_return):
     corresponding_topts[1]["kwarg_only"] = True
     corresponding_topts.append(corresponding_topts[1].copy())
     corresponding_topts[2]["default"] = "{}"
-    corresponding_topts.append(
-        {
-            "type": "TensorOptions",
-            "name": "options",
-            "is_nullable": False,
-            "annotation": None,
-            "kwarg_only": True,
-            "default": "at::kLong",
-        }
-    )
+    corresponding_topts.append({
+        "type": "TensorOptions",
+        "name": "options",
+        "is_nullable": False,
+        "annotation": None,
+        "kwarg_only": True,
+        "default": "at::kLong",
+    })
 
     def check_topt_representation(topt_representation):
         for idx, supported_topt in enumerate(supported_topt_arguments):
-            matches = all(
-                topt_representation[i] == topt for i, topt in enumerate(supported_topt)
-            )
+            matches = all(topt_representation[i] == topt
+                          for i, topt in enumerate(supported_topt))
             if matches:
                 return corresponding_topts[idx]
         return None
@@ -343,7 +328,8 @@ def parse_arguments(args, func_variants, declaration, func_return):
     while idx < len(arguments):
         argument = arguments[idx]
         number_of_arguments = len(supported_topt_arguments[0])
-        if is_tensor_option(argument) and len(arguments) - idx >= number_of_arguments:
+        if is_tensor_option(
+                argument) and len(arguments) - idx >= number_of_arguments:
             topt_representation = []
             for i in range(number_of_arguments):
                 argument = arguments[idx]
@@ -352,12 +338,12 @@ def parse_arguments(args, func_variants, declaration, func_return):
                 topt_representation.append(argument)
                 idx += 1
             if len(topt_representation) == number_of_arguments:
-                merged_argument = check_topt_representation(topt_representation)
+                merged_argument = check_topt_representation(
+                    topt_representation)
                 assert (
                     merged_argument
                 ), "Unsupported combination of TensorOptions {}, the only currently supported combinations are {}".format(
-                    str(topt_representation), str(supported_topt_arguments)
-                )
+                    str(topt_representation), str(supported_topt_arguments))
                 new_arguments.append(merged_argument)
             else:
                 new_arguments += topt_representation
@@ -374,34 +360,29 @@ def parse_arguments(args, func_variants, declaration, func_return):
     for arg_idx, argument in enumerate(arguments_out):
         assert argument["annotation"] == func_return[arg_idx]["annotation"], (
             "For func {} writeable keyword Tensor arguments need to have a matching return Tensor. Further, "
-            "the ith-argument needs to correspond to the i-th return.".format(name)
-        )
+            "the ith-argument needs to correspond to the i-th return.".format(
+                name))
 
     assert len(arguments_out) <= len(func_return), (
         "func {} must return at least as many Tensors "
-        "as can be passed as output.".format(name)
-    )
+        "as can be passed as output.".format(name))
 
     if name.endswith("_out"):
         raise RuntimeError(
             "Native function {} may not be suffixed with _out as we transition to a unified schema. "
-            "Otherwise you will cause confusion amongst consumers of native functions.".format(
-                name
-            )
-        )
+            "Otherwise you will cause confusion amongst consumers of native functions."
+            .format(name))
 
     if is_out_fn and func_variants not in [[], "function", ["function"]]:
         raise RuntimeError(
             "Native functions with output MUST be declared with only the function variant; "
             "e.g., variants: function; otherwise you will tickle a Python argument binding bug "
             "(which usually manifests itself as the result variable being undefined.) "
-            "The culprit was: {}".format(name)
-        )
+            "The culprit was: {}".format(name))
     if not is_out_fn:
         assert len(arguments_out) == 0, (
             "func {} is not marked as output yet contains output "
-            "keyword arguments".format(name)
-        )
+            "keyword arguments".format(name))
 
     # TODO: Explicit checking for void is a hack and should disappear after a more
     # functionally complete implementation of Tensor aliases.
@@ -409,25 +390,23 @@ def parse_arguments(args, func_variants, declaration, func_return):
         found_self = False
         for arg_idx, argument in enumerate(arguments):
             if argument["name"] == "self":
-                assert argument["annotation"] and argument["annotation"].endswith(
-                    "!"
-                ), (
-                    'Inplace function "{}" needs to annotate Tensor argument named self '
-                    "as mutable.".format(name)
-                )
+                assert argument["annotation"] and argument[
+                    "annotation"].endswith("!"), (
+                        'Inplace function "{}" needs to annotate Tensor argument named self '
+                        "as mutable.".format(name))
                 found_self = True
-                assert argument["annotation"] == func_return[arg_idx]["annotation"], (
-                    "Inplace function annotations of function {} need to match between "
-                    "input and correponding output.".format(name)
-                )
-                assert (
-                    argument["name"] == func_return[arg_idx]["name"]
-                    or argument["name"] == func_return[arg_idx]["name"] + "_return"
-                )
+                assert argument["annotation"] == func_return[arg_idx][
+                    "annotation"], (
+                        "Inplace function annotations of function {} need to match between "
+                        "input and correponding output.".format(name))
+                assert (argument["name"] == func_return[arg_idx]["name"]
+                        or argument["name"] == func_return[arg_idx]["name"] +
+                        "_return")
                 assert argument["type"] == func_return[arg_idx]["type"]
         assert (
             found_self
-        ), 'Inplace function "{}" needs Tensor argument named self.'.format(name)
+        ), 'Inplace function "{}" needs Tensor argument named self.'.format(
+            name)
 
     return arguments
 
@@ -444,13 +423,18 @@ def parse_return_arguments(return_decl, inplace, func_decl):
 
     multiple_args = len(return_decl.split(", ")) > 1
     for arg_idx, arg in enumerate(return_decl.split(", ")):
-        t, name, default, nullable, size, annotation = type_argument_translations(arg)
+        t, name, default, nullable, size, annotation = type_argument_translations(
+            arg)
         # name of arguments and name of return sometimes have collision
         # in this case, we rename the return name to <name>_return.
         return_name = name
         if name in func_decl["func"].split("->")[0]:
             return_name = name + "_return"
-        argument_dict = {"type": t, "name": return_name, "annotation": annotation}
+        argument_dict = {
+            "type": t,
+            "name": return_name,
+            "annotation": annotation
+        }
         if name:
             # See Note [field_name versus name]
             argument_dict["field_name"] = name
@@ -458,13 +442,11 @@ def parse_return_arguments(return_decl, inplace, func_decl):
             if t == "Tensor" and inplace:
                 assert annotation and annotation.endswith("!"), (
                     'Return Tensor of function "{}" flagged as inplace needs to be '
-                    "annotated as mutable".format(func_decl["func"])
-                )
+                    "annotated as mutable".format(func_decl["func"]))
                 argument_dict["name"] = "self"
             else:
-                argument_dict["name"] = (
-                    "result" if not multiple_args else "result" + str(arg_idx)
-                )
+                argument_dict["name"] = ("result" if not multiple_args else
+                                         "result" + str(arg_idx))
         argument_dict["output"] = True
         arguments.append(argument_dict)
     return arguments
@@ -504,30 +486,31 @@ def run(paths):
                     fn_name, overload_name = fn_name.split(".", 1)
                 else:
                     overload_name = ""
-                assert arguments[-1] == ")", "Expecting closing ) for {}".format(
-                    func["func"]
-                )
+                assert arguments[
+                    -1] == ")", "Expecting closing ) for {}".format(
+                        func["func"])
                 arguments = arguments[:-1]  # Expect closing )
                 declaration["name"] = func.get("name", fn_name)
                 declaration["operator_name"] = func.get("name", fn_name)
-                declaration["overload_name"] = func.get("overload_name", overload_name)
-                declaration["inplace"] = re.search("(^__i|[^_]_$)", fn_name) is not None
+                declaration["overload_name"] = func.get(
+                    "overload_name", overload_name)
+                declaration["inplace"] = re.search("(^__i|[^_]_$)",
+                                                   fn_name) is not None
                 return_arguments = parse_return_arguments(
-                    return_decl, declaration["inplace"], func
-                )
-                arguments = parse_arguments(
-                    arguments, func.get("variants", []), declaration, return_arguments
-                )
+                    return_decl, declaration["inplace"], func)
+                arguments = parse_arguments(arguments,
+                                            func.get("variants", []),
+                                            declaration, return_arguments)
                 output_arguments = [x for x in arguments if x.get("output")]
                 propagate_field_names(output_arguments, return_arguments)
-                declaration["return"] = (
-                    return_arguments if len(output_arguments) == 0 else output_arguments
-                )
+                declaration["return"] = (return_arguments
+                                         if len(output_arguments) == 0 else
+                                         output_arguments)
                 declaration["variants"] = func.get("variants", ["function"])
-                declaration["requires_tensor"] = func.get("requires_tensor", False)
+                declaration["requires_tensor"] = func.get(
+                    "requires_tensor", False)
                 declaration["matches_jit_signature"] = func.get(
-                    "matches_jit_signature", True
-                )
+                    "matches_jit_signature", True)
                 declaration["cpu_half"] = func.get("cpu_half", False)
                 declaration["cpu_bfloat16"] = func.get("cpu_bfloat16", False)
                 declaration["cuda_bfloat16"] = func.get("cuda_bfloat16", False)
@@ -536,29 +519,26 @@ def run(paths):
                 declaration["deprecated"] = func.get("deprecated", False)
                 declaration["device_guard"] = func.get("device_guard", True)
                 declaration["supports_named_tensor"] = func.get(
-                    "supports_named_tensor", False
-                )
+                    "supports_named_tensor", False)
                 declaration["use_c10_dispatcher"] = func.get(
-                    "use_c10_dispatcher", "unboxed_only"
-                )
-                assert declaration["use_c10_dispatcher"] in ["unboxed_only", "full"]
+                    "use_c10_dispatcher", "unboxed_only")
+                assert declaration["use_c10_dispatcher"] in [
+                    "unboxed_only", "full"
+                ]
                 declaration["manual_kernel_registration"] = func.get(
-                    "manual_kernel_registration", False
-                )
-                declaration["category_override"] = func.get("category_override", "")
+                    "manual_kernel_registration", False)
+                declaration["category_override"] = func.get(
+                    "category_override", "")
                 declaration["arguments"] = func.get("arguments", arguments)
                 declaration["type_method_definition_dispatch"] = func.get(
-                    "dispatch", declaration["name"]
-                )
+                    "dispatch", declaration["name"])
                 declaration["python_module"] = func.get("python_module", "")
                 declarations.append(declaration)
             except Exception as e:
                 msg = """Exception raised in processing function:
 {func}
 Generated partial declaration:
-{decl}""".format(
-                    func=pprint.pformat(func), decl=pprint.pformat(declaration)
-                )
+{decl}""".format(func=pprint.pformat(func), decl=pprint.pformat(declaration))
                 print(msg, file=sys.stderr)
                 raise e
 
