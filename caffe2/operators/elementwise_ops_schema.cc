@@ -336,26 +336,26 @@ For example, the following tensor shapes are supported:
   shape(A) = (2, 3, 4, 5), shape(B) = (3, 4), with axis=1
   shape(A) = (2, 3, 2, 5), shape(B) = (2), with axis=0
     )DOC")
-    .Arg(
-        "axis",
-        "If set, defines the starting dimension for reduction. Args `axis` and "
-        "`axis_str` cannot be used simultaneously.")
-    .Arg(
-        "axis_str",
-        "If set, it could only be N or C or H or W. `order` arg should also be "
-        "provided. It defines the reduction dimensions on NCHW or NHWC. Args "
-        "`axis` and `axis_str` cannot be used simultaneously.")
-    .Arg("order", "Either NHWC or HCWH")
-    .Input(
-        0,
-        "A",
-        "First operand, should share the type with the second operand.")
-    .Input(
-        1,
-        "B",
-        "Second operand. With broadcasting can be of smaller size than A. "
-        "If broadcasting is disabled it should be of the same size.")
-    .Output(0, "C", "Result, has same dimensions and type as B");
+.Arg(
+    "axis",
+    "If set, defines the starting dimension for reduction. Args `axis` and "
+    "`axis_str` cannot be used simultaneously.")
+.Arg(
+    "axis_str",
+    "If set, it could only be N or C or H or W. `order` arg should also be "
+    "provided. It defines the reduction dimensions on NCHW or NHWC. Args "
+    "`axis` and `axis_str` cannot be used simultaneously.")
+.Arg("order", "Either NHWC or HCWH")
+.Input(
+    0,
+    "A",
+    "First operand, should share the type with the second operand.")
+.Input(
+    1,
+    "B",
+    "Second operand. With broadcasting can be of smaller size than A. "
+    "If broadcasting is disabled it should be of the same size.")
+.Output(0, "C", "Result, has same dimensions and type as B");
 
 const char kLTExample[] = R"DOC(
 <details>
@@ -804,22 +804,22 @@ Both input operands should be of type `bool`.
 
 {extra}
     )DOC";
-    c10::ReplaceAll(doc, "{name}", name);
-    c10::ReplaceAll(doc, "{broadcast_doc}", kBroadcastDoc);
-    c10::ReplaceAll(doc, "{extra}", extra);
-    schema.SetDoc(doc);
-    schema.Arg("broadcast", "*(type: int; default: 0)* Pass 1 to enable broadcasting.");
-    schema.Arg(
-        "axis",
-        "*(type: int; default: -1)* Axis to concatenate on. If set, defines the broadcast dimensions.");
-    schema.Input(0, "A", "*(type: Tensor`<bool>`)* First operand.");
-    schema.Input(
-        1,
-        "B",
-        "*(type: Tensor`<bool>`)* Second operand. With broadcasting can be of smaller size than `A`. "
-        "If broadcasting is disabled it should be of the same size.");
-    schema.Output(0, "C", "*(type: Tensor`<bool>`)* Output tensor of booleans. Has same dimensions as input `A`.");
-  };
+c10::ReplaceAll(doc, "{name}", name);
+c10::ReplaceAll(doc, "{broadcast_doc}", kBroadcastDoc);
+c10::ReplaceAll(doc, "{extra}", extra);
+schema.SetDoc(doc);
+schema.Arg("broadcast", "*(type: int; default: 0)* Pass 1 to enable broadcasting.");
+schema.Arg(
+    "axis",
+    "*(type: int; default: -1)* Axis to concatenate on. If set, defines the broadcast dimensions.");
+schema.Input(0, "A", "*(type: Tensor`<bool>`)* First operand.");
+schema.Input(
+    1,
+    "B",
+    "*(type: Tensor`<bool>`)* Second operand. With broadcasting can be of smaller size than `A`. "
+    "If broadcasting is disabled it should be of the same size.");
+schema.Output(0, "C", "*(type: Tensor`<bool>`)* Output tensor of booleans. Has same dimensions as input `A`.");
+};
 }
 
 #define CAFFE2_SCHEMA_FOR_BINARY_LOGICAL_OP(name, symbol, onnx_schema, extra) \
@@ -839,26 +839,26 @@ CAFFE2_SCHEMA_FOR_BINARY_LOGICAL_OP(Xor, "xor", "Xor", kXorExample);
 #undef CAFFE2_SCHEMA_FOR_BINARY_LOGICAL_OP
 
 std::function<void(OpSchema&)> BitwiseDocGenerator(const char* name) {
-  return [=](OpSchema& schema) {
-    string doc = R"DOC(
+    return [=](OpSchema& schema) {
+        string doc = R"DOC(
 Performs element-wise bitwise operation `{name}` (with limited broadcast support).
 Both input operands should be of type `bool`.
 {broadcast_doc})DOC";
-    c10::ReplaceAll(doc, "{name}", name);
-    c10::ReplaceAll(doc, "{broadcast_doc}", kBroadcastDoc);
-    schema.SetDoc(doc);
-    schema.Arg("broadcast", "*(type: int; default: 0)* Pass 1 to enable broadcasting.");
-    schema.Arg(
-        "axis",
-        "*(type: int; default: -1)* Axis to concatenate on. If set, defines the broadcast dimensions.");
-    schema.Input(0, "A", "*(type: Tensor)* First operand.");
-    schema.Input(
-        1,
-        "B",
-        "*(type: Tensor)* Second operand. With broadcasting can be of smaller size than `A`. "
-        "If broadcasting is disabled it should be of the same size.");
-    schema.Output(0, "C", "*(type: Tensor)* Output tensor. Has same dimensions as input `A`.");
-  };
+        c10::ReplaceAll(doc, "{name}", name);
+        c10::ReplaceAll(doc, "{broadcast_doc}", kBroadcastDoc);
+        schema.SetDoc(doc);
+        schema.Arg("broadcast", "*(type: int; default: 0)* Pass 1 to enable broadcasting.");
+        schema.Arg(
+            "axis",
+            "*(type: int; default: -1)* Axis to concatenate on. If set, defines the broadcast dimensions.");
+        schema.Input(0, "A", "*(type: Tensor)* First operand.");
+        schema.Input(
+            1,
+            "B",
+            "*(type: Tensor)* Second operand. With broadcasting can be of smaller size than `A`. "
+            "If broadcasting is disabled it should be of the same size.");
+        schema.Output(0, "C", "*(type: Tensor)* Output tensor. Has same dimensions as input `A`.");
+    };
 }
 
 #define CAFFE2_SCHEMA_FOR_BINARY_BITWISE_OP(name, symbol)    \
@@ -877,10 +877,10 @@ CAFFE2_SCHEMA_FOR_BINARY_BITWISE_OP(BitwiseXor, "bitwise_xor");
 #undef CAFFE2_SCHEMA_FOR_BINARY_BITWISE_OP
 
 OPERATOR_SCHEMA(Not)
-    .NumInputs(1)
-    .NumOutputs(1)
-    .IdenticalTypeAndShapeOfInput(0)
-    .SetDoc(R"DOC(
+.NumInputs(1)
+.NumOutputs(1)
+.IdenticalTypeAndShapeOfInput(0)
+.SetDoc(R"DOC(
 Performs element-wise negation on input tensor `X`.
 
 Github Links:
@@ -928,16 +928,16 @@ Y:
 </details>
 
     )DOC")
-    .Input(0, "X", "*(Tensor`<bool>`)* Input tensor.")
-    .Output(0, "Y", "*(Tensor`<bool>`)* Negated output tensor.")
-    .InheritOnnxSchema();
+.Input(0, "X", "*(Tensor`<bool>`)* Input tensor.")
+.Output(0, "Y", "*(Tensor`<bool>`)* Negated output tensor.")
+.InheritOnnxSchema();
 SHOULD_NOT_DO_GRADIENT(Not);
 
 OPERATOR_SCHEMA(Sign)
-    .NumInputs(1)
-    .NumOutputs(1)
-    .IdenticalTypeAndShapeOfInput(0)
-    .SetDoc(R"DOC(
+.NumInputs(1)
+.NumOutputs(1)
+.IdenticalTypeAndShapeOfInput(0)
+.SetDoc(R"DOC(
 Computes sign for each element of the input: -1, 0 or 1.
 
 Github Link:
@@ -984,8 +984,8 @@ Y:
 </details>
 
     )DOC")
-    .Input(0, "X", "*(type: Tensor`<float>`)* Input data tensor.")
-    .Output(0, "Y", "*(type: Tensor`<float>`)* Output tensor.");
+.Input(0, "X", "*(type: Tensor`<float>`)* Input data tensor.")
+.Output(0, "Y", "*(type: Tensor`<float>`)* Output tensor.");
 SHOULD_NOT_DO_GRADIENT(Sign);
 
 } // namespace caffe2
