@@ -5,11 +5,11 @@
 namespace at {
 namespace native {
 
-// QNNPACK AND XNNPACK may out-of-bound access the input and / or output tensors.
-// This behavior will trigger ASAN, and may result in a segfault if the accessed
-// memory just so happens to fall on a page the current process has no read access
-// to.  Here we define a custom allocator that allocates the extra storage required
-// to keep this behavior safe.
+// QNNPACK AND XNNPACK may out-of-bound access the input and / or output
+// tensors. This behavior will trigger ASAN, and may result in a segfault if the
+// accessed memory just so happens to fall on a page the current process has no
+// read access to.  Here we define a custom allocator that allocates the extra
+// storage required to keep this behavior safe.
 //
 // PreGuardBytes: Number of guard bytes to allocate before the allocation.
 // PostGuardBytes: Number of guard bytes to allocate after the allocation.
@@ -30,10 +30,10 @@ class GuardingAllocator final : public at::Allocator {
     memory.as_byte_ptr += kPreGuardBytes;
 
     return {
-      memory.as_void_ptr,
-      memory.as_void_ptr,
-      &deleter,
-      at::Device(DeviceType::CPU),
+        memory.as_void_ptr,
+        memory.as_void_ptr,
+        &deleter,
+        at::Device(DeviceType::CPU),
     };
   }
 
@@ -46,8 +46,8 @@ class GuardingAllocator final : public at::Allocator {
   static constexpr uint32_t kPostGuardBytes = PostGuardBytes;
 
   union Cast final {
-    void * const as_void_ptr;
-    uint8_t * as_byte_ptr;
+    void* const as_void_ptr;
+    uint8_t* as_byte_ptr;
   };
 };
 

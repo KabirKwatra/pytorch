@@ -43,40 +43,39 @@ bool available(
     const int64_t groups,
     const float output_min,
     const float output_max) {
-         // XNNPACK
+  // XNNPACK
   return xnnpack::internal::available() &&
-         // Weight
-         (4 == weight.ndimension()) &&
-         (weight.size(Layout::Filter::height) > 0) &&
-         (weight.size(Layout::Filter::width) > 0) &&
-         (c10::DeviceType::CPU == weight.device().type()) &&
-         (kFloat == weight.scalar_type()) &&
-         // Bias
-         ((bias && bias->defined()) ? ((1 == bias->ndimension()) &&
-                                      (c10::DeviceType::CPU == bias->device().type()) &&
-                                      (kFloat == bias->scalar_type()) &&
-                                      (weight.size(Layout::Filter::output)) == bias->size(0))
-                                    : true) &&
-         // Padding
-         (padding[Layout::Parameter::height] >= 0) &&
-         (padding[Layout::Parameter::width] >= 0) &&
-         // Stride
-         (stride[Layout::Parameter::height] > 0) &&
-         (stride[Layout::Parameter::width] > 0) &&
-         // Dilation
-         (dilation[Layout::Parameter::height] > 0) &&
-         (dilation[Layout::Parameter::width] > 0) &&
-         // Groups
-         (groups > 0) &&
-         // Input
-         (weight.size(Layout::Filter::input) > 0) &&
-         // Output
-         (weight.size(Layout::Filter::output) > 0) &&
-         // Output - Groups
-         ((weight.size(Layout::Filter::output) % groups) == 0) &&
-         // Output Min / Max
-         (output_max > output_min) &&
-         true;
+      // Weight
+      (4 == weight.ndimension()) && (weight.size(Layout::Filter::height) > 0) &&
+      (weight.size(Layout::Filter::width) > 0) &&
+      (c10::DeviceType::CPU == weight.device().type()) &&
+      (kFloat == weight.scalar_type()) &&
+      // Bias
+      ((bias && bias->defined())
+           ? ((1 == bias->ndimension()) &&
+              (c10::DeviceType::CPU == bias->device().type()) &&
+              (kFloat == bias->scalar_type()) &&
+              (weight.size(Layout::Filter::output)) == bias->size(0))
+           : true) &&
+      // Padding
+      (padding[Layout::Parameter::height] >= 0) &&
+      (padding[Layout::Parameter::width] >= 0) &&
+      // Stride
+      (stride[Layout::Parameter::height] > 0) &&
+      (stride[Layout::Parameter::width] > 0) &&
+      // Dilation
+      (dilation[Layout::Parameter::height] > 0) &&
+      (dilation[Layout::Parameter::width] > 0) &&
+      // Groups
+      (groups > 0) &&
+      // Input
+      (weight.size(Layout::Filter::input) > 0) &&
+      // Output
+      (weight.size(Layout::Filter::output) > 0) &&
+      // Output - Groups
+      ((weight.size(Layout::Filter::output) % groups) == 0) &&
+      // Output Min / Max
+      (output_max > output_min) && true;
 }
 
 Context create(
@@ -110,27 +109,28 @@ Context create(
   xnn_operator_t convolution_op{};
 
   const xnn_status create_status = xnn_create_convolution2d_nhwc_f32(
-      padding[Layout::Parameter::height],                             // input_padding_top
-      padding[Layout::Parameter::width],                              // input_padding_right
-      padding[Layout::Parameter::height],                             // input_padding_bottom
-      padding[Layout::Parameter::width],                              // input_padding_left
-      weight_nhwc.size(Layout::Filter::height),                       // kernel_height
-      weight_nhwc.size(Layout::Filter::width),                        // kernel_width
-      stride[Layout::Parameter::height],                              // subsampling_height
-      stride[Layout::Parameter::width],                               // subsampling_width
-      dilation[Layout::Parameter::height],                            // dilation_height
-      dilation[Layout::Parameter::width],                             // dilation_width
-      groups,                                                         // groups
-      weight_nhwc.size(Layout::Filter::input),                        // group_input_channels
-      weight_nhwc.size(Layout::Filter::output) / groups,              // group_output_channels
-      weight_nhwc.size(Layout::Filter::input) * groups,               // input_pixel_stride
-      weight_nhwc.size(Layout::Filter::output),                       // output_pixel_stride
-      weight_nhwc.data_ptr<float>(),                                  // kernel
-      (bias && bias->defined()) ? bias->data_ptr<float>() : nullptr,  // bias
-      output_min,                                                     // output_min
-      output_max,                                                     // output_max
-      0u,                                                             // flags
-      &convolution_op);                                               // operator
+      padding[Layout::Parameter::height], // input_padding_top
+      padding[Layout::Parameter::width], // input_padding_right
+      padding[Layout::Parameter::height], // input_padding_bottom
+      padding[Layout::Parameter::width], // input_padding_left
+      weight_nhwc.size(Layout::Filter::height), // kernel_height
+      weight_nhwc.size(Layout::Filter::width), // kernel_width
+      stride[Layout::Parameter::height], // subsampling_height
+      stride[Layout::Parameter::width], // subsampling_width
+      dilation[Layout::Parameter::height], // dilation_height
+      dilation[Layout::Parameter::width], // dilation_width
+      groups, // groups
+      weight_nhwc.size(Layout::Filter::input), // group_input_channels
+      weight_nhwc.size(Layout::Filter::output) /
+          groups, // group_output_channels
+      weight_nhwc.size(Layout::Filter::input) * groups, // input_pixel_stride
+      weight_nhwc.size(Layout::Filter::output), // output_pixel_stride
+      weight_nhwc.data_ptr<float>(), // kernel
+      (bias && bias->defined()) ? bias->data_ptr<float>() : nullptr, // bias
+      output_min, // output_min
+      output_max, // output_max
+      0u, // flags
+      &convolution_op); // operator
 
   TORCH_CHECK(
       xnn_status_success == create_status,
@@ -147,20 +147,17 @@ Context create(
 
 // TODO: Decouple and improve error handling and messages.
 bool usable(const Tensor& input) {
-         // Input
+  // Input
   return (4 == input.ndimension()) &&
-         (c10::DeviceType::CPU == input.device().type()) &&
-         (kFloat == input.scalar_type()) &&
-         (input.size(Layout::Activation4D::batch) > 0) &&
-         (input.size(Layout::Activation4D::channels) > 0) &&
-         (input.size(Layout::Activation4D::height) > 0) &&
-         (input.size(Layout::Activation4D::width) > 0) &&
-         true;
+      (c10::DeviceType::CPU == input.device().type()) &&
+      (kFloat == input.scalar_type()) &&
+      (input.size(Layout::Activation4D::batch) > 0) &&
+      (input.size(Layout::Activation4D::channels) > 0) &&
+      (input.size(Layout::Activation4D::height) > 0) &&
+      (input.size(Layout::Activation4D::width) > 0) && true;
 }
 
-Tensor run(
-    const Context& context,
-    const Tensor& input) {
+Tensor run(const Context& context, const Tensor& input) {
   using namespace internal;
 
   const Tensor input_nhwc = input.contiguous(MemoryFormat::ChannelsLast);
@@ -181,13 +178,13 @@ Tensor run(
       MemoryFormat::ChannelsLast);
 
   const xnn_status setup_status = xnn_setup_convolution2d_nhwc_f32(
-      context.convolution_op.get(),                   // operator
-      input_nhwc.size(Layout::Activation4D::batch),   // batch_size
-      input_nhwc.size(Layout::Activation4D::height),  // input_height
-      input_nhwc.size(Layout::Activation4D::width),   // input_width
-      input_nhwc.data_ptr<float>(),                   // input
-      output.data_ptr<float>(),                       // output
-      nullptr);                                       // threadpool
+      context.convolution_op.get(), // operator
+      input_nhwc.size(Layout::Activation4D::batch), // batch_size
+      input_nhwc.size(Layout::Activation4D::height), // input_height
+      input_nhwc.size(Layout::Activation4D::width), // input_width
+      input_nhwc.data_ptr<float>(), // input
+      output.data_ptr<float>(), // output
+      nullptr); // threadpool
 
   TORCH_CHECK(
       xnn_status_success == setup_status,
@@ -195,11 +192,10 @@ Tensor run(
 
   const xnn_status run_status = xnn_run_operator(
       context.convolution_op.get(), // operator
-      nullptr);                     // threadpool
+      nullptr); // threadpool
 
   TORCH_INTERNAL_ASSERT(
-      xnn_status_success == run_status,
-      "xnn_run_operator failed!");
+      xnn_status_success == run_status, "xnn_run_operator failed!");
 
   return output.contiguous(input.suggest_memory_format());
 }
@@ -240,15 +236,15 @@ bool use_convolution2d(
     const IntArrayRef dilation,
     const int64_t groups) {
   return internal::convolution2d::available(
-            weight,
-            bias,
-            padding,
-            stride,
-            dilation,
-            groups,
-            internal::convolution2d::Context::kMin,
-            internal::convolution2d::Context::kMax) &&
-         internal::convolution2d::usable(input);
+             weight,
+             bias,
+             padding,
+             stride,
+             dilation,
+             groups,
+             internal::convolution2d::Context::kMin,
+             internal::convolution2d::Context::kMax) &&
+      internal::convolution2d::usable(input);
 }
 
 Tensor convolution2d(
@@ -291,16 +287,17 @@ at::Tensor _conv2d_prepack(
               stride.vec(),
               dilation.vec(),
               groups,
-              output_min ? *output_min : xnnpack::internal::convolution2d::Context::kMin,
-              output_max ? *output_max : xnnpack::internal::convolution2d::Context::kMax)),
+              output_min ? *output_min
+                         : xnnpack::internal::convolution2d::Context::kMin,
+              output_max ? *output_max
+                         : xnnpack::internal::convolution2d::Context::kMax)),
       weight.options());
 }
 
-at::Tensor _conv2d_packed(
-    const Tensor& packed_weight,
-    const Tensor& input) {
+at::Tensor _conv2d_packed(const Tensor& packed_weight, const Tensor& input) {
   return xnnpack::internal::convolution2d::run(
-      cpp_custom_type_hack::cast<xnnpack::internal::convolution2d::Context>(packed_weight),
+      cpp_custom_type_hack::cast<xnnpack::internal::convolution2d::Context>(
+          packed_weight),
       input);
 }
 

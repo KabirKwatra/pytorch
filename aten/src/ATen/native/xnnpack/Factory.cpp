@@ -1,7 +1,7 @@
 #ifdef USE_XNNPACK
 
-#include <ATen/native/xnnpack/Factory.h>
 #include <ATen/native/utils/Allocator.h>
+#include <ATen/native/xnnpack/Factory.h>
 
 namespace at {
 namespace native {
@@ -16,16 +16,15 @@ Tensor empty_with_tail_padding(
 
   const int64_t nelements = prod_intlist(size);
 
-  Tensor tensor(
-      c10::make_intrusive<c10::TensorImpl>(
-          c10::Storage{
-              dtype,
-              nelements,
-              allocator.allocate(nelements * dtype.itemsize()),
-              &allocator,
-              /*resizable=*/true,
-          },
-          DispatchKeySet{DispatchKey::CPUTensorId}));
+  Tensor tensor(c10::make_intrusive<c10::TensorImpl>(
+      c10::Storage{
+          dtype,
+          nelements,
+          allocator.allocate(nelements * dtype.itemsize()),
+          &allocator,
+          /*resizable=*/true,
+      },
+      DispatchKeySet{DispatchKey::CPUTensorId}));
 
   return tensor.resize_(size, memory_format);
 }

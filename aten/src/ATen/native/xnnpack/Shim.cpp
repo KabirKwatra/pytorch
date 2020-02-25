@@ -8,14 +8,14 @@ namespace xnnpack {
 namespace internal {
 namespace {
 
-constexpr const char * const kError =
+constexpr const char* const kError =
     "Not Implemented! Reason: PyTorch not built with XNNPACK support.";
 
 } // namespace
 } // namespace internal
 
 bool available() {
-    return false;
+  return false;
 }
 
 bool use_convolution2d(
@@ -42,17 +42,11 @@ Tensor convolution2d(
   TORCH_CHECK(false, internal::kError);
 }
 
-bool use_linear(
-    const Tensor&,
-    const Tensor&,
-    const Tensor&) {
+bool use_linear(const Tensor&, const Tensor&, const Tensor&) {
   return false;
 }
 
-Tensor linear(
-    const Tensor&,
-    const Tensor&,
-    const Tensor&) {
+Tensor linear(const Tensor&, const Tensor&, const Tensor&) {
   TORCH_CHECK(false, internal::kError);
 }
 
@@ -70,9 +64,7 @@ at::Tensor _conv2d_prepack(
   TORCH_CHECK(false, xnnpack::internal::kError);
 }
 
-at::Tensor _conv2d_packed(
-    const Tensor&,
-    const Tensor&) {
+at::Tensor _conv2d_packed(const Tensor&, const Tensor&) {
   TORCH_CHECK(false, xnnpack::internal::kError);
 }
 
@@ -84,9 +76,7 @@ Tensor _linear_prepack(
   TORCH_CHECK(false, xnnpack::internal::kError);
 }
 
-Tensor _linear_packed(
-    const Tensor&,
-    const Tensor&) {
+Tensor _linear_packed(const Tensor&, const Tensor&) {
   TORCH_CHECK(false, xnnpack::internal::kError);
 }
 

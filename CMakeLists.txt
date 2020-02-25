@@ -273,7 +273,7 @@ if (MSVC)
 
     # /bigobj increases number of sections in .obj file, which is needed to link
     # against libraries in Python 2.7 under Windows
-    # For Visual Studio generators, if /MP is not added, then we may need 
+    # For Visual Studio generators, if /MP is not added, then we may need
     # to add /MP to the flags.
     # For other generators like ninja, we don't need to add /MP because it is
     # already handled by the generator itself.

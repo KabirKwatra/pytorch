@@ -22,9 +22,10 @@ struct Layout final {
 
   // ND Activation Maps
   struct ActivationND final {
-    // Some operators may not be limited to 4 dimensional tensors. In that scenario,
-    // XNNPACK denotes that operator with an _nc suffix and expects all dimensions,
-    // except channels, to be flattened into one argument: batch_size.
+    // Some operators may not be limited to 4 dimensional tensors. In that
+    // scenario, XNNPACK denotes that operator with an _nc suffix and expects
+    // all dimensions, except channels, to be flattened into one argument:
+    // batch_size.
     static int64_t batch(const IntArrayRef tensor) {
       if (C10_UNLIKELY(tensor.empty())) {
         return -1;
