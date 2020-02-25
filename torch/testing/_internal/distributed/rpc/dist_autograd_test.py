@@ -58,6 +58,7 @@ def _check_rpc_done(rank_distance):
 def _torch_ones(sizes, requires_grad=False):
     return torch.ones(sizes, requires_grad=requires_grad)
 
+
 # This method must be called on the rref owner, and verifies that the grad of
 # rref tensor equals to the given grad.
 
@@ -152,6 +153,7 @@ def _run_trainer(rref_t1, t2, ps, rank_diff):
         # prevent deleting dist autograd context
         rpc.rpc_sync(ps, _set_rpc_done, args=(context_id, rank_diff))
         rpc.rpc_sync(ps, _check_rpc_done, args=(0,))
+
 
 # This function is the same as _run_trainer, except rpc calls torchscript
 # function "my_script_ref_add" instead of python funciton "my_rref_add"
@@ -944,10 +946,7 @@ class DistAutogradTest(RpcAgentTestFixture):
         local_ret.sum().backward()
 
         # create rref on self
-        rref_t1 = rpc.remote(
-            "worker{}".format(self.rank),
-            create_ref_fn,
-            args=())
+        rref_t1 = rpc.remote("worker{}".format(self.rank), create_ref_fn, args=())
 
         # kick off forward and backward pass on three other workers (trainers)
         rank_diffs = [1, 2, 3]
@@ -994,6 +993,7 @@ class DistAutogradTest(RpcAgentTestFixture):
         # ref as arg is passed to pybind boundary, and the ref is not garbage
         # collected by python when calling shutdown()
         import torch.distributed.rpc.api as api
+
         api._ignore_rref_leak = True
 
         self._test_trainer_ps(create_torchscript_tensor, _run_trainer_torchscript)

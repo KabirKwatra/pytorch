@@ -853,7 +853,9 @@ class RpcTest(RpcAgentTestFixture):
 
     @dist_init
     def test_stress_heavy_rpc_torchscript(self):
-        self._stress_test_rpc(heavy_rpc_torchscript, repeat=20, args=(torch.ones(100, 100),))
+        self._stress_test_rpc(
+            heavy_rpc_torchscript, repeat=20, args=(torch.ones(100, 100),)
+        )
 
     @dist_init
     def test_builtin_remote_ret(self):
