@@ -1,8 +1,9 @@
-import torch
-import warnings
-from collections import defaultdict
 import sys
 import traceback
+import warnings
+from collections import defaultdict
+
+import torch
 
 
 def _type(self, dtype=None, non_blocking=False, **kwargs):

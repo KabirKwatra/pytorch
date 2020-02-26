@@ -1,11 +1,12 @@
+import io
+import tempfile
+from copy import deepcopy
+
 import numpy as np
 
 import torch
-import io
-from copy import deepcopy
-
-from torch.testing._internal.common_utils import TestCase, run_tests
-import tempfile
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import TestCase
 
 
 class Foo(torch.nn.Module):
