@@ -52,11 +52,14 @@ def find_cuda_windows_lib():
     test_env = os.environ.copy()
     old_path = test_env["PATH"]
     py_dll_path = os.path.join(sys.exec_prefix, "Library", "bin")
-    th_dll_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), "lib")
+    th_dll_path = os.path.join(os.path.dirname(os.path.dirname(__file__)),
+                               "lib")
     test_env["PATH"] = ";".join([th_dll_path, py_dll_path, old_path])
-    proc = Popen(
-        ["where", "cudart64*.dll"], stdout=PIPE, stderr=PIPE, stdin=PIPE, env=test_env
-    )
+    proc = Popen(["where", "cudart64*.dll"],
+                 stdout=PIPE,
+                 stderr=PIPE,
+                 stdin=PIPE,
+                 env=test_env)
     out, err = proc.communicate()
     out = out.decode().strip()
     if len(out) > 0:
@@ -70,10 +73,8 @@ def find_cuda_windows_lib():
 
 def is_available():
     r"""Returns a bool indicating if CUDA is currently available."""
-    if (
-        not hasattr(torch._C, "_cuda_isDriverSufficient")
-        or not torch._C._cuda_isDriverSufficient()
-    ):
+    if (not hasattr(torch._C, "_cuda_isDriverSufficient")
+            or not torch._C._cuda_isDriverSufficient()):
         return False
     return torch._C._cuda_getDeviceCount() > 0
 
@@ -94,9 +95,8 @@ def _load_cudart():
     raise RuntimeError(
         "couldn't find libcudart. Make sure CUDA libraries are installed in a "
         "default location, or that they're in {}.".format(
-            "DYLD_LIBRARY_PATH" if platform.system() == "Darwin" else "LD_LIBRARY_PATH"
-        )
-    )
+            "DYLD_LIBRARY_PATH" if platform.system() ==
+            "Darwin" else "LD_LIBRARY_PATH"))
 
 
 def _check_driver():
@@ -105,25 +105,19 @@ def _check_driver():
     if not torch._C._cuda_isDriverSufficient():
         if torch._C._cuda_getDriverVersion() == 0:
             # found no NVIDIA driver on the system
-            raise AssertionError(
-                """
+            raise AssertionError("""
 Found no NVIDIA driver on your system. Please check that you
 have an NVIDIA GPU and installed a driver from
-http://www.nvidia.com/Download/index.aspx"""
-            )
+http://www.nvidia.com/Download/index.aspx""")
         else:
             # TODO: directly link to the alternative bin that needs install
-            raise AssertionError(
-                """
+            raise AssertionError("""
 The NVIDIA driver on your system is too old (found version {}).
 Please update your GPU driver by downloading and installing a new
 version from the URL: http://www.nvidia.com/Download/index.aspx
 Alternatively, go to: https://pytorch.org to install
 a PyTorch version that has been compiled with your version
-of the CUDA driver.""".format(
-                    str(torch._C._cuda_getDriverVersion())
-                )
-            )
+of the CUDA driver.""".format(str(torch._C._cuda_getDriverVersion())))
 
 
 def _check_capability():
@@ -149,7 +143,8 @@ def _check_capability():
         if capability == (3, 0) or major < 3:
             warnings.warn(old_gpu_warn % (d, name, major, capability[1]))
         elif CUDA_VERSION <= 9000 and major >= 7 and minor >= 5:
-            warnings.warn(incorrect_binary_warn % (d, name, 10000, CUDA_VERSION))
+            warnings.warn(incorrect_binary_warn %
+                          (d, name, 10000, CUDA_VERSION))
 
 
 def is_initialized():
@@ -204,16 +199,13 @@ def _lazy_init():
             from sys import version_info
 
             if version_info < (3, 4):
-                msg = (
-                    "To use CUDA with multiprocessing, you must use Python "
-                    "3.4+ and the 'spawn' start method"
-                )
+                msg = ("To use CUDA with multiprocessing, you must use Python "
+                       "3.4+ and the 'spawn' start method")
             else:
-                msg = (
-                    "To use CUDA with multiprocessing, you must use the "
-                    "'spawn' start method"
-                )
-            raise RuntimeError("Cannot re-initialize CUDA in forked subprocess. " + msg)
+                msg = ("To use CUDA with multiprocessing, you must use the "
+                       "'spawn' start method")
+            raise RuntimeError(
+                "Cannot re-initialize CUDA in forked subprocess. " + msg)
         _check_driver()
         torch._C._cuda_init()
         _cudart = _load_cudart()
@@ -230,8 +222,8 @@ def _lazy_init():
                 except Exception as e:
                     msg = (
                         "CUDA call failed lazily at initialization with error: {}\n\n"
-                        "CUDA call was originally invoked at:\n\n{}"
-                    ).format(str(e), orig_traceback)
+                        "CUDA call was originally invoked at:\n\n{}").format(
+                            str(e), orig_traceback)
                     raise_from(DeferredCudaCallError(msg), e)
         finally:
             delattr(_tls, "is_initializing")
@@ -345,7 +337,8 @@ def get_device_capability(device=None):
 
 
 def get_device_properties(device):
-    _lazy_init()  # will define _get_device_properties and _CudaDeviceProperties
+    _lazy_init(
+    )  # will define _get_device_properties and _CudaDeviceProperties
     device = _get_device_index(device, optional=True)
     if device < 0 or device >= device_count():
         raise AssertionError("Invalid device id")
@@ -437,9 +430,8 @@ def current_stream(device=None):
             (default).
     """
     _lazy_init()
-    return torch.cuda.Stream(
-        _cdata=torch._C._cuda_getCurrentStream(_get_device_index(device, optional=True))
-    )
+    return torch.cuda.Stream(_cdata=torch._C._cuda_getCurrentStream(
+        _get_device_index(device, optional=True)))
 
 
 def default_stream(device=None):
@@ -452,9 +444,8 @@ def default_stream(device=None):
             (default).
     """
     _lazy_init()
-    return torch.cuda.Stream(
-        _cdata=torch._C._cuda_getDefaultStream(_get_device_index(device, optional=True))
-    )
+    return torch.cuda.Stream(_cdata=torch._C._cuda_getDefaultStream(
+        _get_device_index(device, optional=True)))
 
 
 def current_blas_handle():
@@ -472,25 +463,24 @@ def _dummy_type(name):
     def init_err(self):
         class_name = self.__class__.__name__
         raise RuntimeError(
-            "Tried to instantiate dummy base class {}".format(class_name)
-        )
+            "Tried to instantiate dummy base class {}".format(class_name))
 
-    return type(storage_name, (object,), {"__init__": init_err})
+    return type(storage_name, (object, ), {"__init__": init_err})
 
 
 if not hasattr(torch._C, "CudaDoubleStorageBase"):
     # Define dummy base classes
     for t in [
-        "Double",
-        "Float",
-        "Long",
-        "Int",
-        "Short",
-        "Char",
-        "Byte",
-        "Half",
-        "Bool",
-        "BFloat16",
+            "Double",
+            "Float",
+            "Long",
+            "Int",
+            "Short",
+            "Char",
+            "Byte",
+            "Half",
+            "Bool",
+            "BFloat16",
     ]:
         storage_name = "Cuda{0}StorageBase".format(t)
         tensor_name = "Cuda{0}TensorBase".format(t)
@@ -557,7 +547,8 @@ class BoolStorage(_CudaBase, torch._C.CudaBoolStorageBase, _StorageBase):
     pass
 
 
-class BFloat16Storage(_CudaBase, torch._C.CudaBFloat16StorageBase, _StorageBase):
+class BFloat16Storage(_CudaBase, torch._C.CudaBFloat16StorageBase,
+                      _StorageBase):
     pass
 
 
