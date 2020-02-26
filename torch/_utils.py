@@ -176,6 +176,7 @@ def _rebuild_qtensor(storage, storage_offset, size, stride, quantizer_params, re
     tensor._backward_hooks = backward_hooks
     return tensor
 
+
 def _rebuild_parameter(data, requires_grad, backward_hooks):
     param = torch.nn.Parameter(data, requires_grad)
     # NB: This line exists only for backwards compatibility; the
@@ -366,12 +367,14 @@ def annotate(ret, **kwargs):
 
 class KeyErrorMessage(str):
     r"""str subclass that returns itself in repr"""
+
     def __repr__(self):
         return self
 
 
 class ExceptionWrapper(object):
     r"""Wraps an exception plus traceback to communicate across threads"""
+
     def __init__(self, exc_info=None, where="in background"):
         # It is important that we don't store exc_info, see
         # NOTE [ Python Traceback Reference Cycle Problem ]

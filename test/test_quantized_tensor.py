@@ -7,6 +7,7 @@ from copy import deepcopy
 from torch.testing._internal.common_utils import TestCase, run_tests
 import tempfile
 
+
 class Foo(torch.nn.Module):
     def __init__(self):
         super(Foo, self).__init__()
@@ -52,15 +53,15 @@ class TestQuantizedTensor(TestCase):
         self.assertEqual(qr.item(), 15)
         # we can also print a qtensor
         self.assertEqual(' '.join(str(qr).split()),
-                         "tensor([15.], size=(1,), dtype=torch.quint8, " +
-                         "quantization_scheme=torch.per_tensor_affine, " +
-                         "scale=1.0, zero_point=2)")
+                         "tensor([15.], size=(1,), dtype=torch.quint8, "
+                         + "quantization_scheme=torch.per_tensor_affine, "
+                         + "scale=1.0, zero_point=2)")
         empty_r = torch.ones((0, 1), dtype=torch.float)
         empty_qr = torch.quantize_per_tensor(empty_r, scale, zero_point, torch.quint8)
         self.assertEqual(' '.join(str(empty_qr).split()),
-                         "tensor([], size=(0, 1), dtype=torch.quint8, " +
-                         "quantization_scheme=torch.per_tensor_affine, " +
-                         "scale=1.0, zero_point=2)")
+                         "tensor([], size=(0, 1), dtype=torch.quint8, "
+                         + "quantization_scheme=torch.per_tensor_affine, "
+                         + "scale=1.0, zero_point=2)")
 
     def test_qtensor_quant_dequant(self):
         r = torch.rand(3, 2, dtype=torch.float) * 4 - 2
@@ -324,7 +325,6 @@ class TestQuantizedTensor(TestCase):
             b.view(1, 4, 2, 3)
         # view on contiguous tensor is fine
         b.contiguous().view(1, 4, 2, 3)
-
 
     def test_qtensor_reshape(self):
         scale, zero_point, dtype = 1.0, 2, torch.uint8
