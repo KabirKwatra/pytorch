@@ -50,37 +50,29 @@ class FakeQuantize(Module):
 
     """
 
-    def __init__(
-        self,
-        observer=MovingAverageMinMaxObserver,
-        quant_min=0,
-        quant_max=255,
-        **observer_kwargs
-    ):
+    def __init__(self,
+                 observer=MovingAverageMinMaxObserver,
+                 quant_min=0,
+                 quant_max=255,
+                 **observer_kwargs):
         super(FakeQuantize, self).__init__()
-        assert (
-            quant_min <= quant_max
-        ), "quant_min must be less than or equal to quant_max"
+        assert (quant_min <=
+                quant_max), "quant_min must be less than or equal to quant_max"
         self.quant_min = quant_min
         self.quant_max = quant_max
         self.fake_quant_enabled = True
         self.observer_enabled = True
         self.activation_post_process = observer(**observer_kwargs)
-        assert (
-            torch.iinfo(self.activation_post_process.dtype).min <= quant_min
-        ), "quant_min out of bound"
-        assert (
-            quant_max <= torch.iinfo(self.activation_post_process.dtype).max
-        ), "quant_max out of bound"
+        assert (torch.iinfo(self.activation_post_process.dtype).min <=
+                quant_min), "quant_min out of bound"
+        assert (quant_max <= torch.iinfo(
+            self.activation_post_process.dtype).max), "quant_max out of bound"
         self.register_buffer("scale", torch.tensor([1.0]))
         self.register_buffer("zero_point", torch.tensor([0]))
         self.dtype = self.activation_post_process.dtype
         self.qscheme = self.activation_post_process.qscheme
-        self.ch_axis = (
-            self.activation_post_process.ch_axis
-            if hasattr(self.activation_post_process, "ch_axis")
-            else None
-        )
+        self.ch_axis = (self.activation_post_process.ch_axis if hasattr(
+            self.activation_post_process, "ch_axis") else None)
 
     def enable_fake_quant(self, enabled=True):
         self.fake_quant_enabled = enabled
@@ -108,10 +100,8 @@ class FakeQuantize(Module):
                 _zero_point.to(self.zero_point.device),
             )
         if self.fake_quant_enabled:
-            if (
-                self.qscheme == torch.per_channel_symmetric
-                or self.qscheme == torch.per_channel_affine
-            ):
+            if (self.qscheme == torch.per_channel_symmetric
+                    or self.qscheme == torch.per_channel_affine):
                 X = torch.fake_quantize_per_channel_affine(
                     X,
                     self.scale,
@@ -134,26 +124,27 @@ class FakeQuantize(Module):
 
     def extra_repr(self):
         return "fake_quant_enabled={}, observer_enabled={},\
-            scale={}, zero_point={}".format(
-            self.fake_quant_enabled, self.observer_enabled, self.scale, self.zero_point
-        )
+            scale={}, zero_point={}".format(self.fake_quant_enabled,
+                                            self.observer_enabled, self.scale,
+                                            self.zero_point)
 
     def _save_to_state_dict(self, destination, prefix, keep_vars):
         # We cannot currently register scalar values as buffers, so need to manually
         # specify serialization here.
-        super(FakeQuantize, self)._save_to_state_dict(destination, prefix, keep_vars)
+        super(FakeQuantize, self)._save_to_state_dict(destination, prefix,
+                                                      keep_vars)
         destination[prefix + "scale"] = self.scale
         destination[prefix + "zero_point"] = self.zero_point
 
     def _load_from_state_dict(
-        self,
-        state_dict,
-        prefix,
-        local_metadata,
-        strict,
-        missing_keys,
-        unexpected_keys,
-        error_msgs,
+            self,
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
     ):
         # Removing this function throws an error that the the size of the loaded tensor does not match the original size
         # i.e., These buffers start out with numel 0 and become numel 1 once they have their first forward pass.

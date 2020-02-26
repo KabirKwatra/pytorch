@@ -22,26 +22,25 @@ class Adagrad(Optimizer):
     """
 
     def __init__(
-        self,
-        params,
-        lr=1e-2,
-        lr_decay=0,
-        weight_decay=0,
-        initial_accumulator_value=0,
-        eps=1e-10,
+            self,
+            params,
+            lr=1e-2,
+            lr_decay=0,
+            weight_decay=0,
+            initial_accumulator_value=0,
+            eps=1e-10,
     ):
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0.0 <= lr_decay:
             raise ValueError("Invalid lr_decay value: {}".format(lr_decay))
         if not 0.0 <= weight_decay:
-            raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
+            raise ValueError(
+                "Invalid weight_decay value: {}".format(weight_decay))
         if not 0.0 <= initial_accumulator_value:
             raise ValueError(
                 "Invalid initial_accumulator_value value: {}".format(
-                    initial_accumulator_value
-                )
-            )
+                    initial_accumulator_value))
         if not 0.0 <= eps:
             raise ValueError("Invalid epsilon value: {}".format(eps))
 
@@ -98,7 +97,8 @@ class Adagrad(Optimizer):
                         )
                     grad = grad.add(p.data, alpha=group["weight_decay"])
 
-                clr = group["lr"] / (1 + (state["step"] - 1) * group["lr_decay"])
+                clr = group["lr"] / (1 +
+                                     (state["step"] - 1) * group["lr_decay"])
 
                 if grad.is_sparse:
                     grad = (
@@ -117,7 +117,8 @@ class Adagrad(Optimizer):
                     state["sum"].add_(make_sparse(grad_values.pow(2)))
                     std = state["sum"].sparse_mask(grad)
                     std_values = std._values().sqrt_().add_(group["eps"])
-                    p.data.add_(make_sparse(grad_values / std_values), alpha=-clr)
+                    p.data.add_(make_sparse(grad_values / std_values),
+                                alpha=-clr)
                 else:
                     state["sum"].addcmul_(grad, grad, value=1)
                     std = state["sum"].sqrt().add_(group["eps"])

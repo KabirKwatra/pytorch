@@ -20,7 +20,7 @@ def _cubic_interpolate(x1, f1, g1, x2, f2, g2, bounds=None):
     #   min_pos = x2 - (x2 - x1)*((g2 + d2 - d1)/(g2 - g1 + 2*d2));
     #   t_new = min(max(min_pos,xmin_bound),xmax_bound);
     d1 = g1 + g2 - 3 * (f1 - f2) / (x1 - x2)
-    d2_square = d1 ** 2 - g1 * g2
+    d2_square = d1**2 - g1 * g2
     if d2_square >= 0:
         d2 = d2_square.sqrt()
         if x1 <= x2:
@@ -32,9 +32,17 @@ def _cubic_interpolate(x1, f1, g1, x2, f2, g2, bounds=None):
         return (xmin_bound + xmax_bound) / 2.0
 
 
-def _strong_wolfe(
-    obj_func, x, t, d, f, g, gtd, c1=1e-4, c2=0.9, tolerance_change=1e-9, max_ls=25
-):
+def _strong_wolfe(obj_func,
+                  x,
+                  t,
+                  d,
+                  f,
+                  g,
+                  gtd,
+                  c1=1e-4,
+                  c2=0.9,
+                  tolerance_change=1e-9,
+                  max_ls=25):
     # ported from https://github.com/torch/optim/blob/master/lswolfe.lua
     d_norm = d.abs().max()
     g = g.clone(memory_format=torch.contiguous_format)
@@ -52,7 +60,10 @@ def _strong_wolfe(
         if f_new > (f + c1 * t * gtd) or (ls_iter > 1 and f_new >= f_prev):
             bracket = [t_prev, t]
             bracket_f = [f_prev, f_new]
-            bracket_g = [g_prev, g_new.clone(memory_format=torch.contiguous_format)]
+            bracket_g = [
+                g_prev,
+                g_new.clone(memory_format=torch.contiguous_format)
+            ]
             bracket_gtd = [gtd_prev, gtd_new]
             break
 
@@ -66,7 +77,10 @@ def _strong_wolfe(
         if gtd_new >= 0:
             bracket = [t_prev, t]
             bracket_f = [f_prev, f_new]
-            bracket_g = [g_prev, g_new.clone(memory_format=torch.contiguous_format)]
+            bracket_g = [
+                g_prev,
+                g_new.clone(memory_format=torch.contiguous_format)
+            ]
             bracket_gtd = [gtd_prev, gtd_new]
             break
 
@@ -74,9 +88,13 @@ def _strong_wolfe(
         min_step = t + 0.01 * (t - t_prev)
         max_step = t * 10
         tmp = t
-        t = _cubic_interpolate(
-            t_prev, f_prev, gtd_prev, t, f_new, gtd_new, bounds=(min_step, max_step)
-        )
+        t = _cubic_interpolate(t_prev,
+                               f_prev,
+                               gtd_prev,
+                               t,
+                               f_new,
+                               gtd_new,
+                               bounds=(min_step, max_step))
 
         # next step
         t_prev = tmp
@@ -143,9 +161,11 @@ def _strong_wolfe(
             # Armijo condition not satisfied or not lower than lowest point
             bracket[high_pos] = t
             bracket_f[high_pos] = f_new
-            bracket_g[high_pos] = g_new.clone(memory_format=torch.contiguous_format)
+            bracket_g[high_pos] = g_new.clone(
+                memory_format=torch.contiguous_format)
             bracket_gtd[high_pos] = gtd_new
-            low_pos, high_pos = (0, 1) if bracket_f[0] <= bracket_f[1] else (1, 0)
+            low_pos, high_pos = (0, 1) if bracket_f[0] <= bracket_f[1] else (1,
+                                                                             0)
         else:
             if abs(gtd_new) <= -c2 * gtd:
                 # Wolfe conditions satisfied
@@ -160,7 +180,8 @@ def _strong_wolfe(
             # new point becomes new low
             bracket[low_pos] = t
             bracket_f[low_pos] = f_new
-            bracket_g[low_pos] = g_new.clone(memory_format=torch.contiguous_format)
+            bracket_g[low_pos] = g_new.clone(
+                memory_format=torch.contiguous_format)
             bracket_gtd[low_pos] = gtd_new
 
         # line-search bracket is so small
@@ -206,15 +227,15 @@ class LBFGS(Optimizer):
     """
 
     def __init__(
-        self,
-        params,
-        lr=1,
-        max_iter=20,
-        max_eval=None,
-        tolerance_grad=1e-7,
-        tolerance_change=1e-9,
-        history_size=100,
-        line_search_fn=None,
+            self,
+            params,
+            lr=1,
+            max_iter=20,
+            max_eval=None,
+            tolerance_grad=1e-7,
+            tolerance_change=1e-9,
+            history_size=100,
+            line_search_fn=None,
     ):
         if max_eval is None:
             max_eval = max_iter * 5 // 4
@@ -230,18 +251,16 @@ class LBFGS(Optimizer):
         super(LBFGS, self).__init__(params, defaults)
 
         if len(self.param_groups) != 1:
-            raise ValueError(
-                "LBFGS doesn't support per-parameter options " "(parameter groups)"
-            )
+            raise ValueError("LBFGS doesn't support per-parameter options "
+                             "(parameter groups)")
 
         self._params = self.param_groups[0]["params"]
         self._numel_cache = None
 
     def _numel(self):
         if self._numel_cache is None:
-            self._numel_cache = reduce(
-                lambda total, p: total + p.numel(), self._params, 0
-            )
+            self._numel_cache = reduce(lambda total, p: total + p.numel(),
+                                       self._params, 0)
         return self._numel_cache
 
     def _gather_flat_grad(self):
@@ -261,14 +280,16 @@ class LBFGS(Optimizer):
         for p in self._params:
             numel = p.numel()
             # view as to avoid deprecated pointwise semantics
-            p.data.add_(
-                update[offset : offset + numel].view_as(p.data), alpha=step_size
-            )
+            p.data.add_(update[offset:offset + numel].view_as(p.data),
+                        alpha=step_size)
             offset += numel
         assert offset == self._numel()
 
     def _clone_param(self):
-        return [p.clone(memory_format=torch.contiguous_format) for p in self._params]
+        return [
+            p.clone(memory_format=torch.contiguous_format)
+            for p in self._params
+        ]
 
     def _set_param(self, params_data):
         for p, pdata in zip(self._params, params_data):
@@ -387,7 +408,8 @@ class LBFGS(Optimizer):
                     r.add_(old_stps[i], alpha=al[i] - be_i)
 
             if prev_flat_grad is None:
-                prev_flat_grad = flat_grad.clone(memory_format=torch.contiguous_format)
+                prev_flat_grad = flat_grad.clone(
+                    memory_format=torch.contiguous_format)
             else:
                 prev_flat_grad.copy_(flat_grad)
             prev_loss = loss
@@ -421,8 +443,7 @@ class LBFGS(Optimizer):
                         return self._directional_evaluate(closure, x, t, d)
 
                     loss, flat_grad, t, ls_func_evals = _strong_wolfe(
-                        obj_func, x_init, t, d, loss, flat_grad, gtd
-                    )
+                        obj_func, x_init, t, d, loss, flat_grad, gtd)
                 self._add_grad(t, d)
                 opt_cond = flat_grad.abs().max() <= tolerance_grad
             else:

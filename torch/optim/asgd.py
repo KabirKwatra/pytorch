@@ -23,15 +23,24 @@ class ASGD(Optimizer):
         http://dl.acm.org/citation.cfm?id=131098
     """
 
-    def __init__(self, params, lr=1e-2, lambd=1e-4, alpha=0.75, t0=1e6, weight_decay=0):
+    def __init__(self,
+                 params,
+                 lr=1e-2,
+                 lambd=1e-4,
+                 alpha=0.75,
+                 t0=1e6,
+                 weight_decay=0):
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0.0 <= weight_decay:
-            raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
+            raise ValueError(
+                "Invalid weight_decay value: {}".format(weight_decay))
 
-        defaults = dict(
-            lr=lr, lambd=lambd, alpha=alpha, t0=t0, weight_decay=weight_decay
-        )
+        defaults = dict(lr=lr,
+                        lambd=lambd,
+                        alpha=alpha,
+                        t0=t0,
+                        weight_decay=weight_decay)
         super(ASGD, self).__init__(params, defaults)
 
     def step(self, closure=None):
@@ -51,7 +60,8 @@ class ASGD(Optimizer):
                     continue
                 grad = p.grad.data
                 if grad.is_sparse:
-                    raise RuntimeError("ASGD does not support sparse gradients")
+                    raise RuntimeError(
+                        "ASGD does not support sparse gradients")
                 state = self.state[p]
 
                 # State initialization
@@ -60,8 +70,7 @@ class ASGD(Optimizer):
                     state["eta"] = group["lr"]
                     state["mu"] = 1
                     state["ax"] = torch.zeros_like(
-                        p.data, memory_format=torch.preserve_format
-                    )
+                        p.data, memory_format=torch.preserve_format)
 
                 state["step"] += 1
 
@@ -82,8 +91,8 @@ class ASGD(Optimizer):
 
                 # update eta and mu
                 state["eta"] = group["lr"] / math.pow(
-                    (1 + group["lambd"] * group["lr"] * state["step"]), group["alpha"]
-                )
+                    (1 + group["lambd"] * group["lr"] * state["step"]),
+                    group["alpha"])
                 state["mu"] = 1 / max(1, state["step"] - group["t0"])
 
         return loss
