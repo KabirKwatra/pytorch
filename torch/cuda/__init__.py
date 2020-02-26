@@ -7,28 +7,29 @@ It is lazily initialized, so you can always import it, and use
 
 :ref:`cuda-semantics` has more details about working with CUDA.
 """
+import contextlib
+import ctypes
+import os
+import platform
+import sys
+import threading
+import traceback
+import warnings
+from subprocess import PIPE
+from subprocess import Popen
 
+import torch._C
 from . import amp
-from .streams import Stream, Event
 from . import nvtx
 from . import profiler
 from . import sparse
 from ..storage import _StorageBase
-from .random import *
-from .memory import *
-import contextlib
-import platform
-import ctypes
-import os
-import sys
-import torch
-import traceback
-import warnings
-import threading
-from torch._six import raise_from
-from subprocess import Popen, PIPE
 from ._utils import _get_device_index
-import torch._C
+from .memory import *
+from .random import *
+from .streams import Event
+from .streams import Stream
+from torch._six import raise_from
 
 _initialized = False
 _tls = threading.local()

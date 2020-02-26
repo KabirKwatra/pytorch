@@ -1,5 +1,6 @@
-import torch
 from collections import defaultdict
+
+import torch
 from torch._six import container_abcs
 
 

@@ -1,40 +1,39 @@
-from torch.testing._internal.common_utils import (
-    TestCase,
-    get_gpu_type,
-    freeze_rng_state,
-    run_tests,
-    PY3,
-    IS_WINDOWS,
-    NO_MULTIPROCESSING_SPAWN,
-    skipIfRocm,
-    load_tests,
-    slowTest,
-    skipCUDANonDefaultStreamIf,
-    TEST_WITH_ROCM,
-    TEST_NUMPY,
-)
-from torch.testing._internal.common_methods_invocations import (
-    tri_tests_args,
-    tri_large_tests_args,
-    _compare_trilu_indices,
-    _compare_large_trilu_indices,
-)
-from test_torch import _TestTorchMixin
-from torch._six import inf, nan
-from torch import multiprocessing as mp
-import torch.cuda.comm as comm
-import torch.cuda
-import torch
 import collections
-import io
-import tempfile
-import unittest
-import sys
-from itertools import repeat, chain
-import os
 import gc
-from contextlib import contextmanager
+import io
+import os
+import sys
+import tempfile
 import threading
+import unittest
+from contextlib import contextmanager
+from itertools import chain
+from itertools import repeat
+
+from test_torch import _TestTorchMixin
+
+import torch.cuda
+import torch.cuda.comm as comm
+from torch import multiprocessing as mp
+from torch._six import inf
+from torch._six import nan
+from torch.testing._internal.common_methods_invocations import _compare_large_trilu_indices
+from torch.testing._internal.common_methods_invocations import _compare_trilu_indices
+from torch.testing._internal.common_methods_invocations import tri_large_tests_args
+from torch.testing._internal.common_methods_invocations import tri_tests_args
+from torch.testing._internal.common_utils import freeze_rng_state
+from torch.testing._internal.common_utils import get_gpu_type
+from torch.testing._internal.common_utils import IS_WINDOWS
+from torch.testing._internal.common_utils import load_tests
+from torch.testing._internal.common_utils import NO_MULTIPROCESSING_SPAWN
+from torch.testing._internal.common_utils import PY3
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import skipCUDANonDefaultStreamIf
+from torch.testing._internal.common_utils import skipIfRocm
+from torch.testing._internal.common_utils import slowTest
+from torch.testing._internal.common_utils import TEST_NUMPY
+from torch.testing._internal.common_utils import TEST_WITH_ROCM
+from torch.testing._internal.common_utils import TestCase
 
 if sys.version_info[0] == 3:
     import queue
