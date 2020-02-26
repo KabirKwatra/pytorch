@@ -539,9 +539,9 @@
   mask: non_differentiable
 
 - name: masked_select(Tensor self, Tensor mask) -> Tensor
-# normally broadcasting is handled implicitly, but here, because we call an inplace
-# function as an optimization and the LHS doesn't broadcast for inplace functions,
-# we need to explicitly broadcast.
+  # normally broadcasting is handled implicitly, but here, because we call an inplace
+  # function as an optimization and the LHS doesn't broadcast for inplace functions,
+  # we need to explicitly broadcast.
   self: zeros_like(self.expand(at::infer_size(self.sizes(), mask.sizes())), at::MemoryFormat::Preserve).masked_scatter_(mask, grad)
   mask: non_differentiable
 
