@@ -1,70 +1,68 @@
-from torch.testing._internal.common_device_type import (
-    instantiate_device_type_tests,
-    skipCUDAIfRocm,
-    onlyCPU,
-    onlyCUDA,
-    dtypes,
-    dtypesIfCUDA,
-    deviceCountAtLeast,
-    skipCUDAIfCudnnVersionLessThan,
-)
-from torch.testing._internal.common_methods_invocations import (
-    method_tests,
-    create_input,
-    unpack_variables,
-    EXCLUDE_FUNCTIONAL,
-    EXCLUDE_GRADCHECK,
-    EXCLUDE_GRADGRADCHECK,
-    EXCLUDE_GRADGRADCHECK_BY_TEST_NAME,
-    exclude_tensor_method,
-    mask_not_all_zeros,
-    S,
-)
-from torch.testing import randn_like
-from torch.autograd.function import InplaceFunction
-from torch.autograd import Variable, Function, detect_anomaly
-from torch.testing._internal.common_utils import (
-    TEST_MKL,
-    TEST_WITH_ROCM,
-    TestCase,
-    run_tests,
-    skipIfNoLapack,
-    suppress_warnings,
-    slowTest,
-    load_tests,
-    random_symmetric_pd_matrix,
-    random_symmetric_matrix,
-    IS_WINDOWS,
-    IS_MACOS,
-)
-from torch.utils.checkpoint import checkpoint
-from torch.autograd.profiler import (
-    profile,
-    format_time,
-    EventList,
-    FunctionEvent,
-    FunctionEventAvg,
-    record_function,
-    emit_nvtx,
-)
-from torch.autograd.function import once_differentiable
-from torch.autograd.gradcheck import gradgradcheck, gradcheck
-from torch._six import inf, nan, istuple
-from torch import nn
 import contextlib
 import gc
-import sys
 import math
+import sys
 import tempfile
 import time
 import unittest
 import warnings
-from copy import deepcopy
 from collections import OrderedDict
+from copy import deepcopy
+from functools import reduce
 from itertools import product
 from operator import mul
-from functools import reduce
+
 import torch
+from torch import nn
+from torch._six import inf
+from torch._six import istuple
+from torch._six import nan
+from torch.autograd import detect_anomaly
+from torch.autograd import Function
+from torch.autograd import Variable
+from torch.autograd.function import InplaceFunction
+from torch.autograd.function import once_differentiable
+from torch.autograd.gradcheck import gradcheck
+from torch.autograd.gradcheck import gradgradcheck
+from torch.autograd.profiler import emit_nvtx
+from torch.autograd.profiler import EventList
+from torch.autograd.profiler import format_time
+from torch.autograd.profiler import FunctionEvent
+from torch.autograd.profiler import FunctionEventAvg
+from torch.autograd.profiler import profile
+from torch.autograd.profiler import record_function
+from torch.testing import randn_like
+from torch.testing._internal.common_device_type import deviceCountAtLeast
+from torch.testing._internal.common_device_type import dtypes
+from torch.testing._internal.common_device_type import dtypesIfCUDA
+from torch.testing._internal.common_device_type import instantiate_device_type_tests
+from torch.testing._internal.common_device_type import onlyCPU
+from torch.testing._internal.common_device_type import onlyCUDA
+from torch.testing._internal.common_device_type import skipCUDAIfCudnnVersionLessThan
+from torch.testing._internal.common_device_type import skipCUDAIfRocm
+from torch.testing._internal.common_methods_invocations import create_input
+from torch.testing._internal.common_methods_invocations import EXCLUDE_FUNCTIONAL
+from torch.testing._internal.common_methods_invocations import EXCLUDE_GRADCHECK
+from torch.testing._internal.common_methods_invocations import EXCLUDE_GRADGRADCHECK
+from torch.testing._internal.common_methods_invocations import EXCLUDE_GRADGRADCHECK_BY_TEST_NAME
+from torch.testing._internal.common_methods_invocations import exclude_tensor_method
+from torch.testing._internal.common_methods_invocations import mask_not_all_zeros
+from torch.testing._internal.common_methods_invocations import method_tests
+from torch.testing._internal.common_methods_invocations import S
+from torch.testing._internal.common_methods_invocations import unpack_variables
+from torch.testing._internal.common_utils import IS_MACOS
+from torch.testing._internal.common_utils import IS_WINDOWS
+from torch.testing._internal.common_utils import load_tests
+from torch.testing._internal.common_utils import random_symmetric_matrix
+from torch.testing._internal.common_utils import random_symmetric_pd_matrix
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import skipIfNoLapack
+from torch.testing._internal.common_utils import slowTest
+from torch.testing._internal.common_utils import suppress_warnings
+from torch.testing._internal.common_utils import TEST_MKL
+from torch.testing._internal.common_utils import TEST_WITH_ROCM
+from torch.testing._internal.common_utils import TestCase
+from torch.utils.checkpoint import checkpoint
 
 # TODO: remove this global setting
 # Autograd tests use double as the default dtype

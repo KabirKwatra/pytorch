@@ -1,5 +1,5 @@
-from collections import namedtuple
 import warnings
+from collections import namedtuple
 
 import torch
 from .. import _VF
