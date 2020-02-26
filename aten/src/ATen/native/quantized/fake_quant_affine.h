@@ -29,10 +29,8 @@ using fake_quant_grad_tensor_fn = void (*)(
 DECLARE_DISPATCH(fake_quant_tensor_fn, fake_quant_tensor_stub);
 DECLARE_DISPATCH(fake_quant_grad_tensor_fn, fake_quant_grad_tensor_stub);
 
-using fake_quant_per_channel_fn = void (*)(
-    TensorIterator &iter,
-    int64_t quant_min,
-    int64_t quant_max);
+using fake_quant_per_channel_fn =
+    void (*)(TensorIterator& iter, int64_t quant_min, int64_t quant_max);
 
 DECLARE_DISPATCH(fake_quant_per_channel_fn, fake_quant_per_channel_stub);
 DECLARE_DISPATCH(fake_quant_per_channel_fn, fake_quant_grad_per_channel_stub);

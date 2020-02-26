@@ -148,7 +148,8 @@ Tensor fake_quantize_per_channel_affine_backward(
   iter.add_input(native::_unsafe_view(zero_point, expected_shape));
   iter.build();
 
-  fake_quant_grad_per_channel_stub(iter.device_type(), iter, quant_min, quant_max);
+  fake_quant_grad_per_channel_stub(
+      iter.device_type(), iter, quant_min, quant_max);
 
   return dX;
 }

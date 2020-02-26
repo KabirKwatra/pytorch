@@ -13,10 +13,12 @@ namespace {
 
 #if defined(__AVX__) && !defined(_MSC_VER)
 
-template <> class Vec256<double> {
-private:
+template <>
+class Vec256<double> {
+ private:
   __m256d values;
-public:
+
+ public:
   using value_type = double;
   static constexpr int size() {
     return 4;
@@ -33,18 +35,24 @@ public:
     return values;
   }
   template <int64_t mask>
-  static Vec256<double> blend(const Vec256<double>& a, const Vec256<double>& b) {
+  static Vec256<double> blend(
+      const Vec256<double>& a,
+      const Vec256<double>& b) {
     return _mm256_blend_pd(a.values, b.values, mask);
   }
-  static Vec256<double> blendv(const Vec256<double>& a, const Vec256<double>& b,
-                               const Vec256<double>& mask) {
+  static Vec256<double> blendv(
+      const Vec256<double>& a,
+      const Vec256<double>& b,
+      const Vec256<double>& mask) {
     return _mm256_blendv_pd(a.values, b.values, mask.values);
   }
   static Vec256<double> arange(double base = 0., double step = 1.) {
     return Vec256<double>(base, base + step, base + 2 * step, base + 3 * step);
   }
-  static Vec256<double> set(const Vec256<double>& a, const Vec256<double>& b,
-                            int64_t count = size()) {
+  static Vec256<double> set(
+      const Vec256<double>& a,
+      const Vec256<double>& b,
+      int64_t count = size()) {
     switch (count) {
       case 0:
         return a;
@@ -60,7 +68,6 @@ public:
   static Vec256<double> loadu(const void* ptr, int64_t count = size()) {
     if (count == size())
       return _mm256_loadu_pd(reinterpret_cast<const double*>(ptr));
-
 
     __at_align32__ double tmp_values[size()];
     // Ensure uninitialized memory does not change the output value
@@ -83,10 +90,11 @@ public:
       std::memcpy(ptr, tmp_values, count * sizeof(double));
     }
   }
-  const double& operator[](int idx) const  = delete;
+  const double& operator[](int idx) const = delete;
   double& operator[](int idx) = delete;
   int zero_mask() const {
-    // returns an integer mask where all zero elements are translated to 1-bit and others are translated to 0-bit
+    // returns an integer mask where all zero elements are translated to 1-bit
+    // and others are translated to 0-bit
     __m256d cmp = _mm256_cmp_pd(values, _mm256_set1_pd(0.0), _CMP_EQ_OQ);
     return _mm256_movemask_pd(cmp);
   }
@@ -123,7 +131,7 @@ public:
   Vec256<double> atan() const {
     return Vec256<double>(Sleef_atand4_u10(values));
   }
-  Vec256<double> atan2(const Vec256<double> &b) const {
+  Vec256<double> atan2(const Vec256<double>& b) const {
     return Vec256<double>(Sleef_atan2d4_u10(values, b));
   }
   Vec256<double> erf() const {
@@ -179,7 +187,8 @@ public:
     return _mm256_xor_pd(_mm256_set1_pd(-0.), values);
   }
   Vec256<double> round() const {
-    return _mm256_round_pd(values, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+    return _mm256_round_pd(
+        values, (_MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
   }
   Vec256<double> tan() const {
     return Vec256<double>(Sleef_tand4_u10(values));
@@ -202,7 +211,7 @@ public:
   Vec256<double> rsqrt() const {
     return _mm256_div_pd(_mm256_set1_pd(1), _mm256_sqrt_pd(values));
   }
-  Vec256<double> pow(const Vec256<double> &b) const {
+  Vec256<double> pow(const Vec256<double>& b) const {
     return Vec256<double>(Sleef_powd4_u10(values, b));
   }
   // Comparison using the _CMP_**_OQ predicate.
@@ -234,22 +243,30 @@ public:
 };
 
 template <>
-Vec256<double> inline operator+(const Vec256<double>& a, const Vec256<double>& b) {
+Vec256<double> inline operator+(
+    const Vec256<double>& a,
+    const Vec256<double>& b) {
   return _mm256_add_pd(a, b);
 }
 
 template <>
-Vec256<double> inline operator-(const Vec256<double>& a, const Vec256<double>& b) {
+Vec256<double> inline operator-(
+    const Vec256<double>& a,
+    const Vec256<double>& b) {
   return _mm256_sub_pd(a, b);
 }
 
 template <>
-Vec256<double> inline operator*(const Vec256<double>& a, const Vec256<double>& b) {
+Vec256<double> inline operator*(
+    const Vec256<double>& a,
+    const Vec256<double>& b) {
   return _mm256_mul_pd(a, b);
 }
 
 template <>
-Vec256<double> inline operator/(const Vec256<double>& a, const Vec256<double>& b) {
+Vec256<double> inline operator/(
+    const Vec256<double>& a,
+    const Vec256<double>& b) {
   return _mm256_div_pd(a, b);
 }
 
@@ -261,7 +278,9 @@ Vec256<double> Vec256<double>::frac() const {
 // Implements the IEEE 754 201X `maximum` operation, which propagates NaN if
 // either input is a NaN.
 template <>
-Vec256<double> inline maximum(const Vec256<double>& a, const Vec256<double>& b) {
+Vec256<double> inline maximum(
+    const Vec256<double>& a,
+    const Vec256<double>& b) {
   Vec256<double> max = _mm256_max_pd(a, b);
   Vec256<double> isnan = _mm256_cmp_pd(a, b, _CMP_UNORD_Q);
   // Exploit the fact that all-ones is a NaN.
@@ -271,7 +290,9 @@ Vec256<double> inline maximum(const Vec256<double>& a, const Vec256<double>& b) 
 // Implements the IEEE 754 201X `minimum` operation, which propagates NaN if
 // either input is a NaN.
 template <>
-Vec256<double> inline minimum(const Vec256<double>& a, const Vec256<double>& b) {
+Vec256<double> inline minimum(
+    const Vec256<double>& a,
+    const Vec256<double>& b) {
   Vec256<double> min = _mm256_min_pd(a, b);
   Vec256<double> isnan = _mm256_cmp_pd(a, b, _CMP_UNORD_Q);
   // Exploit the fact that all-ones is a NaN.
@@ -279,32 +300,45 @@ Vec256<double> inline minimum(const Vec256<double>& a, const Vec256<double>& b) 
 }
 
 template <>
-Vec256<double> inline clamp(const Vec256<double>& a, const Vec256<double>& min, const Vec256<double>& max) {
+Vec256<double> inline clamp(
+    const Vec256<double>& a,
+    const Vec256<double>& min,
+    const Vec256<double>& max) {
   return _mm256_min_pd(max, _mm256_max_pd(min, a));
 }
 
 template <>
-Vec256<double> inline clamp_min(const Vec256<double>& a, const Vec256<double>& min) {
+Vec256<double> inline clamp_min(
+    const Vec256<double>& a,
+    const Vec256<double>& min) {
   return _mm256_max_pd(min, a);
 }
 
 template <>
-Vec256<double> inline clamp_max(const Vec256<double>& a, const Vec256<double>& max) {
+Vec256<double> inline clamp_max(
+    const Vec256<double>& a,
+    const Vec256<double>& max) {
   return _mm256_min_pd(max, a);
 }
 
 template <>
-Vec256<double> inline operator&(const Vec256<double>& a, const Vec256<double>& b) {
+Vec256<double> inline operator&(
+    const Vec256<double>& a,
+    const Vec256<double>& b) {
   return _mm256_and_pd(a, b);
 }
 
 template <>
-Vec256<double> inline operator|(const Vec256<double>& a, const Vec256<double>& b) {
+Vec256<double> inline operator|(
+    const Vec256<double>& a,
+    const Vec256<double>& b) {
   return _mm256_or_pd(a, b);
 }
 
 template <>
-Vec256<double> inline operator^(const Vec256<double>& a, const Vec256<double>& b) {
+Vec256<double> inline operator^(
+    const Vec256<double>& a,
+    const Vec256<double>& b) {
   return _mm256_xor_pd(a, b);
 }
 
@@ -323,11 +357,16 @@ inline void convert(const double* src, double* dst, int64_t n) {
 
 #ifdef __AVX2__
 template <>
-Vec256<double> inline fmadd(const Vec256<double>& a, const Vec256<double>& b, const Vec256<double>& c) {
+Vec256<double> inline fmadd(
+    const Vec256<double>& a,
+    const Vec256<double>& b,
+    const Vec256<double>& c) {
   return _mm256_fmadd_pd(a, b, c);
 }
 #endif
 
 #endif
 
-}}}
+} // namespace
+} // namespace vec256
+} // namespace at
