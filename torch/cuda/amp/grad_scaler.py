@@ -7,6 +7,7 @@ class _MultiDeviceReplicator(object):
     """
     Lazily serves copies of a tensor to requested devices.  Copies are cached per-device.
     """
+
     def __init__(self, master_tensor):
         assert master_tensor.is_cuda
         self.master = master_tensor

@@ -8,6 +8,14 @@ It is lazily initialized, so you can always import it, and use
 :ref:`cuda-semantics` has more details about working with CUDA.
 """
 
+from . import amp
+from .streams import Stream, Event
+from . import nvtx
+from . import profiler
+from . import sparse
+from ..storage import _StorageBase
+from .random import *
+from .memory import *
 import contextlib
 import platform
 import ctypes
@@ -145,6 +153,7 @@ def _lazy_call(callable):
     else:
         # Don't store the actual traceback to avoid memory cycle
         _queued_calls.append((callable, traceback.format_stack()))
+
 
 _lazy_call(_check_capability)
 
@@ -436,17 +445,9 @@ def current_blas_handle():
     return torch._C._cuda_getCurrentBlasHandle()
 
 
-from .memory import *
-
-
-from .random import *
-
 ################################################################################
 # Define Storage and Tensor classes
 ################################################################################
-
-
-from ..storage import _StorageBase
 
 
 def _dummy_type(name):
@@ -528,6 +529,7 @@ class BoolStorage(_CudaBase, torch._C.CudaBoolStorageBase, _StorageBase):
 class BFloat16Storage(_CudaBase, torch._C.CudaBFloat16StorageBase, _StorageBase):
     pass
 
+
 torch._storage_classes.add(DoubleStorage)
 torch._storage_classes.add(FloatStorage)
 torch._storage_classes.add(LongStorage)
@@ -538,9 +540,3 @@ torch._storage_classes.add(ByteStorage)
 torch._storage_classes.add(HalfStorage)
 torch._storage_classes.add(BoolStorage)
 torch._storage_classes.add(BFloat16Storage)
-
-from . import sparse
-from . import profiler
-from . import nvtx
-from .streams import Stream, Event
-from . import amp

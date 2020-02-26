@@ -1,3 +1,14 @@
+from torch.testing._internal.common_utils import TestCase, get_gpu_type, freeze_rng_state, run_tests, \
+    PY3, IS_WINDOWS, NO_MULTIPROCESSING_SPAWN, skipIfRocm, \
+    load_tests, slowTest, skipCUDANonDefaultStreamIf, TEST_WITH_ROCM, TEST_NUMPY
+from torch.testing._internal.common_methods_invocations import tri_tests_args, tri_large_tests_args, \
+    _compare_trilu_indices, _compare_large_trilu_indices
+from test_torch import _TestTorchMixin
+from torch._six import inf, nan
+from torch import multiprocessing as mp
+import torch.cuda.comm as comm
+import torch.cuda
+import torch
 import collections
 import io
 import tempfile
@@ -13,19 +24,6 @@ if sys.version_info[0] == 3:
 else:
     import Queue as queue
 
-import torch
-import torch.cuda
-import torch.cuda.comm as comm
-from torch import multiprocessing as mp
-from torch._six import inf, nan
-
-from test_torch import _TestTorchMixin
-
-from torch.testing._internal.common_methods_invocations import tri_tests_args, tri_large_tests_args, \
-    _compare_trilu_indices, _compare_large_trilu_indices
-from torch.testing._internal.common_utils import TestCase, get_gpu_type, freeze_rng_state, run_tests, \
-    PY3, IS_WINDOWS, NO_MULTIPROCESSING_SPAWN, skipIfRocm, \
-    load_tests, slowTest, skipCUDANonDefaultStreamIf, TEST_WITH_ROCM, TEST_NUMPY
 
 # load_tests from common_utils is used to automatically filter tests for
 # sharding on sandcastle. This line silences flake warnings
@@ -65,6 +63,7 @@ types = [
     torch.HalfTensor,
 ]
 
+
 def make_sparse_tensor(t, n, *sizes):
     assert t.is_sparse
     tensor = t()
@@ -75,7 +74,9 @@ def make_sparse_tensor(t, n, *sizes):
     v = v.new(n).copy_(torch.randn(n))
     return t(i, v, torch.Size(sizes))
 
+
 _cycles_per_ms = None
+
 
 def get_cycles_per_ms():
     """Approximate number of cycles per millisecond for torch.cuda._sleep"""
@@ -95,7 +96,6 @@ class TestCuda(TestCase):
     _do_cuda_memory_leak_check = True
     _do_cuda_non_default_stream = True
     FIFTY_MIL_CYCLES = 50000000
-
 
     def _check_memory_stat_consistency(self):
         snapshot = torch.cuda.memory_snapshot()
