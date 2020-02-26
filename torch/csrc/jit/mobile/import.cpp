@@ -1,10 +1,10 @@
 #include "import.h"
 #include <ATen/core/ivalue.h>
-#include <torch/csrc/jit/script/compilation_unit.h>
-#include <torch/csrc/jit/unpickler.h>
 #include <caffe2/serialize/inline_container.h>
 #include <torch/csrc/jit/instruction.h>
 #include <torch/csrc/jit/mobile/type_parser.h>
+#include <torch/csrc/jit/script/compilation_unit.h>
+#include <torch/csrc/jit/unpickler.h>
 
 #include <fstream>
 #include <string>
@@ -34,20 +34,30 @@
 
 namespace torch {
 namespace jit {
-using caffe2::serialize::PyTorchStreamReader;
 using caffe2::serialize::IStreamAdapter;
+using caffe2::serialize::PyTorchStreamReader;
 using caffe2::serialize::ReadAdapterInterface;
 
-OpCode parseOpCode(const char *str);
+OpCode parseOpCode(const char* str);
 namespace {
 
-IValue expect_field(IValue tup, const std::string& expected_name, size_t entry){
+IValue expect_field(
+    IValue tup,
+    const std::string& expected_name,
+    size_t entry) {
   auto row = tup.toTuple()->elements().at(entry).toTuple();
-  TORCH_INTERNAL_ASSERT(row->elements().at(0).toStringRef() == expected_name, "Expected ", expected_name, " found " , row->elements().at(0).toStringRef());
+  TORCH_INTERNAL_ASSERT(
+      row->elements().at(0).toStringRef() == expected_name,
+      "Expected ",
+      expected_name,
+      " found ",
+      row->elements().at(0).toStringRef());
   return row->elements().at(1);
 }
 
-void parseMethods(const std::vector<IValue>& vals, mobile::CompilationUnit& mcu) {
+void parseMethods(
+    const std::vector<IValue>& vals,
+    mobile::CompilationUnit& mcu) {
   for (const auto& element : vals) {
     const auto& m_tuple = element.toTuple()->elements();
     const std::string& function_name = m_tuple[0].toStringRef();
@@ -56,16 +66,21 @@ void parseMethods(const std::vector<IValue>& vals, mobile::CompilationUnit& mcu)
     auto function = std::unique_ptr<mobile::Function>(
         new mobile::Function(c10::QualifiedName(function_name)));
 
-    const auto& ins_list = expect_field(table, "instructions", 0).toTuple()->elements();
-    const auto& ops_list = expect_field(table, "operators", 1).toTuple()->elements();
-    const auto& consts_list = expect_field(table, "constants", 2).toTuple()->elements();
-    const auto& types_list = expect_field(table, "types", 3).toTuple()->elements();
+    const auto& ins_list =
+        expect_field(table, "instructions", 0).toTuple()->elements();
+    const auto& ops_list =
+        expect_field(table, "operators", 1).toTuple()->elements();
+    const auto& consts_list =
+        expect_field(table, "constants", 2).toTuple()->elements();
+    const auto& types_list =
+        expect_field(table, "types", 3).toTuple()->elements();
     const auto& register_size = expect_field(table, "register_size", 4).toInt();
 
     for (const auto& ins : ins_list) {
       auto ins_item = ins.toTuple()->elements();
-      TORCH_CHECK(ins_item.size() == 3,
-                  "There should be three parts in an instruction.");
+      TORCH_CHECK(
+          ins_item.size() == 3,
+          "There should be three parts in an instruction.");
       OpCode op_code = parseOpCode(ins_item[0].toString()->string().c_str());
       int X = ins_item[1].toInt();
       int N = ins_item[2].toInt();
@@ -74,10 +89,11 @@ void parseMethods(const std::vector<IValue>& vals, mobile::CompilationUnit& mcu)
 
     for (const auto& op : ops_list) {
       auto op_item = op.toTuple()->elements();
-      TORCH_CHECK(op_item.size() == 2,
-                  "There should be two parts in an operator name.");
-      function->append_operator(op_item[0].toString()->string(),
-                           op_item[1].toString()->string());
+      TORCH_CHECK(
+          op_item.size() == 2,
+          "There should be two parts in an operator name.");
+      function->append_operator(
+          op_item[0].toString()->string(), op_item[1].toString()->string());
     }
 
     for (const auto& constant : consts_list) {
@@ -108,10 +124,13 @@ class BytecodeDeserializer final {
   c10::optional<at::Device> device_;
 };
 
-BytecodeDeserializer::BytecodeDeserializer(std::unique_ptr<PyTorchStreamReader> reader)
-    : compilation_unit_(std::make_shared<script::CompilationUnit>()), reader_(std::move(reader)) {}
+BytecodeDeserializer::BytecodeDeserializer(
+    std::unique_ptr<PyTorchStreamReader> reader)
+    : compilation_unit_(std::make_shared<script::CompilationUnit>()),
+      reader_(std::move(reader)) {}
 
-mobile::Module BytecodeDeserializer::deserialize(c10::optional<at::Device> device) {
+mobile::Module BytecodeDeserializer::deserialize(
+    c10::optional<at::Device> device) {
   device_ = device;
   auto bvals = readArchive("bytecode").toTuple()->elements();
   auto mcu = std::make_shared<mobile::CompilationUnit>();
@@ -168,8 +187,12 @@ c10::IValue BytecodeDeserializer::readArchive(const std::string& archive_name) {
     return std::get<0>(reader_->getRecord(ss.str()));
   };
 
-  Unpickler unpickler(reader, std::move(class_resolver),
-                      std::move(obj_loader), std::move(read_record), device_);
+  Unpickler unpickler(
+      reader,
+      std::move(class_resolver),
+      std::move(obj_loader),
+      std::move(read_record),
+      device_);
   return unpickler.parse_ivalue();
 }
 
@@ -178,8 +201,7 @@ c10::IValue BytecodeDeserializer::readArchive(const std::string& archive_name) {
 mobile::Module _load_for_mobile(
     std::istream& in,
     c10::optional<at::Device> device) {
-  std::unique_ptr<IStreamAdapter> rai =
-      std::make_unique<IStreamAdapter>(&in);
+  std::unique_ptr<IStreamAdapter> rai = std::make_unique<IStreamAdapter>(&in);
   auto module = _load_for_mobile(std::move(rai), device);
   return module;
 }
