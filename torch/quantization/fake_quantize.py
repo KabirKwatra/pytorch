@@ -3,6 +3,7 @@ import torch
 from torch.nn import Module
 from .observer import MovingAverageMinMaxObserver, HistogramObserver, MovingAveragePerChannelMinMaxObserver, _with_args
 
+
 class FakeQuantize(Module):
     r""" Simulate the quantize and dequantize operations in training time.
     The output of this module is given by
@@ -41,6 +42,7 @@ class FakeQuantize(Module):
                            provides a method to calculate scale and zero-point.
 
     """
+
     def __init__(self, observer=MovingAverageMinMaxObserver, quant_min=0, quant_max=255, **observer_kwargs):
         super(FakeQuantize, self).__init__()
         assert quant_min <= quant_max, \
@@ -56,7 +58,8 @@ class FakeQuantize(Module):
         self.register_buffer('zero_point', torch.tensor([0]))
         self.dtype = self.activation_post_process.dtype
         self.qscheme = self.activation_post_process.qscheme
-        self.ch_axis = self.activation_post_process.ch_axis if hasattr(self.activation_post_process, 'ch_axis') else None
+        self.ch_axis = self.activation_post_process.ch_axis if hasattr(
+            self.activation_post_process, 'ch_axis') else None
 
     def enable_fake_quant(self, enabled=True):
         self.fake_quant_enabled = enabled
@@ -120,6 +123,7 @@ class FakeQuantize(Module):
         super(FakeQuantize, self)._load_from_state_dict(state_dict, prefix, local_metadata, strict,
                                                         missing_keys, unexpected_keys, error_msgs)
 
+
 default_fake_quant = FakeQuantize.with_args(observer=MovingAverageMinMaxObserver, quant_min=0, quant_max=255,
                                             dtype=torch.quint8, qscheme=torch.per_tensor_affine, reduce_range=True)
 default_weight_fake_quant = FakeQuantize.with_args(observer=MovingAverageMinMaxObserver, quant_min=-128, quant_max=127,
@@ -138,17 +142,22 @@ default_histogram_fake_quant = FakeQuantize.with_args(observer=HistogramObserver
                                                       dtype=torch.quint8,
                                                       qscheme=torch.per_tensor_affine,
                                                       reduce_range=True)
+
+
 def disable_fake_quant(mod):
     if type(mod) == FakeQuantize:
         mod.disable_fake_quant()
+
 
 def enable_fake_quant(mod):
     if type(mod) == FakeQuantize:
         mod.enable_fake_quant()
 
+
 def disable_observer(mod):
     if type(mod) == FakeQuantize:
         mod.disable_observer()
+
 
 def enable_observer(mod):
     if type(mod) == FakeQuantize:

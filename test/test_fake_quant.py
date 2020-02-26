@@ -1,3 +1,8 @@
+import unittest
+import io
+from torch.quantization import default_observer, default_per_channel_weight_observer
+from torch.quantization import FakeQuantize
+from torch.testing._internal.common_utils import run_tests, TestCase
 import torch
 import torch.cuda
 import torch.jit
@@ -6,18 +11,17 @@ from hypothesis import given
 from hypothesis import strategies as st
 import torch.testing._internal.hypothesis_utils as hu
 hu.assert_deadline_disabled()
-from torch.testing._internal.common_utils import run_tests, TestCase
-from torch.quantization import FakeQuantize
-from torch.quantization import default_observer, default_per_channel_weight_observer
-import io
-import unittest
 
 # Reference method for fake quantize
+
+
 def _fake_quantize_per_tensor_affine_reference(X, scale, zero_point, quant_min, quant_max):
     res = (torch.clamp(torch.round(X * (1.0 / scale) + zero_point), quant_min, quant_max) - zero_point) * scale
     return res
 
 # Reference method for the gradient of the fake quantize operator
+
+
 def _fake_quantize_per_tensor_affine_grad_reference(dY, X, scale, zero_point, quant_min, quant_max):
     Xq = torch.round(X * (1.0 / scale) + zero_point)
     mask = (Xq >= quant_min) * (Xq <= quant_max)
@@ -26,6 +30,8 @@ def _fake_quantize_per_tensor_affine_grad_reference(dY, X, scale, zero_point, qu
     return res
 
 # Helper function used to simulate per-channel fake-quant against any axis
+
+
 def _permute_to_axis_zero(X, axis):
     new_axis_list = list(range(X.dim()))
     new_axis_list[axis] = 0
@@ -34,18 +40,22 @@ def _permute_to_axis_zero(X, axis):
     return y, new_axis_list
 
 # Reference method for fake quantize
+
+
 def _fake_quantize_per_channel_affine_reference(X, per_channel_scale, per_channel_zero_point, axis, quant_min, quant_max):
     X, permute_axis_list = _permute_to_axis_zero(X, axis)
     res = torch.zeros_like(X)
 
     for i in range(X.size()[0]):
         res[i] = (torch.clamp(torch.round(X[i] * (1.0 / per_channel_scale[i]) +
-                  per_channel_zero_point[i]), quant_min, quant_max) - per_channel_zero_point[i]) * per_channel_scale[i]
+                                          per_channel_zero_point[i]), quant_min, quant_max) - per_channel_zero_point[i]) * per_channel_scale[i]
 
     out = res.permute(tuple(permute_axis_list))
     return out
 
 # Reference method for the gradient of the fake quantize operator
+
+
 def _fake_quantize_per_channel_affine_grad_reference(dY, X, per_channel_scale, per_channel_zero_point, axis, quant_min, quant_max):
     X, permute_axis_list = _permute_to_axis_zero(X, axis)
     Xq = torch.zeros_like(X)
@@ -57,11 +67,14 @@ def _fake_quantize_per_channel_affine_grad_reference(dY, X, per_channel_scale, p
     res[mask] = dY[mask]
     return res
 
+
 def to_tensor(X, device):
     return torch.tensor(X).to(device=torch.device(device), dtype=torch.float32)
 
+
 NP_RANDOM_SEED = 19
 tolerance = 1e-6
+
 
 class TestFakeQuantizePerTensor(TestCase):
 
@@ -142,12 +155,14 @@ class TestFakeQuantizePerTensor(TestCase):
         assert fq_module.scale is not None
         assert fq_module.zero_point is not None
         Y = _fake_quantize_per_tensor_affine_reference(X, fq_module.scale, fq_module.zero_point, quant_min, quant_max)
-        np.testing.assert_allclose(Y.cpu().detach().numpy(), Y_prime.cpu().detach().numpy(), rtol=tolerance, atol=tolerance)
+        np.testing.assert_allclose(Y.cpu().detach().numpy(), Y_prime.cpu().detach().numpy(),
+                                   rtol=tolerance, atol=tolerance)
 
         # Test backward
         dout = torch.rand(X.shape, dtype=torch.float, device=device)
         Y_prime.backward(dout)
-        dX = _fake_quantize_per_tensor_affine_grad_reference(dout, X, fq_module.scale, fq_module.zero_point, quant_min, quant_max)
+        dX = _fake_quantize_per_tensor_affine_grad_reference(
+            dout, X, fq_module.scale, fq_module.zero_point, quant_min, quant_max)
         np.testing.assert_allclose(dX.cpu().numpy(), X.grad.cpu().detach().numpy(), rtol=tolerance, atol=tolerance)
 
     def test_fq_serializable(self):
@@ -201,12 +216,11 @@ class TestFakeQuantizePerTensor(TestCase):
         self.assertNotEqual(fq_module.zero_point, zero_point)
 
 
-
 class TestFakeQuantizePerChannel(TestCase):
 
     @given(device=st.sampled_from(['cpu', 'cuda'] if torch.cuda.is_available() else ['cpu']),
            X=hu.per_channel_tensor(shapes=hu.array_shapes(1, 5,),
-           qparams=hu.qparams(dtypes=torch.quint8)))
+                                   qparams=hu.qparams(dtypes=torch.quint8)))
     def test_forward_per_channel(self, device, X):
         r"""Tests the forward path of the FakeQuantizePerTensorAffine op.
         """
@@ -218,14 +232,15 @@ class TestFakeQuantizePerChannel(TestCase):
         X = to_tensor(X, device)
         scale = to_tensor(scale, device)
         zero_point = torch.tensor(zero_point).to(dtype=torch.int64, device=device)
-        Y = _fake_quantize_per_channel_affine_reference(X.cpu(), scale.cpu(), zero_point.cpu(), axis, quant_min, quant_max)
+        Y = _fake_quantize_per_channel_affine_reference(
+            X.cpu(), scale.cpu(), zero_point.cpu(), axis, quant_min, quant_max)
         Y_prime = torch.fake_quantize_per_channel_affine(
             X, scale, zero_point, axis, quant_min, quant_max)
         np.testing.assert_allclose(Y, Y_prime.cpu(), rtol=tolerance, atol=tolerance)
 
     @given(device=st.sampled_from(['cpu', 'cuda'] if torch.cuda.is_available() else ['cpu']),
            X=hu.per_channel_tensor(shapes=hu.array_shapes(1, 5,),
-           qparams=hu.qparams(dtypes=torch.quint8)))
+                                   qparams=hu.qparams(dtypes=torch.quint8)))
     def test_backward_per_channel(self, device, X):
         r"""Tests the backward method.
         """
@@ -244,11 +259,12 @@ class TestFakeQuantizePerChannel(TestCase):
         dX = _fake_quantize_per_channel_affine_grad_reference(
             dout, X, scale, zero_point, axis, quant_min, quant_max)
         Y_prime.backward(dout)
-        np.testing.assert_allclose(dX.cpu().detach().numpy(), X.grad.cpu().detach().numpy(), rtol=tolerance, atol=tolerance)
+        np.testing.assert_allclose(dX.cpu().detach().numpy(), X.grad.cpu().detach().numpy(),
+                                   rtol=tolerance, atol=tolerance)
 
     @given(device=st.sampled_from(['cpu', 'cuda'] if torch.cuda.is_available() else ['cpu']),
            X=hu.per_channel_tensor(shapes=hu.array_shapes(1, 5,),
-           qparams=hu.qparams(dtypes=torch.quint8)))
+                                   qparams=hu.qparams(dtypes=torch.quint8)))
     @unittest.skip("temporarily disable the test")
     def test_numerical_consistency_per_channel(self, device, X):
         r"""Comparing numerical consistency between CPU quantize/dequantize op and the CPU fake quantize op
@@ -269,7 +285,7 @@ class TestFakeQuantizePerChannel(TestCase):
 
     @given(device=st.sampled_from(['cpu', 'cuda'] if torch.cuda.is_available() else ['cpu']),
            X=hu.per_channel_tensor(shapes=hu.array_shapes(2, 5,),
-           qparams=hu.qparams(dtypes=torch.qint8)))
+                                   qparams=hu.qparams(dtypes=torch.qint8)))
     def test_fq_module(self, device, X):
         np.random.seed(NP_RANDOM_SEED)
         X, (scale, zero_point, axis, torch_type) = X
@@ -284,7 +300,8 @@ class TestFakeQuantizePerChannel(TestCase):
         assert fq_module.zero_point is not None
         Y = _fake_quantize_per_channel_affine_reference(X, fq_module.scale,
                                                         fq_module.zero_point, axis, quant_min, quant_max)
-        np.testing.assert_allclose(Y.cpu().detach().numpy(), Y_prime.cpu().detach().numpy(), rtol=tolerance, atol=tolerance)
+        np.testing.assert_allclose(Y.cpu().detach().numpy(), Y_prime.cpu().detach().numpy(),
+                                   rtol=tolerance, atol=tolerance)
 
         # Test backward
         dout = torch.rand(X.shape, dtype=torch.float, device=device)
@@ -309,6 +326,7 @@ class TestFakeQuantizePerChannel(TestCase):
         loaded_dict = torch.load(b)
         for key in state_dict:
             self.assertEqual(state_dict[key], loaded_dict[key])
+
 
 if __name__ == '__main__':
     run_tests()

@@ -109,6 +109,7 @@ class SyncBatchNorm(Function):
 
         return grad_input, grad_weight, grad_bias, None, None, None, None, None, None
 
+
 class CrossMapLRN2d(Function):
 
     @staticmethod

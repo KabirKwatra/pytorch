@@ -13,12 +13,14 @@ except ImportError:
     ABC = ABCMeta('ABC', (), {})
     from collections import Iterable
 
+
 class BasePruningMethod(ABC):
     r"""Abstract base class for creation of new pruning techniques.
 
     Provides a skeleton for customization requiring the overriding of methods
     such as :meth:`compute_mask` and :meth:`apply`.
     """
+
     def __init__(self):
         pass
 
@@ -105,8 +107,8 @@ class BasePruningMethod(ABC):
                 # if it exists, take existing thing, remove hook, then
                 # go through normal thing
                 if (
-                    isinstance(hook, BasePruningMethod)
-                    and hook._tensor_name == name
+                    isinstance(hook, BasePruningMethod) and
+                    hook._tensor_name == name
                 ):
                     old_method = hook
                     hooks_to_remove.append(k)
@@ -156,7 +158,7 @@ class BasePruningMethod(ABC):
         # pruning
         orig = getattr(module, name)
 
-        # If this is the first time pruning is applied, take care of moving 
+        # If this is the first time pruning is applied, take care of moving
         # the original tensor to a new parameter called name + '_orig' and
         # and deleting the original parameter
         if not isinstance(method, PruningContainer):
@@ -171,7 +173,7 @@ class BasePruningMethod(ABC):
         else:
             default_mask = getattr(module, name + "_mask").detach().clone(memory_format=torch.contiguous_format)
 
-        # Use try/except because if anything goes wrong with the mask 
+        # Use try/except because if anything goes wrong with the mask
         # computation etc., you'd want to roll back.
         try:
             # get the final mask, computed according to the specific method
@@ -279,8 +281,8 @@ class PruningContainer(BasePruningMethod):
                 "Can only add pruning methods acting on "
                 "the parameter named '{}' to PruningContainer {}.".format(
                     self._tensor_name, self
-                )
-                + " Found '{}'".format(method._tensor_name)
+                ) +
+                " Found '{}'".format(method._tensor_name)
             )
         # if all checks passed, add to _pruning_methods tuple
         self._pruning_methods += (method,)
@@ -613,7 +615,7 @@ class RandomStructured(BasePruningMethod):
         if nparams_toprune == 0:  # k=0 not supported by torch.kthvalue
             mask = default_mask
         else:
-            # apply the new structured mask on top of prior (potentially 
+            # apply the new structured mask on top of prior (potentially
             # unstructured) mask
             mask = make_mask(t, self.dim, tensor_size, nparams_toprune)
             mask *= default_mask.to(dtype=mask.dtype)
@@ -1056,7 +1058,7 @@ def global_unstructured(parameters, pruning_method, **kwargs):
         # The length of the parameter
         num_param = param.numel()
         # Slice the mask, reshape it
-        param_mask = final_mask[pointer : pointer + num_param].view_as(param)
+        param_mask = final_mask[pointer: pointer + num_param].view_as(param)
         # Assign the correct pre-computed mask to each parameter and add it
         # to the forward_pre_hooks like any other pruning method
         custom_from_mask(module, name, param_mask)
@@ -1179,8 +1181,8 @@ def _validate_pruning_amount_init(amount):
         )
 
     if (isinstance(amount, numbers.Integral) and amount < 0) or (
-        not isinstance(amount, numbers.Integral)  # so it's a float
-        and (amount > 1.0 or amount < 0.0)
+        not isinstance(amount, numbers.Integral) and  # so it's a float
+        (amount > 1.0 or amount < 0.0)
     ):
         raise ValueError(
             "amount={} should either be a float in the "
