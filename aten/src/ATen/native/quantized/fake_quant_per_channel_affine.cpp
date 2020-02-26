@@ -34,46 +34,46 @@ Tensor fake_quantize_per_channel_affine(
     int64_t axis,
     int64_t quant_min,
     int64_t quant_max) {
-  TORCH_CHECK(self.scalar_type() == ScalarType::Float);
-  TORCH_CHECK(scale.dim() == 1, "scale should be a 1-D tensor");
-  TORCH_CHECK(zero_point.dim() == 1, "zero point should be a 1-D tensor");
-  TORCH_CHECK(
-      scale.numel() == zero_point.numel(),
-      "scale and zero-point need to have the same dimensions");
-  TORCH_CHECK(
-      scale.numel() == self.size(axis),
-      "dimensions of scale and zero-point are not consistent with input tensor")
+    TORCH_CHECK(self.scalar_type() == ScalarType::Float);
+    TORCH_CHECK(scale.dim() == 1, "scale should be a 1-D tensor");
+    TORCH_CHECK(zero_point.dim() == 1, "zero point should be a 1-D tensor");
+    TORCH_CHECK(
+        scale.numel() == zero_point.numel(),
+        "scale and zero-point need to have the same dimensions");
+    TORCH_CHECK(
+        scale.numel() == self.size(axis),
+        "dimensions of scale and zero-point are not consistent with input tensor")
 
-  TORCH_CHECK(
-      quant_min <= quant_max,
-      "`quant_min` should be less than or \
+    TORCH_CHECK(
+        quant_min <= quant_max,
+        "`quant_min` should be less than or \
         equal to `quant_max`.");
 
-  TORCH_CHECK(
-      at::min(zero_point).item().toLong() >= quant_min &&
-          at::max(zero_point).item().toLong() <= quant_max,
-      "`zero_point` must be between `quant_min` and `quant_max`.");
+    TORCH_CHECK(
+        at::min(zero_point).item().toLong() >= quant_min &&
+        at::max(zero_point).item().toLong() <= quant_max,
+        "`zero_point` must be between `quant_min` and `quant_max`.");
 
-  TORCH_CHECK(
-      axis >= 0 && axis <= self.dim(),
-      "`axis` must be between 0 and number of dimensions of input");
+    TORCH_CHECK(
+        axis >= 0 && axis <= self.dim(),
+        "`axis` must be between 0 and number of dimensions of input");
 
-  auto Y = at::empty_like(self, self.options(), MemoryFormat::Preserve);
+    auto Y = at::empty_like(self, self.options(), MemoryFormat::Preserve);
 
-  std::vector<int64_t> expected_shape(self.dim(), 1);
-  expected_shape[axis] = self.size(axis);
+    std::vector<int64_t> expected_shape(self.dim(), 1);
+    expected_shape[axis] = self.size(axis);
 
-  TensorIterator iter;
-  iter.dont_compute_common_dtype();
-  iter.add_output(Y);
-  iter.add_input(self);
-  iter.add_input(native::_unsafe_view(scale, expected_shape));
-  iter.add_input(native::_unsafe_view(zero_point, expected_shape));
-  iter.build();
+    TensorIterator iter;
+    iter.dont_compute_common_dtype();
+    iter.add_output(Y);
+    iter.add_input(self);
+    iter.add_input(native::_unsafe_view(scale, expected_shape));
+    iter.add_input(native::_unsafe_view(zero_point, expected_shape));
+    iter.build();
 
-  fake_quant_per_channel_stub(iter.device_type(), iter, quant_min, quant_max);
+    fake_quant_per_channel_stub(iter.device_type(), iter, quant_min, quant_max);
 
-  return Y;
+    return Y;
 }
 
 /* Backward path for per-channel fake-quantization of the 'inputs' tensor.
@@ -99,58 +99,58 @@ Tensor fake_quantize_per_channel_affine_backward(
     int64_t axis,
     int64_t quant_min,
     int64_t quant_max) {
-  TORCH_CHECK(dY.scalar_type() == ScalarType::Float);
-  TORCH_CHECK(X.scalar_type() == ScalarType::Float);
+    TORCH_CHECK(dY.scalar_type() == ScalarType::Float);
+    TORCH_CHECK(X.scalar_type() == ScalarType::Float);
 
-  TORCH_CHECK(X.sizes() == dY.sizes(), "`X` and `dY` are not the same size");
-  TORCH_CHECK(
-      quant_min <= quant_max,
-      "`quant_min` should be less than or \
+    TORCH_CHECK(X.sizes() == dY.sizes(), "`X` and `dY` are not the same size");
+    TORCH_CHECK(
+        quant_min <= quant_max,
+        "`quant_min` should be less than or \
         equal to `quant_max`.");
-  TORCH_CHECK(scale.dim() == 1, "scale should be a 1-D tensor");
-  TORCH_CHECK(zero_point.dim() == 1, "zero point should be a 1-D tensor");
-  TORCH_CHECK(
-      scale.numel() == zero_point.numel(),
-      "scale and zero-point need to have the same dimensions");
-  TORCH_CHECK(
-      scale.numel() == X.size(axis),
-      "dimensions of scale and zero-point are not consistent with input tensor")
+    TORCH_CHECK(scale.dim() == 1, "scale should be a 1-D tensor");
+    TORCH_CHECK(zero_point.dim() == 1, "zero point should be a 1-D tensor");
+    TORCH_CHECK(
+        scale.numel() == zero_point.numel(),
+        "scale and zero-point need to have the same dimensions");
+    TORCH_CHECK(
+        scale.numel() == X.size(axis),
+        "dimensions of scale and zero-point are not consistent with input tensor")
 
-  TORCH_CHECK(
-      quant_min <= quant_max,
-      "`quant_min` should be less than or \
+    TORCH_CHECK(
+        quant_min <= quant_max,
+        "`quant_min` should be less than or \
         equal to `quant_max`.");
 
-  TORCH_CHECK(
-      at::min(zero_point).item().toLong() >= quant_min &&
-          at::max(zero_point).item().toLong() <= quant_max,
-      "`zero_point` must be between `quant_min` and `quant_max`.");
+    TORCH_CHECK(
+        at::min(zero_point).item().toLong() >= quant_min &&
+        at::max(zero_point).item().toLong() <= quant_max,
+        "`zero_point` must be between `quant_min` and `quant_max`.");
 
-  TORCH_CHECK(
-      axis >= 0 && axis <= X.dim(),
-      "`axis` must be between 0 and number of dimensions of input");
+    TORCH_CHECK(
+        axis >= 0 && axis <= X.dim(),
+        "`axis` must be between 0 and number of dimensions of input");
 
-  if (X.numel() <= 0) {
-    return X;
-  }
+    if (X.numel() <= 0) {
+        return X;
+    }
 
-  auto dX = at::empty_like(X, X.options(), MemoryFormat::Preserve);
+    auto dX = at::empty_like(X, X.options(), MemoryFormat::Preserve);
 
-  std::vector<int64_t> expected_shape(X.dim(), 1);
-  expected_shape[axis] = X.size(axis);
+    std::vector<int64_t> expected_shape(X.dim(), 1);
+    expected_shape[axis] = X.size(axis);
 
-  TensorIterator iter;
-  iter.dont_compute_common_dtype();
-  iter.add_output(dX);
-  iter.add_input(X);
-  iter.add_input(dY);
-  iter.add_input(native::_unsafe_view(scale, expected_shape));
-  iter.add_input(native::_unsafe_view(zero_point, expected_shape));
-  iter.build();
+    TensorIterator iter;
+    iter.dont_compute_common_dtype();
+    iter.add_output(dX);
+    iter.add_input(X);
+    iter.add_input(dY);
+    iter.add_input(native::_unsafe_view(scale, expected_shape));
+    iter.add_input(native::_unsafe_view(zero_point, expected_shape));
+    iter.build();
 
-  fake_quant_grad_per_channel_stub(iter.device_type(), iter, quant_min, quant_max);
+    fake_quant_grad_per_channel_stub(iter.device_type(), iter, quant_min, quant_max);
 
-  return dX;
+    return dX;
 }
 } // namespace native
 } // namespace at
