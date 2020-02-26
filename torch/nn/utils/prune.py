@@ -1,8 +1,9 @@
 r"""
 Pruning methods
 """
-from abc import abstractmethod
 import numbers
+from abc import abstractmethod
+
 import torch
 
 # For Python 2 and 3 support

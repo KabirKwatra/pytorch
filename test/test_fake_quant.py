@@ -1,15 +1,18 @@
-import unittest
 import io
-from torch.quantization import default_observer, default_per_channel_weight_observer
-from torch.quantization import FakeQuantize
-from torch.testing._internal.common_utils import run_tests, TestCase
-import torch
-import torch.cuda
-import torch.jit
+import unittest
+
 import numpy as np
 from hypothesis import given
 from hypothesis import strategies as st
+
+import torch.cuda
+import torch.jit
 import torch.testing._internal.hypothesis_utils as hu
+from torch.quantization import default_observer
+from torch.quantization import default_per_channel_weight_observer
+from torch.quantization import FakeQuantize
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import TestCase
 
 hu.assert_deadline_disabled()
 

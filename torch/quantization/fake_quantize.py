@@ -1,12 +1,14 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import torch
+from .observer import _with_args
+from .observer import HistogramObserver
+from .observer import MovingAverageMinMaxObserver
+from .observer import MovingAveragePerChannelMinMaxObserver
 from torch.nn import Module
-from .observer import (
-    MovingAverageMinMaxObserver,
-    HistogramObserver,
-    MovingAveragePerChannelMinMaxObserver,
-    _with_args,
-)
 
 
 class FakeQuantize(Module):
