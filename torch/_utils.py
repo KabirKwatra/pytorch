@@ -1,8 +1,9 @@
-import torch
-import warnings
-from collections import defaultdict
 import sys
 import traceback
+import warnings
+from collections import defaultdict
+
+import torch
 
 
 def _type(self, dtype=None, non_blocking=False, **kwargs):
@@ -21,9 +22,9 @@ def _type(self, dtype=None, non_blocking=False, **kwargs):
         **kwargs: For compatibility, may contain the key ``async`` in place of
             the ``non_blocking`` argument. The ``async`` arg is deprecated.
     """
-    non_blocking = _get_async_or_non_blocking('type', non_blocking, kwargs)
+    non_blocking = _get_async_or_non_blocking("type", non_blocking, kwargs)
     if dtype is None:
-        return self.__module__ + '.' + self.__class__.__name__
+        return self.__module__ + "." + self.__class__.__name__
 
     if isinstance(dtype, str):
         dtype = _import_dotted_name(dtype)
@@ -32,11 +33,13 @@ def _type(self, dtype=None, non_blocking=False, **kwargs):
     if self.is_sparse:
         if not dtype.is_sparse:
             raise RuntimeError("Cannot cast sparse tensor to dense tensor")
-        new_module_name = dtype.__module__.replace('.sparse', '')
-        new_values_type_name = new_module_name + '.' + dtype.__name__
-        new_values = torch._values(self).type(new_values_type_name, non_blocking)
-        new_indices_type_name = new_module_name + '.LongTensor'
-        new_indices = torch._indices(self).type(new_indices_type_name, non_blocking)
+        new_module_name = dtype.__module__.replace(".sparse", "")
+        new_values_type_name = new_module_name + "." + dtype.__name__
+        new_values = torch._values(self).type(new_values_type_name,
+                                              non_blocking)
+        new_indices_type_name = new_module_name + ".LongTensor"
+        new_indices = torch._indices(self).type(new_indices_type_name,
+                                                non_blocking)
         return dtype(new_indices, new_values, self.size())
     if dtype.is_sparse:
         raise RuntimeError("Cannot cast dense tensor to sparse tensor")
@@ -57,7 +60,7 @@ def _cuda(self, device=None, non_blocking=False, **kwargs):
         **kwargs: For compatibility, may contain the key ``async`` in place of
             the ``non_blocking`` argument.
     """
-    non_blocking = _get_async_or_non_blocking('cuda', non_blocking, kwargs)
+    non_blocking = _get_async_or_non_blocking("cuda", non_blocking, kwargs)
     if self.is_cuda:
         if device is None:
             device = torch.cuda.current_device()
@@ -80,12 +83,12 @@ def _cuda(self, device=None, non_blocking=False, **kwargs):
 def _get_async_or_non_blocking(function_name, non_blocking, kwargs):
     if not kwargs:
         return non_blocking
-    if len(kwargs) != 1 or 'async' not in kwargs:
+    if len(kwargs) != 1 or "async" not in kwargs:
         message = "{}() got an unexpected keyword argument '{}'"
         argument = list(kwargs.keys()).pop()
         raise TypeError(message.format(function_name, argument))
     warnings.warn("'async' is deprecated; use 'non_blocking'")
-    return kwargs['async']
+    return kwargs["async"]
 
 
 # Note [Don't serialize hooks]
@@ -131,7 +134,8 @@ def _rebuild_tensor(storage, storage_offset, size, stride):
     return t.set_(storage, storage_offset, size, stride)
 
 
-def _rebuild_tensor_v2(storage, storage_offset, size, stride, requires_grad, backward_hooks):
+def _rebuild_tensor_v2(storage, storage_offset, size, stride, requires_grad,
+                       backward_hooks):
     tensor = _rebuild_tensor(storage, storage_offset, size, stride)
     tensor.requires_grad = requires_grad
     # NB: This line exists only for backwards compatibility; the
@@ -145,7 +149,8 @@ def _rebuild_sparse_tensor(layout, data):
     if layout == torch.sparse_coo:
         indices, values, size = data
         return torch.sparse_coo_tensor(indices, values, size)
-    raise NotImplementedError("rebuilding sparse tensor for layout %s" % (layout))
+    raise NotImplementedError("rebuilding sparse tensor for layout %s" %
+                              (layout))
 
 
 def _rebuild_xla_tensor(data, dtype, device, requires_grad):
@@ -154,20 +159,37 @@ def _rebuild_xla_tensor(data, dtype, device, requires_grad):
     return tensor
 
 
-def _rebuild_qtensor(storage, storage_offset, size, stride, quantizer_params, requires_grad, backward_hooks):
+def _rebuild_qtensor(
+        storage,
+        storage_offset,
+        size,
+        stride,
+        quantizer_params,
+        requires_grad,
+        backward_hooks,
+):
     qscheme = quantizer_params[0]
     if qscheme == torch.per_tensor_affine:
         _, scale, zero_point = quantizer_params
-        tensor = torch._empty_affine_quantized(size, scale=scale, zero_point=zero_point, dtype=storage.dtype)
+        tensor = torch._empty_affine_quantized(size,
+                                               scale=scale,
+                                               zero_point=zero_point,
+                                               dtype=storage.dtype)
     elif qscheme == torch.per_channel_affine:
         _, scales, zero_points, axis = quantizer_params
         if type(scales) is list and type(zero_points) is list:
             scales = torch.tensor(scales, dtype=torch.double)
             zero_points = torch.tensor(zero_points, dtype=torch.long)
         tensor = torch._empty_per_channel_affine_quantized(
-            size, scales=scales, zero_points=zero_points, axis=axis, dtype=storage.dtype)
+            size,
+            scales=scales,
+            zero_points=zero_points,
+            axis=axis,
+            dtype=storage.dtype)
     else:
-        raise RuntimeError("Can't deserialize quantized tensor with qscheme {}".format(qscheme))
+        raise RuntimeError(
+            "Can't deserialize quantized tensor with qscheme {}".format(
+                qscheme))
     tensor.set_(storage, storage_offset, size, stride)
     tensor.requires_grad = requires_grad
     # NB: This line exists only for backwards compatibility; the
@@ -175,6 +197,7 @@ def _rebuild_qtensor(storage, storage_offset, size, stride, quantizer_params, re
     # OrderedDict.  See Note [Don't serialize hooks]
     tensor._backward_hooks = backward_hooks
     return tensor
+
 
 def _rebuild_parameter(data, requires_grad, backward_hooks):
     param = torch.nn.Parameter(data, requires_grad)
@@ -187,7 +210,7 @@ def _rebuild_parameter(data, requires_grad, backward_hooks):
 
 
 def _import_dotted_name(name):
-    components = name.split('.')
+    components = name.split(".")
     obj = __import__(components[0])
     for component in components[1:]:
         obj = getattr(obj, component)
@@ -196,7 +219,7 @@ def _import_dotted_name(name):
 
 # Taken from python 3.5 docs
 def _accumulate(iterable, fn=lambda x, y: x + y):
-    'Return running totals'
+    "Return running totals"
     # _accumulate([1,2,3,4,5]) --> 1 3 6 10 15
     # _accumulate([1,2,3,4,5], operator.mul) --> 1 2 6 24 120
     it = iter(iterable)
@@ -284,8 +307,10 @@ def _unflatten_sparse_tensors(flat, tensors):
         flat.
     """
     flat_indices, flat_values = flat
-    indices = _unflatten_dense_tensors(flat_indices, [torch._indices(t) for t in tensors])
-    values = _unflatten_dense_tensors(flat_values, [torch._values(t) for t in tensors])
+    indices = _unflatten_dense_tensors(flat_indices,
+                                       [torch._indices(t) for t in tensors])
+    values = _unflatten_dense_tensors(flat_values,
+                                      [torch._values(t) for t in tensors])
     outputs = []
     for t, i, v in zip(tensors, indices, values):
         outputs.append(t.new(i, v, t.size()))
@@ -332,7 +357,8 @@ def _take_tensors(tensors, size_limit):
         if tensor.is_sparse:
             indices = torch._indices(tensor)
             values = torch._values(tensor)
-            size = indices.numel() * indices.element_size() + values.numel() * values.element_size()
+            size = (indices.numel() * indices.element_size() +
+                    values.numel() * values.element_size())
         else:
             size = tensor.numel() * tensor.element_size()
         buf_and_size = buf_dict[t]
@@ -351,8 +377,9 @@ def _take_tensors(tensors, size_limit):
 def annotate(ret, **kwargs):
     def dec(fun):
         fun.__annotations__ = dict(kwargs)
-        fun.__annotations__['return'] = ret
+        fun.__annotations__["return"] = ret
         return fun
+
     return dec
 
 
@@ -364,14 +391,17 @@ def annotate(ret, **kwargs):
 # and the frame (which holds reference to all the object in its temporary scope)
 # holding reference the traceback.
 
+
 class KeyErrorMessage(str):
     r"""str subclass that returns itself in repr"""
+
     def __repr__(self):
         return self
 
 
 class ExceptionWrapper(object):
     r"""Wraps an exception plus traceback to communicate across threads"""
+
     def __init__(self, exc_info=None, where="in background"):
         # It is important that we don't store exc_info, see
         # NOTE [ Python Traceback Reference Cycle Problem ]
@@ -385,8 +415,8 @@ class ExceptionWrapper(object):
         r"""Reraises the wrapped exception in the current thread"""
         # Format a message such as: "Caught ValueError in DataLoader worker
         # process 2. Original Traceback:", followed by the traceback.
-        msg = "Caught {} {}.\nOriginal {}".format(
-            self.exc_type.__name__, self.where, self.exc_msg)
+        msg = "Caught {} {}.\nOriginal {}".format(self.exc_type.__name__,
+                                                  self.where, self.exc_msg)
         if self.exc_type == KeyError:
             # KeyError calls repr() on its argument (usually a dict key). This
             # makes stack traces unreadable. It will not be changed in Python
