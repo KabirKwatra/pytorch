@@ -35,9 +35,11 @@ def _type(self, dtype=None, non_blocking=False, **kwargs):
             raise RuntimeError("Cannot cast sparse tensor to dense tensor")
         new_module_name = dtype.__module__.replace(".sparse", "")
         new_values_type_name = new_module_name + "." + dtype.__name__
-        new_values = torch._values(self).type(new_values_type_name, non_blocking)
+        new_values = torch._values(self).type(new_values_type_name,
+                                              non_blocking)
         new_indices_type_name = new_module_name + ".LongTensor"
-        new_indices = torch._indices(self).type(new_indices_type_name, non_blocking)
+        new_indices = torch._indices(self).type(new_indices_type_name,
+                                                non_blocking)
         return dtype(new_indices, new_values, self.size())
     if dtype.is_sparse:
         raise RuntimeError("Cannot cast dense tensor to sparse tensor")
@@ -132,9 +134,8 @@ def _rebuild_tensor(storage, storage_offset, size, stride):
     return t.set_(storage, storage_offset, size, stride)
 
 
-def _rebuild_tensor_v2(
-    storage, storage_offset, size, stride, requires_grad, backward_hooks
-):
+def _rebuild_tensor_v2(storage, storage_offset, size, stride, requires_grad,
+                       backward_hooks):
     tensor = _rebuild_tensor(storage, storage_offset, size, stride)
     tensor.requires_grad = requires_grad
     # NB: This line exists only for backwards compatibility; the
@@ -148,7 +149,8 @@ def _rebuild_sparse_tensor(layout, data):
     if layout == torch.sparse_coo:
         indices, values, size = data
         return torch.sparse_coo_tensor(indices, values, size)
-    raise NotImplementedError("rebuilding sparse tensor for layout %s" % (layout))
+    raise NotImplementedError("rebuilding sparse tensor for layout %s" %
+                              (layout))
 
 
 def _rebuild_xla_tensor(data, dtype, device, requires_grad):
@@ -158,32 +160,36 @@ def _rebuild_xla_tensor(data, dtype, device, requires_grad):
 
 
 def _rebuild_qtensor(
-    storage,
-    storage_offset,
-    size,
-    stride,
-    quantizer_params,
-    requires_grad,
-    backward_hooks,
+        storage,
+        storage_offset,
+        size,
+        stride,
+        quantizer_params,
+        requires_grad,
+        backward_hooks,
 ):
     qscheme = quantizer_params[0]
     if qscheme == torch.per_tensor_affine:
         _, scale, zero_point = quantizer_params
-        tensor = torch._empty_affine_quantized(
-            size, scale=scale, zero_point=zero_point, dtype=storage.dtype
-        )
+        tensor = torch._empty_affine_quantized(size,
+                                               scale=scale,
+                                               zero_point=zero_point,
+                                               dtype=storage.dtype)
     elif qscheme == torch.per_channel_affine:
         _, scales, zero_points, axis = quantizer_params
         if type(scales) is list and type(zero_points) is list:
             scales = torch.tensor(scales, dtype=torch.double)
             zero_points = torch.tensor(zero_points, dtype=torch.long)
         tensor = torch._empty_per_channel_affine_quantized(
-            size, scales=scales, zero_points=zero_points, axis=axis, dtype=storage.dtype
-        )
+            size,
+            scales=scales,
+            zero_points=zero_points,
+            axis=axis,
+            dtype=storage.dtype)
     else:
         raise RuntimeError(
-            "Can't deserialize quantized tensor with qscheme {}".format(qscheme)
-        )
+            "Can't deserialize quantized tensor with qscheme {}".format(
+                qscheme))
     tensor.set_(storage, storage_offset, size, stride)
     tensor.requires_grad = requires_grad
     # NB: This line exists only for backwards compatibility; the
@@ -301,10 +307,10 @@ def _unflatten_sparse_tensors(flat, tensors):
         flat.
     """
     flat_indices, flat_values = flat
-    indices = _unflatten_dense_tensors(
-        flat_indices, [torch._indices(t) for t in tensors]
-    )
-    values = _unflatten_dense_tensors(flat_values, [torch._values(t) for t in tensors])
+    indices = _unflatten_dense_tensors(flat_indices,
+                                       [torch._indices(t) for t in tensors])
+    values = _unflatten_dense_tensors(flat_values,
+                                      [torch._values(t) for t in tensors])
     outputs = []
     for t, i, v in zip(tensors, indices, values):
         outputs.append(t.new(i, v, t.size()))
@@ -351,10 +357,8 @@ def _take_tensors(tensors, size_limit):
         if tensor.is_sparse:
             indices = torch._indices(tensor)
             values = torch._values(tensor)
-            size = (
-                indices.numel() * indices.element_size()
-                + values.numel() * values.element_size()
-            )
+            size = (indices.numel() * indices.element_size() +
+                    values.numel() * values.element_size())
         else:
             size = tensor.numel() * tensor.element_size()
         buf_and_size = buf_dict[t]
@@ -411,9 +415,8 @@ class ExceptionWrapper(object):
         r"""Reraises the wrapped exception in the current thread"""
         # Format a message such as: "Caught ValueError in DataLoader worker
         # process 2. Original Traceback:", followed by the traceback.
-        msg = "Caught {} {}.\nOriginal {}".format(
-            self.exc_type.__name__, self.where, self.exc_msg
-        )
+        msg = "Caught {} {}.\nOriginal {}".format(self.exc_type.__name__,
+                                                  self.where, self.exc_msg)
         if self.exc_type == KeyError:
             # KeyError calls repr() on its argument (usually a dict key). This
             # makes stack traces unreadable. It will not be changed in Python
