@@ -3,31 +3,55 @@ from torch.autograd.function import Function
 
 
 class SyncBatchNorm(Function):
-
     @staticmethod
-    def forward(self, input, weight, bias, running_mean, running_var, eps, momentum, process_group, world_size):
+    def forward(
+        self,
+        input,
+        weight,
+        bias,
+        running_mean,
+        running_var,
+        eps,
+        momentum,
+        process_group,
+        world_size,
+    ):
         input = input.contiguous()
 
         size = input.numel() // input.size(1)
         if size == 1:
-            raise ValueError('Expected more than 1 value per channel when training, got input size {}'.format(size))
+            raise ValueError(
+                "Expected more than 1 value per channel when training, got input size {}".format(
+                    size
+                )
+            )
         count = torch.Tensor([size]).to(input.device)
 
         # calculate mean/invstd for input.
         mean, invstd = torch.batch_norm_stats(input, eps)
 
         count_all = torch.empty(world_size, 1, dtype=count.dtype, device=count.device)
-        mean_all = torch.empty(world_size, mean.size(0), dtype=mean.dtype, device=mean.device)
-        invstd_all = torch.empty(world_size, invstd.size(0), dtype=invstd.dtype, device=invstd.device)
+        mean_all = torch.empty(
+            world_size, mean.size(0), dtype=mean.dtype, device=mean.device
+        )
+        invstd_all = torch.empty(
+            world_size, invstd.size(0), dtype=invstd.dtype, device=invstd.device
+        )
 
         count_l = list(count_all.unbind(0))
         mean_l = list(mean_all.unbind(0))
         invstd_l = list(invstd_all.unbind(0))
 
         # using all_gather instead of all reduce so we can calculate count/mean/var in one go
-        count_all_reduce = torch.distributed.all_gather(count_l, count, process_group, async_op=True)
-        mean_all_reduce = torch.distributed.all_gather(mean_l, mean, process_group, async_op=True)
-        invstd_all_reduce = torch.distributed.all_gather(invstd_l, invstd, process_group, async_op=True)
+        count_all_reduce = torch.distributed.all_gather(
+            count_l, count, process_group, async_op=True
+        )
+        mean_all_reduce = torch.distributed.all_gather(
+            mean_l, mean, process_group, async_op=True
+        )
+        invstd_all_reduce = torch.distributed.all_gather(
+            invstd_l, invstd, process_group, async_op=True
+        )
 
         # wait on the async communication to finish
         count_all_reduce.wait()
@@ -43,7 +67,7 @@ class SyncBatchNorm(Function):
             running_var,
             momentum,
             eps,
-            count_all.view(-1).long().tolist()
+            count_all.view(-1).long().tolist(),
         )
 
         self.save_for_backward(input, weight, mean, invstd)
@@ -71,16 +95,21 @@ class SyncBatchNorm(Function):
             weight,
             self.needs_input_grad[0],
             self.needs_input_grad[1],
-            self.needs_input_grad[2]
+            self.needs_input_grad[2],
         )
 
         if self.needs_input_grad[0]:
             # synchronizing stats used to calculate input gradient.
             # TODO: move div_ into batch_norm_backward_elemt kernel
             mean_dy_all_reduce = torch.distributed.all_reduce(
-                mean_dy, torch.distributed.ReduceOp.SUM, process_group, async_op=True)
+                mean_dy, torch.distributed.ReduceOp.SUM, process_group, async_op=True
+            )
             mean_dy_xmu_all_reduce = torch.distributed.all_reduce(
-                mean_dy_xmu, torch.distributed.ReduceOp.SUM, process_group, async_op=True)
+                mean_dy_xmu,
+                torch.distributed.ReduceOp.SUM,
+                process_group,
+                async_op=True,
+            )
 
             # wait on the async communication to finish
             mean_dy_all_reduce.wait()
@@ -90,13 +119,7 @@ class SyncBatchNorm(Function):
             mean_dy_xmu.div_(world_size)
             # backward pass for gradient calculation
             grad_input = torch.batch_norm_backward_elemt(
-                grad_output,
-                saved_input,
-                mean,
-                invstd,
-                weight,
-                mean_dy,
-                mean_dy_xmu
+                grad_output, saved_input, mean, invstd, weight, mean_dy, mean_dy_xmu
             )
 
         # synchronizing of grad_weight / grad_bias is not needed as distributed
@@ -111,7 +134,6 @@ class SyncBatchNorm(Function):
 
 
 class CrossMapLRN2d(Function):
-
     @staticmethod
     def forward(ctx, input, size, alpha=1e-4, beta=0.75, k=1):
         ctx.size = size
@@ -178,8 +200,7 @@ class CrossMapLRN2d(Function):
         input_height = input.size(2)
         input_width = input.size(3)
 
-        paddded_ratio = input.new(channels + ctx.size - 1, input_height,
-                                  input_width)
+        paddded_ratio = input.new(channels + ctx.size - 1, input_height, input_width)
         accum_ratio = input.new(input_height, input_width)
 
         cache_ratio_value = 2 * ctx.alpha * ctx.beta / ctx.size
@@ -189,16 +210,21 @@ class CrossMapLRN2d(Function):
         torch.pow(ctx.scale, -ctx.beta, out=grad_input).mul_(grad_output)
 
         paddded_ratio.zero_()
-        padded_ratio_center = paddded_ratio.narrow(0, inversePrePad,
-                                                   channels)
+        padded_ratio_center = paddded_ratio.narrow(0, inversePrePad, channels)
         for n in range(batch_size):
             torch.mul(grad_output[n], output[n], out=padded_ratio_center)
             padded_ratio_center.div_(ctx.scale[n])
             torch.sum(
-                paddded_ratio.narrow(0, 0, ctx.size - 1), 0, keepdim=False, out=accum_ratio)
+                paddded_ratio.narrow(0, 0, ctx.size - 1),
+                0,
+                keepdim=False,
+                out=accum_ratio,
+            )
             for c in range(channels):
                 accum_ratio.add_(paddded_ratio[c + ctx.size - 1])
-                grad_input[n][c].addcmul_(input[n][c], accum_ratio, value=-cache_ratio_value)
+                grad_input[n][c].addcmul_(
+                    input[n][c], accum_ratio, value=-cache_ratio_value
+                )
                 accum_ratio.add_(paddded_ratio[c], alpha=-1)
 
         return grad_input, None, None, None, None
