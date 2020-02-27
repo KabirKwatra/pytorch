@@ -19,8 +19,7 @@ if __name__ == "__main__":
     raise RuntimeError(
         "This test file is not meant to be run directly, use:\n\n"
         "\tpython test/test_jit.py TESTNAME\n\n"
-        "instead."
-    )
+        "instead.")
 
 # Smoke tests for export methods
 
@@ -89,7 +88,7 @@ class TestExportModes(JitTestCase):
 
         f = io.BytesIO()
         x = torch.ones(3)
-        torch.onnx._export(foo, (x,), f, example_outputs=(x, x))
+        torch.onnx._export(foo, (x, ), f, example_outputs=(x, x))
 
     @skipIfNoLapack
     def test_aten_fallback(self):
