@@ -1,5 +1,3 @@
-from torch.testing._internal.common_utils import skipIfNoLapack
-from torch.testing._internal.jit_utils import JitTestCase
 import io
 import os
 import shutil
@@ -8,8 +6,10 @@ import tempfile
 
 import torch
 import torch.nn as nn
-from torch.onnx import OperatorExportTypes
 from torch.autograd import Variable
+from torch.onnx import OperatorExportTypes
+from torch.testing._internal.common_utils import skipIfNoLapack
+from torch.testing._internal.jit_utils import JitTestCase
 
 # Make the helper files in test/ importable
 pytorch_test_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
