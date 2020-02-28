@@ -16,16 +16,19 @@
 #include <functional>
 #include <memory>
 #include <queue>
+#include <thread>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <thread>
 
-namespace torch { namespace autograd {
+namespace torch {
+namespace autograd {
 struct ReadyQueue;
-}} // namespace torch::autograd
+}
+} // namespace torch
 
-namespace torch { namespace autograd {
+namespace torch {
+namespace autograd {
 
 using FutureVariableList = torch::utils::Future<variable_list>;
 
@@ -145,8 +148,9 @@ struct NodeTask {
         isShutdownTask_(isShutdownTask) {}
 };
 
-// A single instance of this struct should be created through the whole process lifetime.
-// The worker thread creation logic and Engine's destructor rely on this.
+// A single instance of this struct should be created through the whole process
+// lifetime. The worker thread creation logic and Engine's destructor rely on
+// this.
 struct TORCH_API Engine {
   /// Returns a reference to a static `Engine` instance.
   static Engine& get_default_engine();
@@ -154,7 +158,8 @@ struct TORCH_API Engine {
   Engine();
   virtual ~Engine();
 
-  using ready_queue_type = std::deque<std::pair<std::shared_ptr<Node>, InputBuffer>>;
+  using ready_queue_type =
+      std::deque<std::pair<std::shared_ptr<Node>, InputBuffer>>;
   using dependencies_type = std::unordered_map<Node*, int>;
 
   // Given a list of (Node, input number) pairs computes the value of the graph
@@ -244,22 +249,23 @@ struct TORCH_API Engine {
     std::queue<std::weak_ptr<GraphTask>> graphtasks_queue_;
 
     ThreadPoolShared() : num_workers_(0) {}
- };
+  };
 
- // Temporary workaround until shutting down threads is done
- // We need shared ownership of all these objects because the threads are leaked
- // when Engine shuts down, so there may be threads waiting on work_
- // for the graphtasks_queue_ to be nonempty.
- std::shared_ptr<ThreadPoolShared> thread_pool_shared_;
+  // Temporary workaround until shutting down threads is done
+  // We need shared ownership of all these objects because the threads are
+  // leaked when Engine shuts down, so there may be threads waiting on work_ for
+  // the graphtasks_queue_ to be nonempty.
+  std::shared_ptr<ThreadPoolShared> thread_pool_shared_;
 
-private:
- variable_list graph_task_exec_post_processing(
-     const std::shared_ptr<GraphTask>& graph_task);
- void mark_graph_task_completed(std::shared_ptr<GraphTask>& graph_task);
+ private:
+  variable_list graph_task_exec_post_processing(
+      const std::shared_ptr<GraphTask>& graph_task);
+  void mark_graph_task_completed(std::shared_ptr<GraphTask>& graph_task);
 };
 
 // allow python_engine to override the default engine when it loads
 using EngineStub = Engine& (*)();
 TORCH_API void set_default_engine_stub(EngineStub stub);
 
-}} // namespace torch::autograd
+} // namespace autograd
+} // namespace torch

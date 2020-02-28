@@ -1,22 +1,23 @@
 #include <torch/csrc/autograd/engine.h>
 
+#include <torch/csrc/autograd/anomaly_mode.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/functions/basic_ops.h>
 #include <torch/csrc/autograd/grad_mode.h>
-#include <torch/csrc/autograd/anomaly_mode.h>
 #include <torch/csrc/autograd/variable.h>
 #include <torch/csrc/utils/memory.h>
 
 #include <ATen/DeviceGuard.h>
 #include <ATen/ExpandUtils.h>
 #include <ATen/Parallel.h>
-#include <c10/util/Exception.h>
-#include <c10/core/Stream.h>
-#include <c10/core/Event.h>
 #include <c10/core/DeviceGuard.h>
-#include <c10/util/Optional.h>
+#include <c10/core/Event.h>
+#include <c10/core/Stream.h>
 #include <c10/core/StreamGuard.h>
+#include <c10/util/Exception.h>
+#include <c10/util/Optional.h>
 
+#include <TH/TH.h>
 #include <atomic>
 #include <condition_variable>
 #include <cstdint>
@@ -24,16 +25,16 @@
 #include <iostream>
 #include <memory>
 #include <mutex>
+#include <queue>
 #include <set>
+#include <sstream>
 #include <string>
 #include <thread>
-#include <unordered_set>
 #include <typeinfo>
-#include <sstream>
-#include <queue>
-#include <TH/TH.h>
+#include <unordered_set>
 
-namespace torch { namespace autograd {
+namespace torch {
+namespace autograd {
 
 namespace {
 static bool in_bad_autograd_fork =
@@ -41,7 +42,9 @@ static bool in_bad_autograd_fork =
 
 // Called in the forked child if engine's thread pool has already been
 // initialized
-static void forked_autograd_child() { in_bad_autograd_fork = true; }
+static void forked_autograd_child() {
+  in_bad_autograd_fork = true;
+}
 
 // Should be called before unsafe for forks (thread pool) calls
 static void track_bad_autograd_forks() {
@@ -51,7 +54,7 @@ static void track_bad_autograd_forks() {
       flag, [&] { pthread_atfork(nullptr, nullptr, forked_autograd_child); });
 #endif
 }
-}
+} // namespace
 
 // Threads spawned by the engine are assigned a constant 'worker_device'
 // specifying what device they process work for.  This variable is initialized
@@ -79,7 +82,7 @@ static thread_local int total_depth = 0;
 // Returns true when t2 should be (weakly) BEFORE t1 in the queue.
 // Shutdown tasks are first and then empty NodeTask are next.
 struct CompareNodeTaskTime {
-  bool operator()(NodeTask const & t1, NodeTask const & t2) {
+  bool operator()(NodeTask const& t1, NodeTask const& t2) {
     if (t2.isShutdownTask_) {
       return true;
     } else if (!t1.fn_ || t1.isShutdownTask_) {
@@ -95,7 +98,8 @@ struct CompareNodeTaskTime {
 };
 
 struct ReadyQueue {
-  std::priority_queue<NodeTask, std::vector<NodeTask>, CompareNodeTaskTime> heap_;
+  std::priority_queue<NodeTask, std::vector<NodeTask>, CompareNodeTaskTime>
+      heap_;
   // To notify threads waiting on the ReadyQueue of available tasks on the heap_
   std::condition_variable not_empty_;
   // To protect read and writes to heap_
@@ -218,9 +222,10 @@ size_t ReadyQueue::size() const {
 auto ReadyQueue::pop() -> NodeTask {
   // Lock mutex for accesses to heap_
   std::unique_lock<std::mutex> lock(mutex_);
-  not_empty_.wait(lock, [this]{ return !heap_.empty(); });
+  not_empty_.wait(lock, [this] { return !heap_.empty(); });
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-  auto task = std::move(const_cast<NodeTask&>(heap_.top())); heap_.pop();
+  auto task = std::move(const_cast<NodeTask&>(heap_.top()));
+  heap_.pop();
   return task;
 }
 
@@ -232,13 +237,13 @@ Engine::Engine() : max_recursion_depth_(100) {}
 // priority
 Engine::~Engine() {
   bool noBackward = true;
-  for (auto& queue: ready_queues_) {
+  for (auto& queue : ready_queues_) {
     std::lock_guard<std::mutex> lock(queue->mutex_);
-    noBackward =  noBackward && queue->heap_.empty();
+    noBackward = noBackward && queue->heap_.empty();
   }
   if (noBackward) {
     for (auto& queue : ready_queues_) {
-     queue->pushShutdownTask();
+      queue->pushShutdownTask();
     }
   }
   // Othewise threads are leaked
@@ -254,7 +259,9 @@ void Engine::set_device(int device) {
   // Don't use DeviceGuard here because its destructor may be called before the
   // device is reset. This is fine because the device is thread local.
   if (device != -1) {
-    for (size_t i = 0; i < static_cast<size_t>(c10::DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES); i++) {
+    for (size_t i = 0; i <
+         static_cast<size_t>(c10::DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES);
+         i++) {
       auto* impl = c10::impl::device_guard_impl_registry[i].load();
       if (impl && device < impl->deviceCount()) {
         impl->setDevice(at::Device(static_cast<c10::DeviceType>(i), device));
@@ -374,11 +381,12 @@ auto Engine::thread_main(
 
 void Engine::reentrant_thread_init() {
   at::init_num_threads();
-  auto tp_shared= thread_pool_shared_;
-  while(true) {
+  auto tp_shared = thread_pool_shared_;
+  while (true) {
     std::unique_lock<std::mutex> lk(tp_shared->mutex_);
     ++thread_pool_shared_->num_workers_;
-    tp_shared->work_.wait(lk, [&tp_shared]{ return !tp_shared->graphtasks_queue_.empty();});
+    tp_shared->work_.wait(
+        lk, [&tp_shared] { return !tp_shared->graphtasks_queue_.empty(); });
     --thread_pool_shared_->num_workers_;
     auto task = tp_shared->graphtasks_queue_.front();
     tp_shared->graphtasks_queue_.pop();
@@ -431,17 +439,24 @@ static variable_list call_pre_hooks(Node& fn, variable_list inputs) {
   return inputs;
 }
 
-static variable_list call_post_hooks(Node& fn, variable_list outputs, const variable_list& inputs) {
+static variable_list call_post_hooks(
+    Node& fn,
+    variable_list outputs,
+    const variable_list& inputs) {
   for (const auto& hook : fn.post_hooks()) {
     outputs = (*hook)(outputs, inputs);
   }
   return outputs;
 }
 
-static bool is_compatible_type(const at::TensorOptions& expected, const at::TensorOptions& actual) {
+static bool is_compatible_type(
+    const at::TensorOptions& expected,
+    const at::TensorOptions& actual) {
   // Types are compatible if they exactly match or if the gradient is a sparse
   // version of the expected type.
-  return expected.type_equal(actual) || (actual.is_sparse() && expected.device().type() == actual.device().type());
+  return expected.type_equal(actual) ||
+      (actual.is_sparse() &&
+       expected.device().type() == actual.device().type());
 }
 
 void validate_outputs(
@@ -456,7 +471,8 @@ void validate_outputs(
   }
   for (size_t i = 0; i < grads.size(); i++) {
     const auto& edge = edges[i];
-    if (!edge.is_valid()) continue;
+    if (!edge.is_valid())
+      continue;
 
     const auto& metadata = edge.function->input_metadata(edge.input_nr);
     const auto& output = grads[i];
@@ -478,14 +494,16 @@ void validate_outputs(
       grads[i] = at::sum_to(std::move(grads[i]), metadata.shape());
     }
     TORCH_CHECK(isFloatingType(grads[i].scalar_type()));
-    if (c10::typeMetaToScalarType(metadata.options().dtype()) != grads[i].scalar_type()) {
-      grads[i] = grads[i].to(c10::typeMetaToScalarType(metadata.options().dtype()));
+    if (c10::typeMetaToScalarType(metadata.options().dtype()) !=
+        grads[i].scalar_type()) {
+      grads[i] =
+          grads[i].to(c10::typeMetaToScalarType(metadata.options().dtype()));
     }
     if (!is_compatible_type(metadata.options(), grads[i].options())) {
-       std::stringstream ss;
-       ss << "invalid gradient at index " << i << " - expected type ";
-       ss << metadata.options() << " but got " << grads[i].options();
-       AT_ERROR(format_error(ss.str()));
+      std::stringstream ss;
+      ss << "invalid gradient at index " << i << " - expected type ";
+      ss << metadata.options() << " but got " << grads[i].options();
+      AT_ERROR(format_error(ss.str()));
     }
     auto output_device = output.device();
     if (output_device != metadata.device()) {
@@ -542,12 +560,12 @@ static variable_list call_function(
 
   validate_outputs(fn.next_edges(), outputs, [&](const std::string& msg) {
     std::ostringstream ss;
-    ss << "Function "  << fn.name() << " returned an " << msg;
+    ss << "Function " << fn.name() << " returned an " << msg;
     return ss.str();
   });
   checkpoint_valid = prev_checkpoint_valid_state;
 
-  if(has_post_hooks){
+  if (has_post_hooks) {
     // NOLINTNEXTLINE(bugprone-use-after-move)
     return call_post_hooks(fn, std::move(outputs), inputs);
   }
@@ -605,7 +623,8 @@ void Engine::evaluate_function(
       at::OptionalDeviceGuard guard(device_of(output));
       if (output.defined() && isnan(output).any().item<uint8_t>()) {
         std::stringstream ss;
-        ss << "Function '" << fn.name() << "' returned nan values in its " << i << "th output.";
+        ss << "Function '" << fn.name() << "' returned nan values in its " << i
+           << "th output.";
         throw std::runtime_error(ss.str());
       }
     }
@@ -617,7 +636,8 @@ void Engine::evaluate_function(
     auto& output = outputs[i];
     const auto& next = fn.next_edge(i);
 
-    if (!next.is_valid()) continue;
+    if (!next.is_valid())
+      continue;
 
     // Check if the next function is ready to be computed
     bool is_ready = false;
@@ -647,10 +667,8 @@ void Engine::evaluate_function(
 
       // Accumulates into buffer
       const auto opt_next_stream = next.function->stream(c10::DeviceType::CUDA);
-      input_buffer.add(next.input_nr,
-                       std::move(output),
-                       opt_parent_stream,
-                       opt_next_stream);
+      input_buffer.add(
+          next.input_nr, std::move(output), opt_parent_stream, opt_next_stream);
 
       if (is_ready) {
         auto& queue = ready_queue(input_buffer.device());
@@ -661,14 +679,12 @@ void Engine::evaluate_function(
       }
     } else {
       // The function already has a buffer
-      auto &input_buffer = not_ready_it->second;
+      auto& input_buffer = not_ready_it->second;
 
       // Accumulates into buffer
       const auto opt_next_stream = next.function->stream(c10::DeviceType::CUDA);
-      input_buffer.add(next.input_nr,
-                       std::move(output),
-                       opt_parent_stream,
-                       opt_next_stream);
+      input_buffer.add(
+          next.input_nr, std::move(output), opt_parent_stream, opt_next_stream);
       if (is_ready) {
         auto& queue = ready_queue(input_buffer.device());
         queue.push(
@@ -683,29 +699,35 @@ void Engine::evaluate_function(
 auto Engine::compute_dependencies(Node* root, GraphTask& task) -> void {
   // Just to make sure that they will never be added to the queue again
   std::unordered_set<Node*> seen;
-  std::vector<Node*> queue { root };
+  std::vector<Node*> queue{root};
 
   // Queue contains all nodes that will start propagating gradients.
   // We no longer have to expand functions that don't require grad.
   auto& dependencies = task.dependencies_;
   while (!queue.empty()) {
-    auto fn = queue.back(); queue.pop_back();
+    auto fn = queue.back();
+    queue.pop_back();
     for (const auto& edge : fn->next_edges()) {
       if (auto next_ptr = edge.function.get()) {
         dependencies[next_ptr] += 1;
         const bool was_inserted = seen.insert(next_ptr).second;
-        if (was_inserted) queue.push_back(next_ptr);
+        if (was_inserted)
+          queue.push_back(next_ptr);
       }
     }
   }
 }
 
 struct ClearCallbacks {
-  ClearCallbacks(std::vector<std::function<void()>>& callbacks,
-                 std::mutex &callbacks_lock)
-    : callbacks_(callbacks)
-    , callbacks_lock_(callbacks_lock) { clear(); }
-  ~ClearCallbacks() { clear(); }
+  ClearCallbacks(
+      std::vector<std::function<void()>>& callbacks,
+      std::mutex& callbacks_lock)
+      : callbacks_(callbacks), callbacks_lock_(callbacks_lock) {
+    clear();
+  }
+  ~ClearCallbacks() {
+    clear();
+  }
 
   void clear() {
     std::lock_guard<std::mutex> lock(callbacks_lock_);
@@ -716,18 +738,20 @@ struct ClearCallbacks {
   std::mutex& callbacks_lock_;
 };
 
-auto Engine::execute(const edge_list& roots,
-                     const variable_list& inputs,
-                     bool keep_graph,
-                     bool create_graph,
-                     const edge_list& outputs) -> variable_list {
+auto Engine::execute(
+    const edge_list& roots,
+    const variable_list& inputs,
+    bool keep_graph,
+    bool create_graph,
+    const edge_list& outputs) -> variable_list {
   // NOLINTNEXTLINE(cppcoreguidelines-pro-type-const-cast)
-  validate_outputs(roots, const_cast<variable_list&>(inputs), [](const std::string& msg) {
-    return msg;
-  });
+  validate_outputs(
+      roots, const_cast<variable_list&>(inputs), [](const std::string& msg) {
+        return msg;
+      });
 
-  // Callbacks are only valid for the duration of this run and should always be cleared
-  // Lock post_callbacks_lock_ before clearing final_callbacks_
+  // Callbacks are only valid for the duration of this run and should always be
+  // cleared Lock post_callbacks_lock_ before clearing final_callbacks_
   ClearCallbacks _cb_guard(final_callbacks_, post_callbacks_lock_);
 
   auto graph_task = std::make_shared<GraphTask>(
@@ -735,7 +759,8 @@ auto Engine::execute(const edge_list& roots,
       create_graph,
       worker_device == NO_DEVICE ? 0 : total_depth + 1);
 
-  // Now compute the dependencies for all executable functions and queue the root
+  // Now compute the dependencies for all executable functions and queue the
+  // root
   auto graph_root = std::make_shared<GraphRoot>(roots, inputs);
   compute_dependencies(graph_root.get(), *graph_task);
 
@@ -748,9 +773,10 @@ auto Engine::execute(const edge_list& roots,
 
 void Engine::initialize_threads_pool() {
   track_bad_autograd_forks();
-  TORCH_CHECK(!in_bad_autograd_fork,
-              "Unable to handle autograd's threading in combination with fork-based multiprocessing. "
-              "See https://github.com/pytorch/pytorch/wiki/Autograd-and-Fork");
+  TORCH_CHECK(
+      !in_bad_autograd_fork,
+      "Unable to handle autograd's threading in combination with fork-based multiprocessing. "
+      "See https://github.com/pytorch/pytorch/wiki/Autograd-and-Fork");
   std::call_once(start_threads_flag_, &Engine::start_threads, this);
 }
 
@@ -861,7 +887,6 @@ variable_list Engine::graph_task_exec_post_processing(
   return graph_task->captured_vars_;
 }
 
-
 // note that when python is present, this base engine will be overriden
 // with a PythonEngine. Because this typically happens before get_default_engine
 // is called, this base engine will never be created.
@@ -875,7 +900,6 @@ std::atomic<EngineStub> engine_stub(get_base_engine);
 void set_default_engine_stub(EngineStub stub) {
   engine_stub.store(stub);
 }
-
 
 Engine& Engine::get_default_engine() {
   return engine_stub.load()();
@@ -946,7 +970,9 @@ void Engine::add_thread_pool_task(const std::weak_ptr<GraphTask>& graph_task) {
   // There may already be some items on the graphtasks_queue_ added by other
   // threads but not enough workers to get to the the new task that will be
   // added
-  bool create_thread = (thread_pool_shared_->num_workers_ <= thread_pool_shared_->graphtasks_queue_.size());
+  bool create_thread =
+      (thread_pool_shared_->num_workers_ <=
+       thread_pool_shared_->graphtasks_queue_.size());
   thread_pool_shared_->graphtasks_queue_.push(graph_task);
   // Don't need to be holding the lock while actually creating the thread
   lck.unlock();
@@ -963,54 +989,55 @@ void GraphTask::init_to_execute(Node& graph_root, const edge_list& outputs) {
   exec_info_[&graph_root].needed_ = true;
 
   int output_idx = 0;
-  for (auto & output_edge : outputs) {
-    Node *output = output_edge.function.get();
-    auto & info = exec_info_[output];
+  for (auto& output_edge : outputs) {
+    Node* output = output_edge.function.get();
+    auto& info = exec_info_[output];
     if (!info.captures_)
       info.captures_ = make_unique<std::vector<ExecInfo::Capture>>();
     info.captures_->emplace_back(output_edge.input_nr, output_idx++);
   }
   captured_vars_.resize(output_idx);
 
-  // NB: this is an uglier version (recursion replaced with iteration) of the following code:
-  // is_needed = {}
-  // def compute_is_needed(fn):
+  // NB: this is an uglier version (recursion replaced with iteration) of the
+  // following code: is_needed = {} def compute_is_needed(fn):
   //   if fn not in is_needed:
   //     is_needed[fn] = any(compute_is_needed(next_edge)
   //                         for next_edge in fn.next_edges)
   //   return is_needed[fn]
   struct Frame {
-    Frame (Node *fn) : fn_(fn), next_next_fn_(0) {}
-    Node *fn_;
+    Frame(Node* fn) : fn_(fn), next_next_fn_(0) {}
+    Node* fn_;
     size_t next_next_fn_;
 
     Node* get_next_fn() {
-      const auto & next = fn_->next_edges();
+      const auto& next = fn_->next_edges();
       auto num_next = next.size();
       while (next_next_fn_ < num_next) {
         auto fn = next[next_next_fn_++].function.get();
-        if (fn) return fn;
+        if (fn)
+          return fn;
       }
       return nullptr;
     }
   };
   std::vector<Frame> stack;
   std::unordered_set<Node*> seen;
-  for (const auto & input : graph_root.next_edges()) {
-    if (seen.count(input.function.get()) > 0) continue;
+  for (const auto& input : graph_root.next_edges()) {
+    if (seen.count(input.function.get()) > 0)
+      continue;
     stack.emplace_back(input.function.get());
     while (!stack.empty()) {
-      auto &frame = stack.back();
-      if (Node *next_fn = frame.get_next_fn()) {
+      auto& frame = stack.back();
+      if (Node* next_fn = frame.get_next_fn()) {
         if (/* bool unseen = */ seen.emplace(next_fn).second) {
           stack.emplace_back(next_fn);
           continue; // recurse
         }
       } else {
         // NB: if we were using real recursion we could have saved some lookups
-        // using a return value from recursive call. It would make this manually unrolled
-        // version a lot more complicated, so I skipped that.
-        const auto & next_edges = frame.fn_->next_edges();
+        // using a return value from recursive call. It would make this manually
+        // unrolled version a lot more complicated, so I skipped that.
+        const auto& next_edges = frame.fn_->next_edges();
         const bool needed = std::any_of(
             next_edges.begin(), next_edges.end(), [&](const Edge& edge) {
               auto it = exec_info_.find(edge.function.get());
@@ -1023,4 +1050,5 @@ void GraphTask::init_to_execute(Node& graph_root, const edge_list& outputs) {
   }
 }
 
-}} // namespace torch::autograd
+} // namespace autograd
+} // namespace torch
