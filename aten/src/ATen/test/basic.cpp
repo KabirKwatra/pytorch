@@ -7,12 +7,12 @@
 
 // for TH compat test only...
 struct THFloatTensor;
-extern "C" THFloatTensor * THFloatTensor_newWithSize2d(size_t a, size_t b);
-extern "C" void THFloatTensor_fill(THFloatTensor *, float v);
+extern "C" THFloatTensor* THFloatTensor_newWithSize2d(size_t a, size_t b);
+extern "C" void THFloatTensor_fill(THFloatTensor*, float v);
 
-#include <iostream>
-#include <chrono>
 #include <string.h>
+#include <chrono>
+#include <iostream>
 #include <sstream>
 
 #define ASSERT_EQ_RESOLVED(X, Y) \
@@ -289,7 +289,8 @@ void TestView(DeprecatedTypeProperties& type) {
   // Testing the tensor view path, which is different from
   // the Variable view path, see https://github.com/pytorch/pytorch/pull/23452
   // for details
-  Tensor tensor = randn({3, 4}, type);;
+  Tensor tensor = randn({3, 4}, type);
+  ;
   Tensor viewed = tensor.view({3, 4});
   tensor.resize_({6, 2});
   ASSERT_TRUE(tensor.sizes().equals({6, 2}));
@@ -402,7 +403,13 @@ TEST(BasicTest, FactoryMethodsTest) {
     ASSERT_FALSE(tensor1.is_pinned());
 
     // Test set everything
-    tensor1 = at::empty({4}, at::TensorOptions().dtype(at::kHalf).device(at::kCUDA).layout(at::kSparse).requires_grad(true));
+    tensor1 = at::empty(
+        {4},
+        at::TensorOptions()
+            .dtype(at::kHalf)
+            .device(at::kCUDA)
+            .layout(at::kSparse)
+            .requires_grad(true));
     ASSERT_EQ(tensor1.dtype(), at::kHalf);
     ASSERT_EQ(tensor1.layout(), at::kSparse);
     ASSERT_TRUE(tensor1.device().is_cuda());

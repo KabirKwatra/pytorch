@@ -5,17 +5,15 @@
 /*
 Check if self is transpose of a contiguous matrix
 */
-static int THTensor_(isTransposedContiguous)(THTensor *self)
-{
+static int THTensor_(isTransposedContiguous)(THTensor* self) {
   return self->stride(0) == 1 && self->stride(1) == self->size(0);
 }
 /*
 If a matrix is a regular contiguous matrix, make sure it is transposed
 because this is what we return from Lapack calls.
 */
-static void THTensor_(checkTransposed)(THTensor *self)
-{
-  if(THTensor_(isContiguous)(self))
+static void THTensor_(checkTransposed)(THTensor* self) {
+  if (THTensor_(isContiguous)(self))
     THTensor_(transpose)(self, NULL, 0, 1);
   return;
 }
@@ -24,16 +22,12 @@ newContiguous followed by transpose
 Similar to (newContiguous), but checks if the transpose of the matrix
 is contiguous and also limited to 2D matrices.
 */
-static THTensor *THTensor_(newTransposedContiguous)(THTensor *self)
-{
-  THTensor *tensor;
-  if(THTensor_(isTransposedContiguous)(self))
-  {
+static THTensor* THTensor_(newTransposedContiguous)(THTensor* self) {
+  THTensor* tensor;
+  if (THTensor_(isTransposedContiguous)(self)) {
     THTensor_(retain)(self);
     tensor = self;
-  }
-  else
-  {
+  } else {
     tensor = THTensor_(newContiguous)(self);
     THTensor_(transpose)(tensor, NULL, 0, 1);
   }
@@ -50,12 +44,15 @@ The returned tensor have to be freed by the calling function.
 nrows is required, because some lapack calls, require output space smaller than
 input space, like underdetermined gels.
 */
-static THTensor *THTensor_(checkLapackClone)(THTensor *result, THTensor *src, int nrows)
-{
+static THTensor* THTensor_(
+    checkLapackClone)(THTensor* result, THTensor* src, int nrows) {
   /* check if user wants to reuse src and if it is correct shape/size */
-  if (src == result && THTensor_(isTransposedContiguous)(src) && src->size(1) == nrows)
+  if (src == result && THTensor_(isTransposedContiguous)(src) &&
+      src->size(1) == nrows)
     THTensor_(retain)(result);
-  else if(src == result || result == NULL) /* in this case, user wants reuse of src, but its structure is not OK */
+  else if (src == result || result == NULL) /* in this case, user wants reuse of
+                                               src, but its structure is not OK
+                                             */
     result = THTensor_(new)();
   else
     THTensor_(retain)(result);
@@ -63,13 +60,13 @@ static THTensor *THTensor_(checkLapackClone)(THTensor *result, THTensor *src, in
 }
 
 /*
-Same as cloneColumnMajor, but accepts nrows argument, because some lapack calls require
-the resulting tensor to be larger than src.
+Same as cloneColumnMajor, but accepts nrows argument, because some lapack calls
+require the resulting tensor to be larger than src.
 */
-static THTensor *THTensor_(cloneColumnMajorNrows)(THTensor *self, THTensor *src, int nrows)
-{
-  THTensor *result;
-  THTensor *view;
+static THTensor* THTensor_(
+    cloneColumnMajorNrows)(THTensor* self, THTensor* src, int nrows) {
+  THTensor* result;
+  THTensor* view;
 
   if (src == NULL)
     src = self;
@@ -84,9 +81,7 @@ static THTensor *THTensor_(cloneColumnMajorNrows)(THTensor *self, THTensor *src,
     at::Tensor result_wrap = THTensor_wrap(result);
     at::Tensor src_wrap = THTensor_wrap(src);
     at::native::copy_(result_wrap, src_wrap);
-  }
-  else
-  {
+  } else {
     view = THTensor_(newNarrow)(result, 0, 0, src->size(0));
     at::Tensor view_wrap = THTensor_wrap(view);
     at::Tensor src_wrap = THTensor_wrap(src);
@@ -98,28 +93,38 @@ static THTensor *THTensor_(cloneColumnMajorNrows)(THTensor *self, THTensor *src,
 
 /*
 Create a clone of src in self column major order for use with Lapack.
-If src == self, a new tensor is allocated, in any case, the return tensor should be
-freed by calling function.
+If src == self, a new tensor is allocated, in any case, the return tensor should
+be freed by calling function.
 */
-static THTensor *THTensor_(cloneColumnMajor)(THTensor *self, THTensor *src)
-{
+static THTensor* THTensor_(cloneColumnMajor)(THTensor* self, THTensor* src) {
   return THTensor_(cloneColumnMajorNrows)(self, src, src->size(0));
 }
 
-void THTensor_(gels)(THTensor *rb_, THTensor *ra_, THTensor *b, THTensor *a)
-{
+void THTensor_(gels)(THTensor* rb_, THTensor* ra_, THTensor* b, THTensor* a) {
   int free_b = 0;
   // Note that a = NULL is interpreted as a = ra_, and b = NULL as b = rb_.
-  if (a == NULL) a = ra_;
-  if (b == NULL) b = rb_;
-  THArgCheck(a->dim() == 2, 2, "A should have 2 dimensions, but has %d",
-      a->dim());
+  if (a == NULL)
+    a = ra_;
+  if (b == NULL)
+    b = rb_;
+  THArgCheck(
+      a->dim() == 2, 2, "A should have 2 dimensions, but has %d", a->dim());
   THArgCheck(!a->is_empty(), 2, "A should not be empty");
-  THArgCheck(b->dim() == 1 || b->dim() == 2, 1, "B should have 1 or 2 "
-      "dimensions, but has %d", b->dim());
+  THArgCheck(
+      b->dim() == 1 || b->dim() == 2,
+      1,
+      "B should have 1 or 2 "
+      "dimensions, but has %d",
+      b->dim());
   THArgCheck(!b->is_empty(), 1, "B should not be empty");
-  TORCH_CHECK(a->size(0) == b->size(0), "Expected A and b to have same size "
-      "at dim 0, but A has ", a->size(0), " rows and B has ", b->size(0), " rows");
+  TORCH_CHECK(
+      a->size(0) == b->size(0),
+      "Expected A and b to have same size "
+      "at dim 0, but A has ",
+      a->size(0),
+      " rows and B has ",
+      b->size(0),
+      " rows");
 
   if (b->dim() == 1) {
     b = THTensor_wrap(b).unsqueeze(1).unsafeReleaseTensorImpl();
@@ -127,11 +132,13 @@ void THTensor_(gels)(THTensor *rb_, THTensor *ra_, THTensor *b, THTensor *a)
   }
 
   int m, n, nrhs, lda, ldb, info, lwork;
-  THTensor *work = NULL;
+  THTensor* work = NULL;
   scalar_t wkopt = 0;
 
-  THTensor *ra__ = NULL;  // working version of A matrix to be passed into lapack GELS
-  THTensor *rb__ = NULL;  // working version of B matrix to be passed into lapack GELS
+  THTensor* ra__ =
+      NULL; // working version of A matrix to be passed into lapack GELS
+  THTensor* rb__ =
+      NULL; // working version of B matrix to be passed into lapack GELS
 
   ra__ = THTensor_(cloneColumnMajor)(ra_, a);
 
@@ -145,23 +152,43 @@ void THTensor_(gels)(THTensor *rb_, THTensor *ra_, THTensor *b, THTensor *a)
   nrhs = rb__->size(1);
   info = 0;
 
-
   /* get optimal workspace size */
-  THLapack_(gels)('N', m, n, nrhs, ra__->data<scalar_t>(), lda,
-                  rb__->data<scalar_t>(), ldb,
-                  &wkopt, -1, &info);
+  THLapack_(gels)(
+      'N',
+      m,
+      n,
+      nrhs,
+      ra__->data<scalar_t>(),
+      lda,
+      rb__->data<scalar_t>(),
+      ldb,
+      &wkopt,
+      -1,
+      &info);
   lwork = (int)wkopt;
   work = THTensor_(newWithSize1d)(lwork);
-  THLapack_(gels)('N', m, n, nrhs, ra__->data<scalar_t>(), lda,
-                  rb__->data<scalar_t>(), ldb,
-                  work->data<scalar_t>(), lwork, &info);
+  THLapack_(gels)(
+      'N',
+      m,
+      n,
+      nrhs,
+      ra__->data<scalar_t>(),
+      lda,
+      rb__->data<scalar_t>(),
+      ldb,
+      work->data<scalar_t>(),
+      lwork,
+      &info);
 
-  THLapackCheckWithCleanup("Lapack Error in %s : The %d-th diagonal element of the triangular factor of A is zero",
-                           THCleanup(c10::raw::intrusive_ptr::decref(ra__);
-                                     c10::raw::intrusive_ptr::decref(rb__);
-                                     c10::raw::intrusive_ptr::decref(work);
-                                     if (free_b) c10::raw::intrusive_ptr::decref(b);),
-                           "gels", info,"");
+  THLapackCheckWithCleanup(
+      "Lapack Error in %s : The %d-th diagonal element of the triangular factor of A is zero",
+      THCleanup(c10::raw::intrusive_ptr::decref(ra__);
+                c10::raw::intrusive_ptr::decref(rb__);
+                c10::raw::intrusive_ptr::decref(work);
+                if (free_b) c10::raw::intrusive_ptr::decref(b);),
+      "gels",
+      info,
+      "");
 
   /*
    * In the m < n case, if the input b is used as the result (so b == _rb),
@@ -175,23 +202,24 @@ void THTensor_(gels)(THTensor *rb_, THTensor *ra_, THTensor *b, THTensor *a)
   THTensor_(freeCopyTo)(ra__, ra_);
   THTensor_(freeCopyTo)(rb__, rb_);
   c10::raw::intrusive_ptr::decref(work);
-  if (free_b) c10::raw::intrusive_ptr::decref(b);
+  if (free_b)
+    c10::raw::intrusive_ptr::decref(b);
 }
 
-void THTensor_(geev)(THTensor *re_, THTensor *rv_, THTensor *a_, bool eigenvectors)
-{
+void THTensor_(
+    geev)(THTensor* re_, THTensor* rv_, THTensor* a_, bool eigenvectors) {
   char jobvr = eigenvectors ? 'V' : 'N';
   int n, lda, lwork, info, ldvr;
-  THTensor *work=nullptr, *wi, *wr, *a;
+  THTensor *work = nullptr, *wi, *wr, *a;
   scalar_t wkopt;
-  scalar_t *rv_data;
+  scalar_t* rv_data;
   int64_t i;
 
-  THTensor *re__ = NULL;
-  THTensor *rv__ = NULL;
+  THTensor* re__ = NULL;
+  THTensor* rv__ = NULL;
 
   THArgCheck(a_->dim() == 2, 1, "A should be 2 dimensional");
-  THArgCheck(a_->size(0) == a_->size(1), 1,"A should be square");
+  THArgCheck(a_->size(0) == a_->size(1), 1, "A should be square");
 
   /* we want to definitely clone a_ for geev*/
   a = THTensor_(cloneColumnMajor)(NULL, a_);
@@ -204,51 +232,77 @@ void THTensor_(geev)(THTensor *re_, THTensor *rv_, THTensor *a_, bool eigenvecto
 
   rv_data = NULL;
   ldvr = 1;
-  if (jobvr == 'V')
-  {
-    THTensor_(resize2d)(rv_,n,n);
+  if (jobvr == 'V') {
+    THTensor_(resize2d)(rv_, n, n);
     /* guard against someone passing a correct size, but wrong stride */
     rv__ = THTensor_(newTransposedContiguous)(rv_);
     rv_data = rv__->data<scalar_t>();
     ldvr = n;
   }
-  THTensor_(resize2d)(re_,n,2);
+  THTensor_(resize2d)(re_, n, 2);
   re__ = THTensor_(newContiguous)(re_);
 
-  if (n > 0) {  // lapack doesn't work with size 0
+  if (n > 0) { // lapack doesn't work with size 0
     /* get optimal workspace size */
-    THLapack_(geev)('N', jobvr, n, a->data<scalar_t>(), lda, wr->data<scalar_t>(), wi->data<scalar_t>(),
-        NULL, 1, rv_data, ldvr, &wkopt, -1, &info);
+    THLapack_(geev)(
+        'N',
+        jobvr,
+        n,
+        a->data<scalar_t>(),
+        lda,
+        wr->data<scalar_t>(),
+        wi->data<scalar_t>(),
+        NULL,
+        1,
+        rv_data,
+        ldvr,
+        &wkopt,
+        -1,
+        &info);
 
     lwork = (int)wkopt;
     work = THTensor_(newWithSize1d)(lwork);
 
-    THLapack_(geev)('N', jobvr, n, a->data<scalar_t>(), lda, wr->data<scalar_t>(), wi->data<scalar_t>(),
-        NULL, 1, rv_data, ldvr, work->data<scalar_t>(), lwork, &info);
+    THLapack_(geev)(
+        'N',
+        jobvr,
+        n,
+        a->data<scalar_t>(),
+        lda,
+        wr->data<scalar_t>(),
+        wi->data<scalar_t>(),
+        NULL,
+        1,
+        rv_data,
+        ldvr,
+        work->data<scalar_t>(),
+        lwork,
+        &info);
 
-    THLapackCheckWithCleanup(" Lapack Error in %s : %d off-diagonal elements of an didn't converge to zero",
-                             THCleanup(c10::raw::intrusive_ptr::decref(re__);
-                                       c10::raw::intrusive_ptr::decref(rv__);
-                                       c10::raw::intrusive_ptr::decref(a);
-                                       c10::raw::intrusive_ptr::decref(wi);
-                                       c10::raw::intrusive_ptr::decref(wr);
-                                       c10::raw::intrusive_ptr::decref(work);),
-                             "geev", info,"");
+    THLapackCheckWithCleanup(
+        " Lapack Error in %s : %d off-diagonal elements of an didn't converge to zero",
+        THCleanup(c10::raw::intrusive_ptr::decref(re__);
+                  c10::raw::intrusive_ptr::decref(rv__);
+                  c10::raw::intrusive_ptr::decref(a);
+                  c10::raw::intrusive_ptr::decref(wi);
+                  c10::raw::intrusive_ptr::decref(wr);
+                  c10::raw::intrusive_ptr::decref(work);),
+        "geev",
+        info,
+        "");
   }
 
   {
-    scalar_t *re_data = re__->data<scalar_t>();
-    scalar_t *wi_data = wi->data<scalar_t>();
-    scalar_t *wr_data = wr->data<scalar_t>();
-    for (i=0; i<n; i++)
-    {
-      re_data[2*i] = wr_data[i];
-      re_data[2*i+1] = wi_data[i];
+    scalar_t* re_data = re__->data<scalar_t>();
+    scalar_t* wi_data = wi->data<scalar_t>();
+    scalar_t* wr_data = wr->data<scalar_t>();
+    for (i = 0; i < n; i++) {
+      re_data[2 * i] = wr_data[i];
+      re_data[2 * i + 1] = wi_data[i];
     }
   }
 
-  if (jobvr == 'V')
-  {
+  if (jobvr == 'V') {
     THTensor_(checkTransposed)(rv_);
     THTensor_(freeCopyTo)(rv__, rv_);
   }
@@ -259,48 +313,47 @@ void THTensor_(geev)(THTensor *re_, THTensor *rv_, THTensor *a_, bool eigenvecto
   c10::raw::intrusive_ptr::decref(work);
 }
 
-void THTensor_(copyUpLoTriangle)(THTensor *a, char uplo)
-{
-  THArgCheck(THTensor_nDimensionLegacyAll(a) == 2, 1, "A should be 2 dimensional");
+void THTensor_(copyUpLoTriangle)(THTensor* a, char uplo) {
+  THArgCheck(
+      THTensor_nDimensionLegacyAll(a) == 2, 1, "A should be 2 dimensional");
   THArgCheck(a->size(0) == a->size(1), 1, "A should be square");
 
   int n = a->size(0);
 
   /* Build full matrix */
-  scalar_t *p = a->data<scalar_t>();
+  scalar_t* p = a->data<scalar_t>();
   int64_t i, j;
 
   /* Upper Triangular Case */
-  if (uplo == 'U')
-  {
+  if (uplo == 'U') {
     /* Clear lower triangle (excluding diagonals) */
-    for (i=0; i<n; i++) {
-     for (j=i+1; j<n; j++) {
-        p[n*i + j] = p[n*j+i];
+    for (i = 0; i < n; i++) {
+      for (j = i + 1; j < n; j++) {
+        p[n * i + j] = p[n * j + i];
       }
     }
   }
   /* Lower Triangular Case */
-  else if (uplo == 'L')
-  {
+  else if (uplo == 'L') {
     /* Clear upper triangle (excluding diagonals) */
-    for (i=0; i<n; i++) {
-      for (j=0; j<i; j++) {
-        p[n*i + j] = p[n*j+i];
+    for (i = 0; i < n; i++) {
+      for (j = 0; j < i; j++) {
+        p[n * i + j] = p[n * j + i];
       }
     }
   }
 }
 
-void THTensor_(potri)(THTensor *ra_, THTensor *a, bool upper)
-{
+void THTensor_(potri)(THTensor* ra_, THTensor* a, bool upper) {
   char uplo = upper ? 'U' : 'L';
-  if (a == NULL) a = ra_;
-  THArgCheck(THTensor_nDimensionLegacyAll(a) == 2, 1, "A should be 2 dimensional");
+  if (a == NULL)
+    a = ra_;
+  THArgCheck(
+      THTensor_nDimensionLegacyAll(a) == 2, 1, "A should be 2 dimensional");
   THArgCheck(a->size(0) == a->size(1), 1, "A should be square");
 
   int n, lda, info;
-  THTensor *ra__ = NULL;
+  THTensor* ra__ = NULL;
 
   ra__ = THTensor_(cloneColumnMajor)(ra_, a);
 
@@ -309,9 +362,12 @@ void THTensor_(potri)(THTensor *ra_, THTensor *a, bool upper)
 
   /* Run inverse */
   THLapack_(potri)(uplo, n, ra__->data<scalar_t>(), lda, &info);
-  THLapackCheckWithCleanup("Lapack Error %s : A(%d,%d) is 0, A cannot be factorized",
-                           THCleanup(c10::raw::intrusive_ptr::decref(ra__);),
-                           "potri", info, info);
+  THLapackCheckWithCleanup(
+      "Lapack Error %s : A(%d,%d) is 0, A cannot be factorized",
+      THCleanup(c10::raw::intrusive_ptr::decref(ra__);),
+      "potri",
+      info,
+      info);
 
   THTensor_(copyUpLoTriangle)(ra__, uplo);
   THTensor_(freeCopyTo)(ra__, ra_);
@@ -334,13 +390,13 @@ void THTensor_(potri)(THTensor *ra_, THTensor *a, bool upper)
   For further details, please see the LAPACK documentation.
 
 */
-void THTensor_(geqrf)(THTensor *ra_, THTensor *rtau_, THTensor *a)
-{
-  if (a == NULL) ra_ = a;
+void THTensor_(geqrf)(THTensor* ra_, THTensor* rtau_, THTensor* a) {
+  if (a == NULL)
+    ra_ = a;
   THArgCheck(a->dim() == 2, 1, "A should be 2 dimensional");
   THArgCheck(!a->is_empty(), 1, "A should not be empty");
 
-  THTensor *ra__ = NULL;
+  THTensor* ra__ = NULL;
 
   /* Prepare the input for LAPACK, making a copy if necessary. */
   ra__ = THTensor_(cloneColumnMajor)(ra_, a);
@@ -354,22 +410,36 @@ void THTensor_(geqrf)(THTensor *ra_, THTensor *rtau_, THTensor *a)
   /* Dry-run to query the suggested size of the workspace. */
   int info = 0;
   scalar_t wkopt = 0;
-  THLapack_(geqrf)(m, n, ra__->data<scalar_t>(), lda,
-                   rtau_->data<scalar_t>(),
-                   &wkopt, -1, &info);
+  THLapack_(geqrf)(
+      m,
+      n,
+      ra__->data<scalar_t>(),
+      lda,
+      rtau_->data<scalar_t>(),
+      &wkopt,
+      -1,
+      &info);
 
   /* Allocate the workspace and call LAPACK to do the real work. */
   int lwork = (int)wkopt;
-  THTensor *work = THTensor_(newWithSize1d)(lwork);
-  THLapack_(geqrf)(m, n, ra__->data<scalar_t>(), lda,
-                   rtau_->data<scalar_t>(),
-                   work->data<scalar_t>(), lwork, &info);
+  THTensor* work = THTensor_(newWithSize1d)(lwork);
+  THLapack_(geqrf)(
+      m,
+      n,
+      ra__->data<scalar_t>(),
+      lda,
+      rtau_->data<scalar_t>(),
+      work->data<scalar_t>(),
+      lwork,
+      &info);
 
-  THLapackCheckWithCleanup("Lapack Error %s : unknown Lapack error. info = %i",
-                           THCleanup(
-                               c10::raw::intrusive_ptr::decref(ra__);
-                               c10::raw::intrusive_ptr::decref(work);),
-                           "geqrf", info,"");
+  THLapackCheckWithCleanup(
+      "Lapack Error %s : unknown Lapack error. info = %i",
+      THCleanup(c10::raw::intrusive_ptr::decref(ra__);
+                c10::raw::intrusive_ptr::decref(work);),
+      "geqrf",
+      info,
+      "");
 
   THTensor_(freeCopyTo)(ra__, ra_);
   c10::raw::intrusive_ptr::decref(work);
@@ -391,12 +461,13 @@ void THTensor_(geqrf)(THTensor *ra_, THTensor *rtau_, THTensor *a)
   For further details, please see the LAPACK documentation.
 
 */
-void THTensor_(orgqr)(THTensor *ra_, THTensor *a, THTensor *tau)
-{
-  if (a == NULL) a = ra_;
-  THArgCheck(THTensor_nDimensionLegacyAll(a) == 2, 1, "A should be 2 dimensional");
+void THTensor_(orgqr)(THTensor* ra_, THTensor* a, THTensor* tau) {
+  if (a == NULL)
+    a = ra_;
+  THArgCheck(
+      THTensor_nDimensionLegacyAll(a) == 2, 1, "A should be 2 dimensional");
 
-  THTensor *ra__ = NULL;
+  THTensor* ra__ = NULL;
   ra__ = THTensor_(cloneColumnMajor)(ra_, a);
 
   int m = THTensor_sizeLegacyNoScalars(ra__, 0);
@@ -406,22 +477,38 @@ void THTensor_(orgqr)(THTensor *ra_, THTensor *a, THTensor *tau)
   /* Dry-run to query the suggested size of the workspace. */
   int info = 0;
   scalar_t wkopt = 0;
-  THLapack_(orgqr)(m, k, k, ra__->data<scalar_t>(), lda,
-                   tau->data<scalar_t>(),
-                   &wkopt, -1, &info);
+  THLapack_(orgqr)(
+      m,
+      k,
+      k,
+      ra__->data<scalar_t>(),
+      lda,
+      tau->data<scalar_t>(),
+      &wkopt,
+      -1,
+      &info);
 
   /* Allocate the workspace and call LAPACK to do the real work. */
   int lwork = (int)wkopt;
-  THTensor *work = THTensor_(newWithSize1d)(lwork);
-  THLapack_(orgqr)(m, k, k, ra__->data<scalar_t>(), lda,
-                   tau->data<scalar_t>(),
-                   work->data<scalar_t>(), lwork, &info);
+  THTensor* work = THTensor_(newWithSize1d)(lwork);
+  THLapack_(orgqr)(
+      m,
+      k,
+      k,
+      ra__->data<scalar_t>(),
+      lda,
+      tau->data<scalar_t>(),
+      work->data<scalar_t>(),
+      lwork,
+      &info);
 
-  THLapackCheckWithCleanup(" Lapack Error %s : unknown Lapack error. info = %i",
-                           THCleanup(
-                               c10::raw::intrusive_ptr::decref(ra__);
-                               c10::raw::intrusive_ptr::decref(work);),
-                           "orgqr", info,"");
+  THLapackCheckWithCleanup(
+      " Lapack Error %s : unknown Lapack error. info = %i",
+      THCleanup(c10::raw::intrusive_ptr::decref(ra__);
+                c10::raw::intrusive_ptr::decref(work);),
+      "orgqr",
+      info,
+      "");
   THTensor_(freeCopyTo)(ra__, ra_);
   c10::raw::intrusive_ptr::decref(work);
 }
@@ -432,38 +519,42 @@ void THTensor_(orgqr)(THTensor *ra_, THTensor *a, THTensor *tau)
 
   Args:
   * `ra_`       - result Tensor, which will contain the matrix Q' c.
-  * `a`         - input Tensor, which should be a matrix with the directions of the
-                  elementary reflectors below the diagonal. If NULL, `ra_` is used as
-                  input.
+  * `a`         - input Tensor, which should be a matrix with the directions of
+  the elementary reflectors below the diagonal. If NULL, `ra_` is used as input.
   * `tau`       - input Tensor, containing the magnitudes of the elementary
                   reflectors.
   * `c`         - input Tensor, containing the matrix to be multiplied.
-  * `left`      - bool, determining whether c is left- or right-multiplied with Q.
+  * `left`      - bool, determining whether c is left- or right-multiplied with
+  Q.
   * `transpose` - bool, determining whether to transpose Q before multiplying.
 
   For further details, please see the LAPACK documentation.
 
 */
-void THTensor_(ormqr)(THTensor *ra_, THTensor *a, THTensor *tau, THTensor *c, bool left, bool transpose)
-{
+void THTensor_(ormqr)(
+    THTensor* ra_,
+    THTensor* a,
+    THTensor* tau,
+    THTensor* c,
+    bool left,
+    bool transpose) {
   char side = left ? 'L' : 'R';
   char trans = transpose ? 'T' : 'N';
-  if (a == NULL) a = ra_;
-  THArgCheck(THTensor_nDimensionLegacyAll(a) == 2, 1, "A should be 2 dimensional");
+  if (a == NULL)
+    a = ra_;
+  THArgCheck(
+      THTensor_nDimensionLegacyAll(a) == 2, 1, "A should be 2 dimensional");
 
-  THTensor *ra__ = NULL;
+  THTensor* ra__ = NULL;
   ra__ = THTensor_(cloneColumnMajor)(ra_, c);
 
   int m = c->size(0);
   int n = c->size(1);
   int k = THTensor_sizeLegacyNoScalars(tau, 0);
   int lda;
-  if (side == 'L')
-  {
+  if (side == 'L') {
     lda = m;
-  }
-  else
-  {
+  } else {
     lda = n;
   }
   int ldc = m;
@@ -471,22 +562,46 @@ void THTensor_(ormqr)(THTensor *ra_, THTensor *a, THTensor *tau, THTensor *c, bo
   /* Dry-run to query the suggested size of the workspace. */
   int info = 0;
   scalar_t wkopt = 0;
-  THLapack_(ormqr)(side, trans, m, n, k, a->data<scalar_t>(), lda,
-                   tau->data<scalar_t>(), ra__->data<scalar_t>(), ldc,
-                   &wkopt, -1, &info);
+  THLapack_(ormqr)(
+      side,
+      trans,
+      m,
+      n,
+      k,
+      a->data<scalar_t>(),
+      lda,
+      tau->data<scalar_t>(),
+      ra__->data<scalar_t>(),
+      ldc,
+      &wkopt,
+      -1,
+      &info);
 
   /* Allocate the workspace and call LAPACK to do the real work. */
   int lwork = (int)wkopt;
-  THTensor *work = THTensor_(newWithSize1d)(lwork);
-  THLapack_(ormqr)(side, trans, m, n, k, a->data<scalar_t>(), lda,
-                   tau->data<scalar_t>(), ra__->data<scalar_t>(), ldc,
-                   work->data<scalar_t>(), lwork, &info);
+  THTensor* work = THTensor_(newWithSize1d)(lwork);
+  THLapack_(ormqr)(
+      side,
+      trans,
+      m,
+      n,
+      k,
+      a->data<scalar_t>(),
+      lda,
+      tau->data<scalar_t>(),
+      ra__->data<scalar_t>(),
+      ldc,
+      work->data<scalar_t>(),
+      lwork,
+      &info);
 
-  THLapackCheckWithCleanup(" Lapack Error %s : unknown Lapack error. info = %i",
-                           THCleanup(
-                               c10::raw::intrusive_ptr::decref(ra__);
-                               c10::raw::intrusive_ptr::decref(work);),
-                           "ormqr", info,"");
+  THLapackCheckWithCleanup(
+      " Lapack Error %s : unknown Lapack error. info = %i",
+      THCleanup(c10::raw::intrusive_ptr::decref(ra__);
+                c10::raw::intrusive_ptr::decref(work);),
+      "ormqr",
+      info,
+      "");
   THTensor_(freeCopyTo)(ra__, ra_);
   c10::raw::intrusive_ptr::decref(work);
 }
