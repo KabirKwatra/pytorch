@@ -55,17 +55,17 @@ namespace util {
 #endif
 
 struct type_index final : IdWrapper<type_index, uint64_t> {
-    constexpr explicit type_index(uint64_t checksum) : IdWrapper(checksum) {}
+  constexpr explicit type_index(uint64_t checksum) : IdWrapper(checksum) {}
 
-    // Allow usage in std::map / std::set
-    // TODO Disallow this and rather use std::unordered_map/set everywhere
-    friend constexpr bool operator<(type_index lhs, type_index rhs) noexcept {
-        return lhs.underlyingId() < rhs.underlyingId();
-    }
+  // Allow usage in std::map / std::set
+  // TODO Disallow this and rather use std::unordered_map/set everywhere
+  friend constexpr bool operator<(type_index lhs, type_index rhs) noexcept {
+    return lhs.underlyingId() < rhs.underlyingId();
+  }
 
-    friend std::ostream& operator<<(std::ostream& stream, type_index typeId) {
-        return stream << typeId.underlyingId();
-    }
+  friend std::ostream& operator<<(std::ostream& stream, type_index typeId) {
+    return stream << typeId.underlyingId();
+  }
 };
 
 namespace detail {
@@ -86,35 +86,35 @@ inline constexpr string_view extract(
     string_view suffix,
     string_view str) {
 #if !defined(__CUDA_ARCH__) // CUDA doesn't like std::logic_error in device code
-    return (!str.starts_with(prefix) || !str.ends_with(suffix))
-           ? (throw std::logic_error("Invalid pattern"), string_view())
-           : str.substr(prefix.size(), str.size() - prefix.size() - suffix.size());
+  return (!str.starts_with(prefix) || !str.ends_with(suffix))
+      ? (throw std::logic_error("Invalid pattern"), string_view())
+      : str.substr(prefix.size(), str.size() - prefix.size() - suffix.size());
 #else
-    return str.substr(prefix.size(), str.size() - prefix.size() - suffix.size());
+  return str.substr(prefix.size(), str.size() - prefix.size() - suffix.size());
 #endif
 }
 
 template <typename T>
 inline C10_TYPENAME_CONSTEXPR c10::string_view fully_qualified_type_name_impl() {
 #if defined(_MSC_VER) && !defined(__clang__)
-    return extract(
-               "class c10::basic_string_view<char> __cdecl c10::util::detail::fully_qualified_type_name_impl<",
-               ">(void)",
-               __FUNCSIG__);
+  return extract(
+      "class c10::basic_string_view<char> __cdecl c10::util::detail::fully_qualified_type_name_impl<",
+      ">(void)",
+      __FUNCSIG__);
 #elif defined(__clang__)
-    return extract(
-               "c10::string_view c10::util::detail::fully_qualified_type_name_impl() [T = ",
-               "]",
-               __PRETTY_FUNCTION__);
+  return extract(
+      "c10::string_view c10::util::detail::fully_qualified_type_name_impl() [T = ",
+      "]",
+      __PRETTY_FUNCTION__);
 #elif defined(__GNUC__)
-    return extract(
+  return extract(
 #if C10_TYPENAME_SUPPORTS_CONSTEXPR
-               "constexpr c10::string_view c10::util::detail::fully_qualified_type_name_impl() [with T = ",
+      "constexpr c10::string_view c10::util::detail::fully_qualified_type_name_impl() [with T = ",
 #else
-               "c10::string_view c10::util::detail::fully_qualified_type_name_impl() [with T = ",
+      "c10::string_view c10::util::detail::fully_qualified_type_name_impl() [with T = ",
 #endif
-               "; c10::string_view = c10::basic_string_view<char>]",
-               __PRETTY_FUNCTION__);
+      "; c10::string_view = c10::basic_string_view<char>]",
+      __PRETTY_FUNCTION__);
 #endif
 }
 
@@ -126,11 +126,11 @@ inline constexpr uint64_t type_index_impl() {
 // type we want an id for. We use this name and run crc64 on it to get a type
 // id.
 #if defined(_MSC_VER)
-    return crc64(__FUNCSIG__, sizeof(__FUNCSIG__)).checksum();
+  return crc64(__FUNCSIG__, sizeof(__FUNCSIG__)).checksum();
 #elif defined(__clang__)
-    return crc64(__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__)).checksum();
+  return crc64(__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__)).checksum();
 #elif defined(__GNUC__)
-    return crc64(__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__)).checksum();
+  return crc64(__PRETTY_FUNCTION__, sizeof(__PRETTY_FUNCTION__)).checksum();
 #endif
 }
 #endif
@@ -140,29 +140,28 @@ inline constexpr uint64_t type_index_impl() {
 template <typename T>
 inline constexpr type_index get_type_index() {
 #if !defined(__CUDA_ARCH__)
-    // To enforce that this is really computed at compile time, we pass the
-    // type index through std::integral_constant.
-    return type_index{std::integral_constant<
-                      uint64_t,
-                      detail::type_index_impl<std::remove_cv_t<std::decay_t<T>>>()>::value};
+  // To enforce that this is really computed at compile time, we pass the
+  // type index through std::integral_constant.
+  return type_index{std::integral_constant<
+      uint64_t,
+      detail::type_index_impl<std::remove_cv_t<std::decay_t<T>>>()>::value};
 #else
-    // There's nothing in theory preventing us from running this on device code
-    // except for nvcc throwing a compiler error if we enable it.
-    return (
-               abort(),
-               type_index(0));
+  // There's nothing in theory preventing us from running this on device code
+  // except for nvcc throwing a compiler error if we enable it.
+  return (abort(), type_index(0));
 #endif
 }
 
 template <typename T>
-inline C10_TYPENAME_CONSTEXPR string_view get_fully_qualified_type_name() noexcept {
+inline C10_TYPENAME_CONSTEXPR string_view
+get_fully_qualified_type_name() noexcept {
 #if C10_TYPENAME_SUPPORTS_CONSTEXPR
-    constexpr
+  constexpr
 #else
-    static
+  static
 #endif
-    string_view name = detail::fully_qualified_type_name_impl<T>();
-    return name;
+      string_view name = detail::fully_qualified_type_name_impl<T>();
+  return name;
 }
 } // namespace util
 } // namespace c10
