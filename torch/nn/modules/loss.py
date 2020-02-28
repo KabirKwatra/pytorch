@@ -1,8 +1,8 @@
 import warnings
 
-from .module import Module
-from .. import functional as F
 from .. import _reduction as _Reduction
+from .. import functional as F
+from .module import Module
 
 
 class _Loss(Module):
