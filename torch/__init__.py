@@ -113,13 +113,12 @@ if platform.system() == "Windows":
     py_dll_path = os.path.join(sys.exec_prefix, "Library", "bin")
     th_dll_path = os.path.join(os.path.dirname(__file__), "lib")
 
-    if not os.path.exists(
-        os.path.join(th_dll_path, "nvToolsExt64_1.dll")
-    ) and not os.path.exists(os.path.join(py_dll_path, "nvToolsExt64_1.dll")):
+    if not os.path.exists(os.path.join(
+            th_dll_path, "nvToolsExt64_1.dll")) and not os.path.exists(
+                os.path.join(py_dll_path, "nvToolsExt64_1.dll")):
         nvtoolsext_dll_path = os.path.join(
-            os.getenv(
-                "NVTOOLSEXT_PATH", "C:\\Program Files\\NVIDIA Corporation\\NvToolsExt"
-            ),
+            os.getenv("NVTOOLSEXT_PATH",
+                      "C:\\Program Files\\NVIDIA Corporation\\NvToolsExt"),
             "bin",
             "x64",
         )
@@ -129,16 +128,15 @@ if platform.system() == "Windows":
     from .version import cuda as cuda_version
     import glob
 
-    if (
-        cuda_version
-        and len(glob.glob(os.path.join(th_dll_path, "cudart64*.dll"))) == 0
-        and len(glob.glob(os.path.join(py_dll_path, "cudart64*.dll"))) == 0
-    ):
+    if (cuda_version
+            and len(glob.glob(os.path.join(th_dll_path, "cudart64*.dll"))) == 0
+            and len(glob.glob(os.path.join(py_dll_path,
+                                           "cudart64*.dll"))) == 0):
         cuda_version_1 = cuda_version.replace(".", "_")
         cuda_path_var = "CUDA_PATH_V" + cuda_version_1
         default_path = (
-            "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v" + cuda_version
-        )
+            "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v" +
+            cuda_version)
         cuda_path = os.path.join(os.getenv(cuda_path_var, default_path), "bin")
     else:
         cuda_path = ""
@@ -148,15 +146,15 @@ if platform.system() == "Windows":
             filter(
                 os.path.exists,
                 [th_dll_path, py_dll_path, nvtoolsext_dll_path, cuda_path],
-            )
-        )
+            ))
 
         for dll_path in dll_paths:
             os.add_dll_directory(dll_path)
 
     if is_conda or sys.version_info < (3, 8):
         dll_paths = [th_dll_path, py_dll_path, nvtoolsext_dll_path, cuda_path]
-        dll_paths = list(filter(os.path.exists, dll_paths)) + [os.environ["PATH"]]
+        dll_paths = list(filter(os.path.exists,
+                                dll_paths)) + [os.environ["PATH"]]
 
         os.environ["PATH"] = ";".join(dll_paths)
 
@@ -167,17 +165,15 @@ def _load_global_deps():
         return
 
     lib_name = "libtorch_global_deps" + (
-        ".dylib" if platform.system() == "Darwin" else ".so"
-    )
+        ".dylib" if platform.system() == "Darwin" else ".so")
     here = os.path.abspath(__file__)
     lib_path = os.path.join(os.path.dirname(here), "lib", lib_name)
 
     ctypes.CDLL(lib_path, mode=ctypes.RTLD_GLOBAL)
 
 
-if (
-    USE_RTLD_GLOBAL_WITH_LIBTORCH or os.getenv("TORCH_USE_RTLD_GLOBAL")
-) and platform.system() != "Windows":
+if (USE_RTLD_GLOBAL_WITH_LIBTORCH or
+        os.getenv("TORCH_USE_RTLD_GLOBAL")) and platform.system() != "Windows":
     # Do it the hard way.  You might want to load libtorch with RTLD_GLOBAL in a
     # few circumstances:
     #
@@ -196,7 +192,8 @@ if (
     #
     import os as _dl_flags
 
-    if not hasattr(_dl_flags, "RTLD_GLOBAL") or not hasattr(_dl_flags, "RTLD_LAZY"):
+    if not hasattr(_dl_flags, "RTLD_GLOBAL") or not hasattr(
+            _dl_flags, "RTLD_LAZY"):
         try:
             # next try if DLFCN exists
             import DLFCN as _dl_flags
@@ -220,7 +217,9 @@ else:
     _load_global_deps()
     from torch._C import *
 
-__all__ += [name for name in dir(_C) if name[0] != "_" and not name.endswith("Base")]
+__all__ += [
+    name for name in dir(_C) if name[0] != "_" and not name.endswith("Base")
+]
 
 ################################################################################
 # Define basic utilities
@@ -233,12 +232,8 @@ def typename(o):
 
     module = ""
     class_name = ""
-    if (
-        hasattr(o, "__module__")
-        and o.__module__ != "builtins"
-        and o.__module__ != "__builtin__"
-        and o.__module__ is not None
-    ):
+    if (hasattr(o, "__module__") and o.__module__ != "builtins"
+            and o.__module__ != "__builtin__" and o.__module__ is not None):
         module = o.__module__ + "."
 
     if hasattr(o, "__qualname__"):
@@ -393,7 +388,6 @@ _storage_classes = {
 # The _tensor_classes set is initialized by the call to _C._initialize_tensor_type_bindings()
 _tensor_classes = set()
 
-
 ################################################################################
 # Initialize extension
 ################################################################################
@@ -424,7 +418,6 @@ for name in dir(_C._VariableFunctions):
 
 # needs to be after the above ATen bindings so we can overwrite from Python side
 
-
 ################################################################################
 # Remove unnecessary members
 ################################################################################
@@ -443,7 +436,6 @@ del BFloat16StorageBase
 ################################################################################
 # Import most common subpackages
 ################################################################################
-
 
 _C._init_names(list(torch._storage_classes))
 
