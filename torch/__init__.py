@@ -1,5 +1,4 @@
 # @lint-ignore-every PYTHON3COMPATIMPORTS
-
 r"""
 The torch package contains data structures for multi-dimensional
 tensors and mathematical operations over these are defined.
@@ -9,55 +8,61 @@ Tensors and arbitrary types, and other useful utilities.
 It has a CUDA counterpart, that enables you to run your tensor computations
 on an NVIDIA GPU with compute capability >= 3.0.
 """
+import ctypes
+import os
+import platform
+import sys
 
-from torch.multiprocessing._atfork import register_after_fork
-import torch.quasirandom
-from torch._classes import classes
-from torch._ops import ops
-from . import _torch_docs, _tensor_docs, _storage_docs
-import torch.__future__
 import torch.__config__
-import torch.utils.data
-import torch.quantization
-import torch.backends.quantized
-import torch.backends.openmp
-import torch.backends.mkldnn
-import torch.backends.mkl
+import torch.__future__
+import torch.autograd
 import torch.backends.cuda
-import torch.testing
+import torch.backends.mkl
+import torch.backends.mkldnn
+import torch.backends.openmp
+import torch.backends.quantized
+import torch.cuda
 import torch.distributions
-import torch.random
 import torch.hub
 import torch.jit
-import torch.onnx
-import torch.utils.backcompat
-import torch.sparse
 import torch.multiprocessing
-import torch.optim
-import torch.nn.quantized
 import torch.nn.intrinsic
-import torch.nn
-from torch.autograd import no_grad, enable_grad, set_grad_enabled
-import torch.autograd
-import torch.cuda
+import torch.nn.quantized
+import torch.onnx
+import torch.optim
+import torch.quantization
+import torch.quasirandom
+import torch.random
+import torch.sparse
+import torch.testing
+import torch.utils.backcompat
+import torch.utils.data
+from . import _storage_docs
+from . import _tensor_docs
+from . import _torch_docs
+from ._six import string_classes as _string_classes
+from ._tensor_str import set_printoptions
+from ._utils import _import_dotted_name
+from ._utils_internal import get_file_path
+from ._utils_internal import prepare_multiprocessing_environment
+from ._utils_internal import USE_RTLD_GLOBAL_WITH_LIBTORCH
 from .functional import *
+from .random import get_rng_state
+from .random import initial_seed
+from .random import manual_seed
+from .random import seed
+from .random import set_rng_state
+from .serialization import load
+from .serialization import save
 from .storage import _StorageBase
 from .tensor import Tensor
-from ._tensor_str import set_printoptions
-from .serialization import save, load
-from .random import set_rng_state, get_rng_state, manual_seed, initial_seed, seed
-import os
-import sys
-import platform
-import ctypes
-from ._utils import _import_dotted_name
-from ._utils_internal import (
-    get_file_path,
-    prepare_multiprocessing_environment,
-    USE_RTLD_GLOBAL_WITH_LIBTORCH,
-)
 from .version import __version__
-from ._six import string_classes as _string_classes
+from torch._classes import classes
+from torch._ops import ops
+from torch.autograd import enable_grad
+from torch.autograd import no_grad
+from torch.autograd import set_grad_enabled
+from torch.multiprocessing._atfork import register_after_fork
 
 __all__ = [
     "typename",
