@@ -151,9 +151,11 @@ def mixed_type_producer(queue, event):
         event.wait()
         event.clear()
 
+
 def simple_autograd_function(a=1):
     torch.rand(3).requires_grad_(True).mean().backward()
     return a ** 2
+
 
 @contextlib.contextmanager
 def fs_sharing():

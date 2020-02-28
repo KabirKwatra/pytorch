@@ -605,6 +605,7 @@ class BCEWithLogitsLoss(_Loss):
         >>> output = loss(input, target)
         >>> output.backward()
     """
+
     def __init__(self, weight=None, size_average=None, reduce=None, reduction='mean', pos_weight=None):
         super(BCEWithLogitsLoss, self).__init__(size_average, reduce, reduction)
         self.register_buffer('weight', weight)
