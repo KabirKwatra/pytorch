@@ -10,6 +10,42 @@ It has a CUDA counterpart, that enables you to run your tensor computations
 on an NVIDIA GPU with compute capability >= 3.0.
 """
 
+from torch.multiprocessing._atfork import register_after_fork
+import torch.quasirandom
+from torch._classes import classes
+from torch._ops import ops
+from . import _torch_docs, _tensor_docs, _storage_docs
+import torch.__future__
+import torch.__config__
+import torch.utils.data
+import torch.quantization
+import torch.backends.quantized
+import torch.backends.openmp
+import torch.backends.mkldnn
+import torch.backends.mkl
+import torch.backends.cuda
+import torch.testing
+import torch.distributions
+import torch.random
+import torch.hub
+import torch.jit
+import torch.onnx
+import torch.utils.backcompat
+import torch.sparse
+import torch.multiprocessing
+import torch.optim
+import torch.nn.quantized
+import torch.nn.intrinsic
+import torch.nn
+from torch.autograd import no_grad, enable_grad, set_grad_enabled
+import torch.autograd
+import torch.cuda
+from .functional import *
+from .storage import _StorageBase
+from .tensor import Tensor
+from ._tensor_str import set_printoptions
+from .serialization import save, load
+from .random import set_rng_state, get_rng_state, manual_seed, initial_seed, seed
 import os
 import sys
 import platform
@@ -217,17 +253,12 @@ def set_default_dtype(d):
     """
     _C._set_default_dtype(d)
 
+
 # If you edit these imports, please update torch/__init__.py.in as well
-from .random import set_rng_state, get_rng_state, manual_seed, initial_seed, seed
-from .serialization import save, load
-from ._tensor_str import set_printoptions
 
 ################################################################################
 # Define Storage and Tensor classes
 ################################################################################
-
-from .tensor import Tensor
-from .storage import _StorageBase
 
 
 class DoubleStorage(_C.DoubleStorageBase, _StorageBase):
@@ -273,8 +304,10 @@ class BFloat16Storage(_C.BFloat16StorageBase, _StorageBase):
 class QUInt8Storage(_C.QUInt8StorageBase, _StorageBase):
     pass
 
+
 class QInt8Storage(_C.QInt8StorageBase, _StorageBase):
     pass
+
 
 class QInt32Storage(_C.QInt32StorageBase, _StorageBase):
     pass
@@ -318,7 +351,6 @@ for name in dir(_C._VariableFunctions):
 ################################################################################
 
 # needs to be after the above ATen bindings so we can overwrite from Python side
-from .functional import *
 
 
 ################################################################################
@@ -340,36 +372,10 @@ del BFloat16StorageBase
 # Import most common subpackages
 ################################################################################
 
-import torch.cuda
-import torch.autograd
-from torch.autograd import no_grad, enable_grad, set_grad_enabled
-import torch.nn
-import torch.nn.intrinsic
-import torch.nn.quantized
-import torch.optim
-import torch.multiprocessing
-import torch.sparse
-import torch.utils.backcompat
-import torch.onnx
-import torch.jit
-import torch.hub
-import torch.random
-import torch.distributions
-import torch.testing
-import torch.backends.cuda
-import torch.backends.mkl
-import torch.backends.mkldnn
-import torch.backends.openmp
-import torch.backends.quantized
-import torch.quantization
-import torch.utils.data
-import torch.__config__
-import torch.__future__
 
 _C._init_names(list(torch._storage_classes))
 
 # attach docstrings to torch and tensor functions
-from . import _torch_docs, _tensor_docs, _storage_docs
 del _torch_docs, _tensor_docs, _storage_docs
 
 
@@ -379,11 +385,8 @@ def compiled_with_cxx11_abi():
 
 
 # Import the ops "namespace"
-from torch._ops import ops
-from torch._classes import classes
 
 # Import the quasi random sampler
-import torch.quasirandom
 
 # If you are seeing this, it means that this call site was not checked if
 # the memory format could be preserved, and it was switched to old default
@@ -391,6 +394,5 @@ import torch.quasirandom
 legacy_contiguous_format = contiguous_format
 
 # Register fork handler to initialize OpenMP in child processes (see gh-28389)
-from torch.multiprocessing._atfork import register_after_fork
 register_after_fork(torch.get_num_threads)
 del register_after_fork
