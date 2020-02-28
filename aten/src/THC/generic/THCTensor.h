@@ -40,7 +40,7 @@ THC_API void THCTensor_(clearFlag)(THCState *state, THCTensor *self, const char 
 THC_API THCTensor *THCTensor_(new)(THCState *state);
 THC_API THCTensor *THCTensor_(newWithTensor)(THCState *state, THCTensor *tensor);
 THC_API THCTensor *THCTensor_(newWithStorage1d)(THCState *state, THCStorage *storage_, ptrdiff_t storageOffset_,
-                                int64_t size0_, int64_t stride0_);
+        int64_t size0_, int64_t stride0_);
 
 /* stride might be NULL */
 THC_API THCTensor *THCTensor_(newWithSize1d)(THCState *state, int64_t size0_);
