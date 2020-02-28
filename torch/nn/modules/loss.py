@@ -15,7 +15,11 @@ class _Loss(Module):
 
 
 class _WeightedLoss(_Loss):
-    def __init__(self, weight=None, size_average=None, reduce=None, reduction="mean"):
+    def __init__(self,
+                 weight=None,
+                 size_average=None,
+                 reduce=None,
+                 reduction="mean"):
         super(_WeightedLoss, self).__init__(size_average, reduce, reduction)
         self.register_buffer("weight", weight)
 
@@ -197,12 +201,12 @@ class NLLLoss(_WeightedLoss):
     __constants__ = ["ignore_index", "reduction"]
 
     def __init__(
-        self,
-        weight=None,
-        size_average=None,
-        ignore_index=-100,
-        reduce=None,
-        reduction="mean",
+            self,
+            weight=None,
+            size_average=None,
+            ignore_index=-100,
+            reduce=None,
+            reduction="mean",
     ):
         super(NLLLoss, self).__init__(weight, size_average, reduce, reduction)
         self.ignore_index = ignore_index
@@ -219,21 +223,20 @@ class NLLLoss(_WeightedLoss):
 
 class NLLLoss2d(NLLLoss):
     def __init__(
-        self,
-        weight=None,
-        size_average=None,
-        ignore_index=-100,
-        reduce=None,
-        reduction="mean",
+            self,
+            weight=None,
+            size_average=None,
+            ignore_index=-100,
+            reduce=None,
+            reduction="mean",
     ):
         warnings.warn(
             "NLLLoss2d has been deprecated. "
             "Please use NLLLoss instead as a drop-in replacement and see "
             "https://pytorch.org/docs/master/nn.html#torch.nn.NLLLoss for more details."
         )
-        super(NLLLoss2d, self).__init__(
-            weight, size_average, ignore_index, reduce, reduction
-        )
+        super(NLLLoss2d, self).__init__(weight, size_average, ignore_index,
+                                        reduce, reduction)
 
 
 class PoissonNLLLoss(_Loss):
@@ -296,13 +299,13 @@ class PoissonNLLLoss(_Loss):
     __constants__ = ["log_input", "full", "eps", "reduction"]
 
     def __init__(
-        self,
-        log_input=True,
-        full=False,
-        size_average=None,
-        eps=1e-8,
-        reduce=None,
-        reduction="mean",
+            self,
+            log_input=True,
+            full=False,
+            size_average=None,
+            eps=1e-8,
+            reduce=None,
+            reduction="mean",
     ):
         super(PoissonNLLLoss, self).__init__(size_average, reduce, reduction)
         self.log_input = log_input
@@ -544,13 +547,18 @@ class BCELoss(_WeightedLoss):
     """
     __constants__ = ["reduction"]
 
-    def __init__(self, weight=None, size_average=None, reduce=None, reduction="mean"):
+    def __init__(self,
+                 weight=None,
+                 size_average=None,
+                 reduce=None,
+                 reduction="mean"):
         super(BCELoss, self).__init__(weight, size_average, reduce, reduction)
 
     def forward(self, input, target):
-        return F.binary_cross_entropy(
-            input, target, weight=self.weight, reduction=self.reduction
-        )
+        return F.binary_cross_entropy(input,
+                                      target,
+                                      weight=self.weight,
+                                      reduction=self.reduction)
 
 
 class BCEWithLogitsLoss(_Loss):
@@ -644,14 +652,15 @@ class BCEWithLogitsLoss(_Loss):
     """
 
     def __init__(
-        self,
-        weight=None,
-        size_average=None,
-        reduce=None,
-        reduction="mean",
-        pos_weight=None,
+            self,
+            weight=None,
+            size_average=None,
+            reduce=None,
+            reduction="mean",
+            pos_weight=None,
     ):
-        super(BCEWithLogitsLoss, self).__init__(size_average, reduce, reduction)
+        super(BCEWithLogitsLoss, self).__init__(size_average, reduce,
+                                                reduction)
         self.register_buffer("weight", weight)
         self.register_buffer("pos_weight", pos_weight)
 
@@ -716,14 +725,20 @@ class HingeEmbeddingLoss(_Loss):
     """
     __constants__ = ["margin", "reduction"]
 
-    def __init__(self, margin=1.0, size_average=None, reduce=None, reduction="mean"):
-        super(HingeEmbeddingLoss, self).__init__(size_average, reduce, reduction)
+    def __init__(self,
+                 margin=1.0,
+                 size_average=None,
+                 reduce=None,
+                 reduction="mean"):
+        super(HingeEmbeddingLoss, self).__init__(size_average, reduce,
+                                                 reduction)
         self.margin = margin
 
     def forward(self, input, target):
-        return F.hinge_embedding_loss(
-            input, target, margin=self.margin, reduction=self.reduction
-        )
+        return F.hinge_embedding_loss(input,
+                                      target,
+                                      margin=self.margin,
+                                      reduction=self.reduction)
 
 
 class MultiLabelMarginLoss(_Loss):
@@ -784,10 +799,13 @@ class MultiLabelMarginLoss(_Loss):
     __constants__ = ["reduction"]
 
     def __init__(self, size_average=None, reduce=None, reduction="mean"):
-        super(MultiLabelMarginLoss, self).__init__(size_average, reduce, reduction)
+        super(MultiLabelMarginLoss, self).__init__(size_average, reduce,
+                                                   reduction)
 
     def forward(self, input, target):
-        return F.multilabel_margin_loss(input, target, reduction=self.reduction)
+        return F.multilabel_margin_loss(input,
+                                        target,
+                                        reduction=self.reduction)
 
 
 class SmoothL1Loss(_Loss):
@@ -973,14 +991,15 @@ class CrossEntropyLoss(_WeightedLoss):
     __constants__ = ["ignore_index", "reduction"]
 
     def __init__(
-        self,
-        weight=None,
-        size_average=None,
-        ignore_index=-100,
-        reduce=None,
-        reduction="mean",
+            self,
+            weight=None,
+            size_average=None,
+            ignore_index=-100,
+            reduce=None,
+            reduction="mean",
     ):
-        super(CrossEntropyLoss, self).__init__(weight, size_average, reduce, reduction)
+        super(CrossEntropyLoss, self).__init__(weight, size_average, reduce,
+                                               reduction)
         self.ignore_index = ignore_index
 
     def forward(self, input, target):
@@ -1033,15 +1052,19 @@ class MultiLabelSoftMarginLoss(_WeightedLoss):
     """
     __constants__ = ["reduction"]
 
-    def __init__(self, weight=None, size_average=None, reduce=None, reduction="mean"):
-        super(MultiLabelSoftMarginLoss, self).__init__(
-            weight, size_average, reduce, reduction
-        )
+    def __init__(self,
+                 weight=None,
+                 size_average=None,
+                 reduce=None,
+                 reduction="mean"):
+        super(MultiLabelSoftMarginLoss, self).__init__(weight, size_average,
+                                                       reduce, reduction)
 
     def forward(self, input, target):
-        return F.multilabel_soft_margin_loss(
-            input, target, weight=self.weight, reduction=self.reduction
-        )
+        return F.multilabel_soft_margin_loss(input,
+                                             target,
+                                             weight=self.weight,
+                                             reduction=self.reduction)
 
 
 class CosineEmbeddingLoss(_Loss):
@@ -1082,14 +1105,21 @@ class CosineEmbeddingLoss(_Loss):
     """
     __constants__ = ["margin", "reduction"]
 
-    def __init__(self, margin=0.0, size_average=None, reduce=None, reduction="mean"):
-        super(CosineEmbeddingLoss, self).__init__(size_average, reduce, reduction)
+    def __init__(self,
+                 margin=0.0,
+                 size_average=None,
+                 reduce=None,
+                 reduction="mean"):
+        super(CosineEmbeddingLoss, self).__init__(size_average, reduce,
+                                                  reduction)
         self.margin = margin
 
     def forward(self, input1, input2, target):
-        return F.cosine_embedding_loss(
-            input1, input2, target, margin=self.margin, reduction=self.reduction
-        )
+        return F.cosine_embedding_loss(input1,
+                                       input2,
+                                       target,
+                                       margin=self.margin,
+                                       reduction=self.reduction)
 
 
 class MarginRankingLoss(_Loss):
@@ -1130,14 +1160,21 @@ class MarginRankingLoss(_Loss):
     """
     __constants__ = ["margin", "reduction"]
 
-    def __init__(self, margin=0.0, size_average=None, reduce=None, reduction="mean"):
-        super(MarginRankingLoss, self).__init__(size_average, reduce, reduction)
+    def __init__(self,
+                 margin=0.0,
+                 size_average=None,
+                 reduce=None,
+                 reduction="mean"):
+        super(MarginRankingLoss, self).__init__(size_average, reduce,
+                                                reduction)
         self.margin = margin
 
     def forward(self, input1, input2, target):
-        return F.margin_ranking_loss(
-            input1, input2, target, margin=self.margin, reduction=self.reduction
-        )
+        return F.margin_ranking_loss(input1,
+                                     input2,
+                                     target,
+                                     margin=self.margin,
+                                     reduction=self.reduction)
 
 
 class MultiMarginLoss(_WeightedLoss):
@@ -1189,15 +1226,16 @@ class MultiMarginLoss(_WeightedLoss):
     __constants__ = ["p", "margin", "reduction"]
 
     def __init__(
-        self,
-        p=1,
-        margin=1.0,
-        weight=None,
-        size_average=None,
-        reduce=None,
-        reduction="mean",
+            self,
+            p=1,
+            margin=1.0,
+            weight=None,
+            size_average=None,
+            reduce=None,
+            reduction="mean",
     ):
-        super(MultiMarginLoss, self).__init__(weight, size_average, reduce, reduction)
+        super(MultiMarginLoss, self).__init__(weight, size_average, reduce,
+                                              reduction)
         if p != 1 and p != 2:
             raise ValueError("only p == 1 and p == 2 supported")
         assert weight is None or weight.dim() == 1
@@ -1277,16 +1315,17 @@ class TripletMarginLoss(_Loss):
     __constants__ = ["margin", "p", "eps", "swap", "reduction"]
 
     def __init__(
-        self,
-        margin=1.0,
-        p=2.0,
-        eps=1e-6,
-        swap=False,
-        size_average=None,
-        reduce=None,
-        reduction="mean",
+            self,
+            margin=1.0,
+            p=2.0,
+            eps=1e-6,
+            swap=False,
+            size_average=None,
+            reduce=None,
+            reduction="mean",
     ):
-        super(TripletMarginLoss, self).__init__(size_average, reduce, reduction)
+        super(TripletMarginLoss, self).__init__(size_average, reduce,
+                                                reduction)
         self.margin = margin
         self.p = p
         self.eps = eps
