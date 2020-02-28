@@ -25,12 +25,12 @@ static inline void adagrad_update_base_inlined(
     float decay,
     float epsilon,
     float lr) {
-    for (auto i = 0; i < N; ++i) {
-        float gi = g[i];
-        float hi = decay * h[i] + gi * gi;
-        nh[i] = hi;
-        nw[i] = w[i] + lr * gi / (std::sqrt(hi) + epsilon);
-    }
+  for (auto i = 0; i < N; ++i) {
+    float gi = g[i];
+    float hi = decay * h[i] + gi * gi;
+    nh[i] = hi;
+    nw[i] = w[i] + lr * gi / (std::sqrt(hi) + epsilon);
+  }
 }
 
 // version with prefetching
@@ -84,31 +84,31 @@ inline void adagrad_update_prefetch_inlined(
 
     float epsilon,
     float lr) {
-    auto i = 0;
+  auto i = 0;
 
 #ifdef CAFFE2_PERFKERNELS_ADAGRAD_H_USE_INTRINSIC
-    constexpr int kSize = 8;
-    for (; i + kSize <= N; i += kSize) {
-        _mm_prefetch(reinterpret_cast<const char*>(&w_n[i]), _MM_HINT_T0);
-        _mm_prefetch(reinterpret_cast<const char*>(&h_n[i]), _MM_HINT_T0);
-        _mm_prefetch(reinterpret_cast<const char*>(&nw_n[i]), _MM_HINT_T0);
-        _mm_prefetch(reinterpret_cast<const char*>(&nh_n[i]), _MM_HINT_T0);
+  constexpr int kSize = 8;
+  for (; i + kSize <= N; i += kSize) {
+    _mm_prefetch(reinterpret_cast<const char*>(&w_n[i]), _MM_HINT_T0);
+    _mm_prefetch(reinterpret_cast<const char*>(&h_n[i]), _MM_HINT_T0);
+    _mm_prefetch(reinterpret_cast<const char*>(&nw_n[i]), _MM_HINT_T0);
+    _mm_prefetch(reinterpret_cast<const char*>(&nh_n[i]), _MM_HINT_T0);
 
-        __m256 gi = _mm256_loadu_ps(g + i);
-        __m256 hi = _mm256_loadu_ps(h + i);
-        __m256 wi = _mm256_loadu_ps(w + i);
+    __m256 gi = _mm256_loadu_ps(g + i);
+    __m256 hi = _mm256_loadu_ps(h + i);
+    __m256 wi = _mm256_loadu_ps(w + i);
 
-        __m256 nhi = _mm256_add_ps(hi, _mm256_mul_ps(gi, gi));
-        _mm256_storeu_ps(nh + i, nhi);
-        __m256 vtmp = _mm256_div_ps(
-                          _mm256_mul_ps(_mm256_set1_ps(lr), gi),
-                          _mm256_add_ps(_mm256_sqrt_ps(nhi), _mm256_set1_ps(epsilon)));
-        _mm256_storeu_ps(nw + i, _mm256_add_ps(wi, vtmp));
-    }
+    __m256 nhi = _mm256_add_ps(hi, _mm256_mul_ps(gi, gi));
+    _mm256_storeu_ps(nh + i, nhi);
+    __m256 vtmp = _mm256_div_ps(
+        _mm256_mul_ps(_mm256_set1_ps(lr), gi),
+        _mm256_add_ps(_mm256_sqrt_ps(nhi), _mm256_set1_ps(epsilon)));
+    _mm256_storeu_ps(nw + i, _mm256_add_ps(wi, vtmp));
+  }
 #endif
 
-    adagrad_update_base_inlined(
-        N - i, w + i, g + i, h + i, nw + i, nh + i, 1.0f, epsilon, lr);
+  adagrad_update_base_inlined(
+      N - i, w + i, g + i, h + i, nw + i, nh + i, 1.0f, epsilon, lr);
 }
 
 } // namespace internal
