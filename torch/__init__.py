@@ -51,76 +51,128 @@ import sys
 import platform
 import ctypes
 from ._utils import _import_dotted_name
-from ._utils_internal import get_file_path, prepare_multiprocessing_environment, \
-    USE_RTLD_GLOBAL_WITH_LIBTORCH
+from ._utils_internal import (
+    get_file_path,
+    prepare_multiprocessing_environment,
+    USE_RTLD_GLOBAL_WITH_LIBTORCH,
+)
 from .version import __version__
 from ._six import string_classes as _string_classes
 
 __all__ = [
-    'typename', 'is_tensor', 'is_storage', 'set_default_tensor_type',
-    'set_rng_state', 'get_rng_state', 'manual_seed', 'initial_seed', 'seed',
-    'save', 'load', 'set_printoptions', 'chunk', 'split', 'stack', 'matmul',
-    'no_grad', 'enable_grad', 'rand', 'randn',
-    'DoubleStorage', 'FloatStorage', 'LongStorage', 'IntStorage',
-    'ShortStorage', 'CharStorage', 'ByteStorage', 'BoolStorage',
-    'DoubleTensor', 'FloatTensor', 'LongTensor', 'IntTensor',
-    'ShortTensor', 'CharTensor', 'ByteTensor', 'BoolTensor', 'Tensor',
+    "typename",
+    "is_tensor",
+    "is_storage",
+    "set_default_tensor_type",
+    "set_rng_state",
+    "get_rng_state",
+    "manual_seed",
+    "initial_seed",
+    "seed",
+    "save",
+    "load",
+    "set_printoptions",
+    "chunk",
+    "split",
+    "stack",
+    "matmul",
+    "no_grad",
+    "enable_grad",
+    "rand",
+    "randn",
+    "DoubleStorage",
+    "FloatStorage",
+    "LongStorage",
+    "IntStorage",
+    "ShortStorage",
+    "CharStorage",
+    "ByteStorage",
+    "BoolStorage",
+    "DoubleTensor",
+    "FloatTensor",
+    "LongTensor",
+    "IntTensor",
+    "ShortTensor",
+    "CharTensor",
+    "ByteTensor",
+    "BoolTensor",
+    "Tensor",
 ]
 
 ################################################################################
 # Load the extension module
 ################################################################################
 
-if platform.system() == 'Windows':
-    is_conda = os.path.exists(os.path.join(sys.prefix, 'conda-meta'))
-    py_dll_path = os.path.join(sys.exec_prefix, 'Library', 'bin')
-    th_dll_path = os.path.join(os.path.dirname(__file__), 'lib')
+if platform.system() == "Windows":
+    is_conda = os.path.exists(os.path.join(sys.prefix, "conda-meta"))
+    py_dll_path = os.path.join(sys.exec_prefix, "Library", "bin")
+    th_dll_path = os.path.join(os.path.dirname(__file__), "lib")
 
-    if not os.path.exists(os.path.join(th_dll_path, 'nvToolsExt64_1.dll')) and \
-            not os.path.exists(os.path.join(py_dll_path, 'nvToolsExt64_1.dll')):
+    if not os.path.exists(
+        os.path.join(th_dll_path, "nvToolsExt64_1.dll")
+    ) and not os.path.exists(os.path.join(py_dll_path, "nvToolsExt64_1.dll")):
         nvtoolsext_dll_path = os.path.join(
-            os.getenv('NVTOOLSEXT_PATH', 'C:\\Program Files\\NVIDIA Corporation\\NvToolsExt'), 'bin', 'x64')
+            os.getenv(
+                "NVTOOLSEXT_PATH", "C:\\Program Files\\NVIDIA Corporation\\NvToolsExt"
+            ),
+            "bin",
+            "x64",
+        )
     else:
-        nvtoolsext_dll_path = ''
+        nvtoolsext_dll_path = ""
 
     from .version import cuda as cuda_version
     import glob
-    if cuda_version and len(glob.glob(os.path.join(th_dll_path, 'cudart64*.dll'))) == 0 and \
-            len(glob.glob(os.path.join(py_dll_path, 'cudart64*.dll'))) == 0:
-        cuda_version_1 = cuda_version.replace('.', '_')
-        cuda_path_var = 'CUDA_PATH_V' + cuda_version_1
-        default_path = 'C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v' + cuda_version
-        cuda_path = os.path.join(os.getenv(cuda_path_var, default_path), 'bin')
+
+    if (
+        cuda_version
+        and len(glob.glob(os.path.join(th_dll_path, "cudart64*.dll"))) == 0
+        and len(glob.glob(os.path.join(py_dll_path, "cudart64*.dll"))) == 0
+    ):
+        cuda_version_1 = cuda_version.replace(".", "_")
+        cuda_path_var = "CUDA_PATH_V" + cuda_version_1
+        default_path = (
+            "C:\\Program Files\\NVIDIA GPU Computing Toolkit\\CUDA\\v" + cuda_version
+        )
+        cuda_path = os.path.join(os.getenv(cuda_path_var, default_path), "bin")
     else:
-        cuda_path = ''
+        cuda_path = ""
 
     if sys.version_info >= (3, 8):
-        dll_paths = list(filter(os.path.exists, [th_dll_path, py_dll_path, nvtoolsext_dll_path, cuda_path]))
+        dll_paths = list(
+            filter(
+                os.path.exists,
+                [th_dll_path, py_dll_path, nvtoolsext_dll_path, cuda_path],
+            )
+        )
 
         for dll_path in dll_paths:
             os.add_dll_directory(dll_path)
 
     if is_conda or sys.version_info < (3, 8):
         dll_paths = [th_dll_path, py_dll_path, nvtoolsext_dll_path, cuda_path]
-        dll_paths = list(filter(os.path.exists, dll_paths)) + [os.environ['PATH']]
+        dll_paths = list(filter(os.path.exists, dll_paths)) + [os.environ["PATH"]]
 
-        os.environ['PATH'] = ';'.join(dll_paths)
+        os.environ["PATH"] = ";".join(dll_paths)
 
 
 # See Note [Global dependencies]
 def _load_global_deps():
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         return
 
-    lib_name = 'libtorch_global_deps' + ('.dylib' if platform.system() == 'Darwin' else '.so')
+    lib_name = "libtorch_global_deps" + (
+        ".dylib" if platform.system() == "Darwin" else ".so"
+    )
     here = os.path.abspath(__file__)
-    lib_path = os.path.join(os.path.dirname(here), 'lib', lib_name)
+    lib_path = os.path.join(os.path.dirname(here), "lib", lib_name)
 
     ctypes.CDLL(lib_path, mode=ctypes.RTLD_GLOBAL)
 
 
-if (USE_RTLD_GLOBAL_WITH_LIBTORCH or os.getenv('TORCH_USE_RTLD_GLOBAL')) and \
-        platform.system() != 'Windows':
+if (
+    USE_RTLD_GLOBAL_WITH_LIBTORCH or os.getenv("TORCH_USE_RTLD_GLOBAL")
+) and platform.system() != "Windows":
     # Do it the hard way.  You might want to load libtorch with RTLD_GLOBAL in a
     # few circumstances:
     #
@@ -138,7 +190,8 @@ if (USE_RTLD_GLOBAL_WITH_LIBTORCH or os.getenv('TORCH_USE_RTLD_GLOBAL')) and \
     # mysterious segfaults.
     #
     import os as _dl_flags
-    if not hasattr(_dl_flags, 'RTLD_GLOBAL') or not hasattr(_dl_flags, 'RTLD_LAZY'):
+
+    if not hasattr(_dl_flags, "RTLD_GLOBAL") or not hasattr(_dl_flags, "RTLD_LAZY"):
         try:
             # next try if DLFCN exists
             import DLFCN as _dl_flags
@@ -148,6 +201,7 @@ if (USE_RTLD_GLOBAL_WITH_LIBTORCH or os.getenv('TORCH_USE_RTLD_GLOBAL')) and \
     old_flags = sys.getdlopenflags()
     sys.setdlopenflags(_dl_flags.RTLD_GLOBAL | _dl_flags.RTLD_LAZY)
     from torch._C import *
+
     sys.setdlopenflags(old_flags)
     del old_flags
     del _dl_flags
@@ -161,9 +215,7 @@ else:
     _load_global_deps()
     from torch._C import *
 
-__all__ += [name for name in dir(_C)
-            if name[0] != '_' and
-            not name.endswith('Base')]
+__all__ += [name for name in dir(_C) if name[0] != "_" and not name.endswith("Base")]
 
 ################################################################################
 # Define basic utilities
@@ -174,15 +226,19 @@ def typename(o):
     if isinstance(o, torch.Tensor):
         return o.type()
 
-    module = ''
-    class_name = ''
-    if hasattr(o, '__module__') and o.__module__ != 'builtins' \
-            and o.__module__ != '__builtin__' and o.__module__ is not None:
-        module = o.__module__ + '.'
+    module = ""
+    class_name = ""
+    if (
+        hasattr(o, "__module__")
+        and o.__module__ != "builtins"
+        and o.__module__ != "__builtin__"
+        and o.__module__ is not None
+    ):
+        module = o.__module__ + "."
 
-    if hasattr(o, '__qualname__'):
+    if hasattr(o, "__qualname__"):
         class_name = o.__qualname__
-    elif hasattr(o, '__name__'):
+    elif hasattr(o, "__name__"):
         class_name = o.__name__
     else:
         class_name = o.__class__.__name__
@@ -314,9 +370,19 @@ class QInt32Storage(_C.QInt32StorageBase, _StorageBase):
 
 
 _storage_classes = {
-    DoubleStorage, FloatStorage, LongStorage, IntStorage, ShortStorage,
-    CharStorage, ByteStorage, HalfStorage, BoolStorage, QUInt8Storage, QInt8Storage,
-    QInt32Storage, BFloat16Storage
+    DoubleStorage,
+    FloatStorage,
+    LongStorage,
+    IntStorage,
+    ShortStorage,
+    CharStorage,
+    ByteStorage,
+    HalfStorage,
+    BoolStorage,
+    QUInt8Storage,
+    QInt8Storage,
+    QInt32Storage,
+    BFloat16Storage,
 }
 
 # The _tensor_classes set is initialized by the call to _C._initialize_tensor_type_bindings()
@@ -327,14 +393,15 @@ _tensor_classes = set()
 # Initialize extension
 ################################################################################
 
+
 def manager_path():
-    if platform.system() == 'Windows':
+    if platform.system() == "Windows":
         return b""
-    path = get_file_path('torch', 'bin', 'torch_shm_manager')
-    prepare_multiprocessing_environment(get_file_path('torch'))
+    path = get_file_path("torch", "bin", "torch_shm_manager")
+    prepare_multiprocessing_environment(get_file_path("torch"))
     if not os.path.exists(path):
         raise RuntimeError("Unable to find torch_shm_manager at " + path)
-    return path.encode('utf-8')
+    return path.encode("utf-8")
 
 
 # Shared memory manager needs to know the exact location of manager executable
@@ -342,7 +409,7 @@ _C._initExtension(manager_path())
 del manager_path
 
 for name in dir(_C._VariableFunctions):
-    if name.startswith('__'):
+    if name.startswith("__"):
         continue
     globals()[name] = getattr(_C._VariableFunctions, name)
 
