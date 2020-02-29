@@ -122,8 +122,7 @@ def load_aten_declarations(path):
         # NB: keep this in sync with common_with_cwrap.py
         if declaration.get("overload_name"):
             declaration["type_wrapper_name"] = "{}_{}".format(
-                declaration["name"], declaration["overload_name"]
-            )
+                declaration["name"], declaration["overload_name"])
         else:
             declaration["type_wrapper_name"] = declaration["name"]
         declaration["return_type"] = format_return_type(declaration["returns"])
@@ -140,7 +139,9 @@ def load_deprecated_signatures(aten_decls, deprecated_path):
         for declaration in aten_decls:
             name = declaration["name"]
             base_name = name[:-1] if declaration["inplace"] else name
-            simple_types = [arg["simple_type"] for arg in declaration["arguments"]]
+            simple_types = [
+                arg["simple_type"] for arg in declaration["arguments"]
+            ]
             signature = "{}({})".format(base_name, ", ".join(simple_types))
             d[signature].append(declaration)
         return d
@@ -152,7 +153,8 @@ def load_deprecated_signatures(aten_decls, deprecated_path):
 
     def get_signature(name, params, call_args):
         # create a mapping of parameter name to parameter type
-        types = dict([param.split(" ")[::-1] for param in params if param != "*"])
+        types = dict(
+            [param.split(" ")[::-1] for param in params if param != "*"])
         # if the name in the call is not in the parameter list, assume it's
         # a literal Scalar
         rearranged_types = [types.get(arg, "Scalar") for arg in call_args]
@@ -183,16 +185,14 @@ def load_deprecated_signatures(aten_decls, deprecated_path):
                     continue
                 _, param_name = param.split(" ")
                 original = original_args[call_arg_to_idx[param_name]]
-                arguments.append(
-                    {
-                        "name": param_name,
-                        "kwarg_only": kwarg_only,
-                        "type": original["type"],
-                        "simple_type": original["simple_type"],
-                        "dynamic_type": original["dynamic_type"],
-                        "output": original.get("output", False),
-                    }
-                )
+                arguments.append({
+                    "name": param_name,
+                    "kwarg_only": kwarg_only,
+                    "type": original["type"],
+                    "simple_type": original["simple_type"],
+                    "dynamic_type": original["dynamic_type"],
+                    "output": original.get("output", False),
+                })
             declaration["arguments"] = arguments
             declarations.append(declaration)
     return declarations
@@ -205,8 +205,7 @@ def gen_autograd(aten_path, out, autograd_dir, disable_autograd=False):
     from .load_derivatives import load_derivatives
 
     autograd_functions = load_derivatives(
-        os.path.join(autograd_dir, "derivatives.yaml"), aten_decls
-    )
+        os.path.join(autograd_dir, "derivatives.yaml"), aten_decls)
 
     template_path = os.path.join(autograd_dir, "templates")
 
@@ -224,9 +223,10 @@ def gen_autograd(aten_path, out, autograd_dir, disable_autograd=False):
     # Generate variable_factories.h
     from .gen_variable_factories import gen_variable_factories
 
-    gen_variable_factories(
-        out, aten_decls, template_path, disable_autograd=disable_autograd
-    )
+    gen_variable_factories(out,
+                           aten_decls,
+                           template_path,
+                           disable_autograd=disable_autograd)
 
 
 def gen_autograd_python(aten_path, out, autograd_dir):
@@ -239,15 +239,13 @@ def gen_autograd_python(aten_path, out, autograd_dir):
     from .load_derivatives import load_derivatives
 
     autograd_functions = load_derivatives(
-        os.path.join(autograd_dir, "derivatives.yaml"), aten_decls
-    )
+        os.path.join(autograd_dir, "derivatives.yaml"), aten_decls)
 
     template_path = os.path.join(autograd_dir, "templates")
 
     # Load deprecated signatures
     deprecated = load_deprecated_signatures(
-        aten_decls, os.path.join(autograd_dir, "deprecated.yaml")
-    )
+        aten_decls, os.path.join(autograd_dir, "deprecated.yaml"))
 
     # Generate Functions.h/cpp
     from .gen_autograd_functions import gen_autograd_functions_python
@@ -257,24 +255,23 @@ def gen_autograd_python(aten_path, out, autograd_dir):
     # Generate Python bindings
     from . import gen_python_functions
 
-    gen_python_functions.gen_py_variable_methods(
-        out, aten_decls + deprecated, template_path
-    )
-    gen_python_functions.gen_py_torch_functions(
-        out, aten_decls + deprecated, template_path
-    )
+    gen_python_functions.gen_py_variable_methods(out, aten_decls + deprecated,
+                                                 template_path)
+    gen_python_functions.gen_py_torch_functions(out, aten_decls + deprecated,
+                                                template_path)
     gen_python_functions.gen_py_nn_functions(out, aten_decls, template_path)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Generate autograd C++ files script")
-    parser.add_argument(
-        "declarations", metavar="DECL", help="path to Declarations.yaml"
-    )
+    parser = argparse.ArgumentParser(
+        description="Generate autograd C++ files script")
+    parser.add_argument("declarations",
+                        metavar="DECL",
+                        help="path to Declarations.yaml")
     parser.add_argument("out", metavar="OUT", help="path to output directory")
-    parser.add_argument(
-        "autograd", metavar="AUTOGRAD", help="path to autograd directory"
-    )
+    parser.add_argument("autograd",
+                        metavar="AUTOGRAD",
+                        help="path to autograd directory")
     args = parser.parse_args()
     gen_autograd(args.declarations, args.out, args.autograd)
 
