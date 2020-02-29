@@ -513,6 +513,7 @@ def gen_variable_type(out, aten_declarations, template_path):
     }
     write(out, 'RegistrationDeclarations.h', REGISTRATION_DECLARATIONS_H, env)
 
+
 def gen_variable_type_shard(out, aten_declarations, template_path, suffix, header):
     VARIABLE_TYPE_H = CodeTemplate.from_file(template_path + '/VariableType.h')
     VARIABLE_TYPE_CPP = CodeTemplate.from_file(template_path + '/VariableType.cpp')
@@ -595,7 +596,8 @@ def emit_body(declaration):
         differentiable_outputs = []
         output_differentiability = declaration['output_differentiability']
         if False in output_differentiability and inplace:
-            raise RuntimeError("output_differentiability=False for inplace operation (version_counter won't get updated)")
+            raise RuntimeError(
+                "output_differentiability=False for inplace operation (version_counter won't get updated)")
         for differentiable, output in zip(output_differentiability, returns):
             if differentiable:
                 differentiable_outputs.append(output)
@@ -605,9 +607,9 @@ def emit_body(declaration):
         differentiable_outputs = candidate_differentiable_outputs
 
     requires_derivative = (
-        base_name not in DONT_REQUIRE_DERIVATIVE and name not in DONT_REQUIRE_DERIVATIVE and
-        len(differentiable_inputs) > 0 and len(differentiable_outputs) > 0 and
-        strategy == 'use_derived')
+        base_name not in DONT_REQUIRE_DERIVATIVE and name not in DONT_REQUIRE_DERIVATIVE
+        and len(differentiable_inputs) > 0 and len(differentiable_outputs) > 0
+        and strategy == 'use_derived')
 
     if func is not None and not requires_derivative:
         raise RuntimeError('ERROR: derivative ignored for {} -- specified an autograd function without derivative'
@@ -779,7 +781,8 @@ def emit_body(declaration):
                 return_info = differentiable_outputs[0]
                 # We only support simple Tensor or a TensorList for functions that return views
                 if not return_info['dynamic_type'] in ['Tensor', 'TensorList']:
-                    raise RuntimeError("{} that return differentiable views can only return Tensor or Tensor[]".format(base_name))
+                    raise RuntimeError(
+                        "{} that return differentiable views can only return Tensor or Tensor[]".format(base_name))
                 # Only allow rebasing of the history if we return a single Tensor
                 # If we are in a no grad block, raise a warning
                 # See NOTE [ View + Inplace detection ] for more details about this logic
@@ -1002,8 +1005,8 @@ def dispatch_strategy(declaration):
           get dispatched back to VariableType (which will ensure that they
           are differentiable.)
     """
-    if (declaration['abstract'] or declaration['requires_tensor'] or
-            declaration['derivative'] is not None):
+    if (declaration['abstract'] or declaration['requires_tensor']
+            or declaration['derivative'] is not None):
         # If the function is abstract (not implemented on at::Type), we must
         # call the implementation on the derived type with unpacked tensors.
 

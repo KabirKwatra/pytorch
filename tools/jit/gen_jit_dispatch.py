@@ -237,9 +237,9 @@ def is_jit_op(decl):
     if is_out_variant(decl) and sum([not not arg.get('output') for arg in arguments]) > 1:
         return False
 
-    return (('namespace' in decl['method_of'] or 'Tensor' in decl['method_of']) and
-            all(is_jit_arg(i, arg) for i, arg in enumerate(decl['arguments'])) and
-            all(is_jit_arg(i, arg) for i, arg in enumerate(decl['returns'])))
+    return (('namespace' in decl['method_of'] or 'Tensor' in decl['method_of'])
+            and all(is_jit_arg(i, arg) for i, arg in enumerate(decl['arguments']))
+            and all(is_jit_arg(i, arg) for i, arg in enumerate(decl['returns'])))
 
 
 def is_tensor_arg(arg):
@@ -269,6 +269,7 @@ BACKWARD_OP_PATTERNS = [
     '.*_backward',
     '.*_backward_(out|input|weight|bias)',
 ]
+
 
 def is_backward_op(decl):
     for pattern in BACKWARD_OP_PATTERNS:
@@ -574,6 +575,7 @@ NEEDS_HACKED_TWIN_NAMES = [
     "aten::index_put",
     "aten::index_put_",
 ]
+
 
 def needs_hacked_twin(decl):
     schema_string = decl['schema_string']

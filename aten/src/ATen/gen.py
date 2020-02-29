@@ -1,4 +1,11 @@
 
+from code_template import CodeTemplate
+import gen_backend_select_register
+import function_wrapper
+import preprocess_declarations
+import native_parse
+import nn_parse
+import cwrap_parser
 import argparse
 import os
 
@@ -9,15 +16,6 @@ from collections import OrderedDict
 import sys
 from os import path
 sys.path.append(path.dirname(path.abspath(__file__)))
-
-import cwrap_parser
-import nn_parse
-import native_parse
-import preprocess_declarations
-import function_wrapper
-import gen_backend_select_register
-
-from code_template import CodeTemplate
 
 
 # This file is the top-level entry point for code generation in ATen.
@@ -159,10 +157,12 @@ core_file_manager = FileManager(core_install_dir)
 file_manager = FileManager()
 cuda_file_manager = FileManager()
 
+
 def backend_to_devicetype(backend):
     if backend == 'QuantizedCPU':
         return 'CPU'
     return backend
+
 
 backends = ['CPU', 'CUDA']
 densities = ['Dense', 'Sparse', 'Mkldnn']  # TODO: layout instead of densities?
@@ -496,6 +496,7 @@ def generate_outputs():
 
     file_manager.check_all_files_written()
     cuda_file_manager.check_all_files_written()
+
 
 declare_outputs()
 if options.output_dependencies is not None:

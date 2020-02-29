@@ -782,8 +782,8 @@ def create_generic(top_env, declarations):
         return "std::tuple<{}>".format(','.join(r['type'] for r in return_types))
 
     def is_any_tensor_type(formal):
-        return (formal['dynamic_type'] == 'Tensor' or formal['dynamic_type'] == 'ByteTensor'
-                or formal['dynamic_type'] == 'IndexTensor' or formal['dynamic_type'] == 'BoolTensor')
+        return (formal['dynamic_type'] == 'Tensor' or formal['dynamic_type'] == 'ByteTensor' or
+                formal['dynamic_type'] == 'IndexTensor' or formal['dynamic_type'] == 'BoolTensor')
 
     def find_tensors(formals):
         # type: (List[AtFormal]) -> List[str]
@@ -872,7 +872,7 @@ def create_generic(top_env, declarations):
             broadcast_dims_spec = broadcast_arg['broadcast'].split()[1].split(':')[1].split(',')
             # generate size call for each dimension
             broadcast_dims = ([x.split('.')[0] + '.size(' + x.split('.')[1].replace('dim', '') + ')'  # type: ignore
-                              for x in broadcast_dims_spec])
+                               for x in broadcast_dims_spec])
             broadcast_dims_init_list = '{' + ','.join(broadcast_dims) + '}'  # type: ignore
             broadcast_actuals = [broadcast_arg['name'], broadcast_dims_init_list]
 
@@ -932,7 +932,7 @@ def create_generic(top_env, declarations):
             option['broadcast_actuals'] = get_broadcast_actuals(broadcast_arg, broadcast_inplace, broadcast_dims)
             if not broadcast_dims:
                 option['broadcast_returns'] = (["b_" + x for x in option['broadcast_actuals']
-                                               if x != broadcast_arg['name'] or not broadcast_inplace])
+                                                if x != broadcast_arg['name'] or not broadcast_inplace])
             else:
                 option['broadcast_returns'] = ["b_" + broadcast_arg['name']]
 
