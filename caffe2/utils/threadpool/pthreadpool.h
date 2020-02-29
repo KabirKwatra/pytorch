@@ -5,7 +5,6 @@
 
 #include "ThreadPoolCommon.h"
 
-
 #include <stddef.h> // for size_t
 
 typedef struct pthreadpool* pthreadpool_t;
@@ -13,7 +12,8 @@ typedef struct pthreadpool* pthreadpool_t;
 typedef void (*pthreadpool_function_1d_t)(void*, size_t);
 typedef void (*pthreadpool_function_1d_tiled_t)(void*, size_t, size_t);
 typedef void (*pthreadpool_function_2d_t)(void*, size_t, size_t);
-typedef void (*pthreadpool_function_2d_tiled_t)(void*, size_t, size_t, size_t, size_t);
+typedef void (
+    *pthreadpool_function_2d_tiled_t)(void*, size_t, size_t, size_t, size_t);
 typedef void (*pthreadpool_function_3d_tiled_t)(
     void*,
     size_t,
@@ -39,7 +39,8 @@ typedef void (*pthreadpool_task_1d_t)(void*, size_t);
 typedef void (*pthreadpool_task_1d_tile_1d_t)(void*, size_t, size_t);
 typedef void (*pthreadpool_task_2d_t)(void*, size_t, size_t);
 typedef void (*pthreadpool_task_2d_tile_1d_t)(void*, size_t, size_t, size_t);
-typedef void (*pthreadpool_task_2d_tile_2d_t)(void*, size_t, size_t, size_t, size_t);
+typedef void (
+    *pthreadpool_task_2d_tile_2d_t)(void*, size_t, size_t, size_t, size_t);
 typedef void (*pthreadpool_task_3d_tile_2d_t)(
     void*,
     size_t,
@@ -90,7 +91,7 @@ extern "C" {
  *    On error the function returns NULL and sets errno accordingly.
  */
 
-//Returns internal threadpool impl.
+// Returns internal threadpool impl.
 pthreadpool_t pthreadpool_create(size_t threads_count);
 
 /**

@@ -1,5 +1,5 @@
-#include <caffe2/utils/threadpool/ThreadPoolMobile.h>
 #include <caffe2/utils/threadpool/ThreadPool.h>
+#include <caffe2/utils/threadpool/ThreadPoolMobile.h>
 #include <caffe2/utils/threadpool/pthreadpool.h>
 
 namespace caffe2 {
