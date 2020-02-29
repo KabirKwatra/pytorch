@@ -1,22 +1,22 @@
 #pragma once
 
-#include <ATen/core/function_schema.h>
-#include <c10/util/Metaprogramming.h>
-#include <c10/util/flat_hash_map.h>
-#include <c10/util/either.h>
-#include <c10/core/DispatchKey.h>
-#include <ATen/core/ivalue.h>
 #include <ATen/core/boxing/KernelFunction.h>
 #include <ATen/core/dispatch/DispatchKeyExtractor.h>
+#include <ATen/core/function_schema.h>
+#include <ATen/core/ivalue.h>
+#include <c10/core/DispatchKey.h>
+#include <c10/util/Metaprogramming.h>
+#include <c10/util/either.h>
+#include <c10/util/flat_hash_map.h>
 
 #include <array>
 #include <atomic>
+#include <functional>
 #include <iostream>
 #include <mutex>
-#include <type_traits>
 #include <sstream>
+#include <type_traits>
 #include <unordered_map>
-#include <functional>
 
 namespace c10 {
 
@@ -26,16 +26,19 @@ namespace impl {
  * It can store zero or one KernelFunctions for each DispatchKey.
  */
 class KernelFunctionTable final {
-public:
-  explicit KernelFunctionTable()
-  : kernels_()
-  , kernelCount_(0) {}
+ public:
+  explicit KernelFunctionTable() : kernels_(), kernelCount_(0) {}
 
-  enum class SetKernelResult : uint8_t {ADDED_NEW_KERNEL, OVERWROTE_EXISTING_KERNEL};
-  C10_NODISCARD SetKernelResult setKernel(DispatchKey dispatchKey, KernelFunction kernel) {
+  enum class SetKernelResult : uint8_t {
+    ADDED_NEW_KERNEL,
+    OVERWROTE_EXISTING_KERNEL
+  };
+  C10_NODISCARD SetKernelResult
+  setKernel(DispatchKey dispatchKey, KernelFunction kernel) {
     TORCH_INTERNAL_ASSERT(dispatchKey != DispatchKey::Undefined);
     auto& slot = kernels_[static_cast<uint8_t>(dispatchKey)];
-    SetKernelResult result;;
+    SetKernelResult result;
+    ;
     if (slot.isValid()) {
       result = SetKernelResult::OVERWROTE_EXISTING_KERNEL;
     } else {
@@ -46,7 +49,10 @@ public:
     return result;
   }
 
-  enum class RemoveKernelIfExistsResult : uint8_t {REMOVED_KERNEL, KERNEL_DIDNT_EXIST};
+  enum class RemoveKernelIfExistsResult : uint8_t {
+    REMOVED_KERNEL,
+    KERNEL_DIDNT_EXIST
+  };
   RemoveKernelIfExistsResult removeKernelIfExists(DispatchKey dispatchKey) {
     auto& slot = kernels_[static_cast<uint8_t>(dispatchKey)];
     if (slot.isValid()) {
@@ -70,28 +76,29 @@ public:
     return kernelCount_;
   }
 
-private:
-  std::array<KernelFunction, static_cast<uint8_t>(DispatchKey::NumDispatchKeys)> kernels_;
+ private:
+  std::array<KernelFunction, static_cast<uint8_t>(DispatchKey::NumDispatchKeys)>
+      kernels_;
   size_t kernelCount_;
 };
-}
+} // namespace impl
 
 /**
  * Per-operator dispatch table.
  *
- * Given an operator specified by a FunctionSchema, this class records a dispatch
- * table for various kernels provided for this operator.  For example, if we
- * consider the operator add(Tensor, Tensor), the dispatch table for this
+ * Given an operator specified by a FunctionSchema, this class records a
+ * dispatch table for various kernels provided for this operator.  For example,
+ * if we consider the operator add(Tensor, Tensor), the dispatch table for this
  * operator may contain implementations for various dynamic tensor types, such
  * as CPUTensorId, CUDATensorId, etc.
  */
 class DispatchTable final {
  public:
   explicit DispatchTable(const FunctionSchema& schema)
-  : kernels_()
-  , catchallKernel_()
-  , dispatchKeyExtractor_(DispatchKeyExtractor::make(schema))
-  , operatorName_(toString(schema.operator_name())) {}
+      : kernels_(),
+        catchallKernel_(),
+        dispatchKeyExtractor_(DispatchKeyExtractor::make(schema)),
+        operatorName_(toString(schema.operator_name())) {}
 
   /**
    * Register a kernel in the table at some dispatch key.
@@ -104,8 +111,14 @@ class DispatchTable final {
     }
     auto result = kernels_.setKernel(dispatchKey, std::move(kernel));
     dispatchKeyExtractor_.setOperatorHasKernelForBackend(dispatchKey, true);
-    if (result == impl::KernelFunctionTable::SetKernelResult::OVERWROTE_EXISTING_KERNEL) {
-      TORCH_WARN("Registered a kernel for operator ", operatorName_, " with dispatch key ", toString(dispatchKey), " that overwrote a previously registered kernel with the same dispatch key for the same operator.");
+    if (result ==
+        impl::KernelFunctionTable::SetKernelResult::OVERWROTE_EXISTING_KERNEL) {
+      TORCH_WARN(
+          "Registered a kernel for operator ",
+          operatorName_,
+          " with dispatch key ",
+          toString(dispatchKey),
+          " that overwrote a previously registered kernel with the same dispatch key for the same operator.");
     }
   }
 
@@ -127,7 +140,10 @@ class DispatchTable final {
    */
   void setCatchallKernel(KernelFunction kernel) {
     if (catchallKernel_.isValid()) {
-      TORCH_WARN("Registered a catch-all kernel for operator ", operatorName_," that overwrote a previously registered catch-all kernel for the same operator.");
+      TORCH_WARN(
+          "Registered a catch-all kernel for operator ",
+          operatorName_,
+          " that overwrote a previously registered catch-all kernel for the same operator.");
     }
     if (manuallyBoxedKernel_.has_value()) {
       kernel.setManuallyBoxedKernel_(*manuallyBoxedKernel_);
@@ -139,7 +155,11 @@ class DispatchTable final {
    * Remove the catch-all kernel.
    */
   void removeCatchallKernel() {
-    TORCH_INTERNAL_ASSERT(catchallKernel_.isValid(), "Tried to remove the catch-all kernel for operator ", operatorName_," but there is no catch-all kernel registered.");
+    TORCH_INTERNAL_ASSERT(
+        catchallKernel_.isValid(),
+        "Tried to remove the catch-all kernel for operator ",
+        operatorName_,
+        " but there is no catch-all kernel registered.");
     catchallKernel_ = {};
   }
 
@@ -152,7 +172,9 @@ class DispatchTable final {
     str << "[";
 
     bool has_kernels = false;
-    for (uint8_t iter = 0; iter != static_cast<uint8_t>(DispatchKey::NumDispatchKeys); ++iter) {
+    for (uint8_t iter = 0;
+         iter != static_cast<uint8_t>(DispatchKey::NumDispatchKeys);
+         ++iter) {
       if (!kernels_[static_cast<DispatchKey>(iter)].isValid()) {
         continue;
       }
@@ -198,13 +220,21 @@ class DispatchTable final {
     return operatorName_;
   }
 
-  // This function is a temporary hack, see comment at manuallyBoxedKernel_ member
-  void setManuallyBoxedKernel_(KernelFunction::InternalBoxedKernelFunction* func) {
-    TORCH_INTERNAL_ASSERT(!manuallyBoxedKernel_.has_value(), "Cannot set multiple manually boxed kernels for the same operator ", operatorName_);
+  // This function is a temporary hack, see comment at manuallyBoxedKernel_
+  // member
+  void setManuallyBoxedKernel_(
+      KernelFunction::InternalBoxedKernelFunction* func) {
+    TORCH_INTERNAL_ASSERT(
+        !manuallyBoxedKernel_.has_value(),
+        "Cannot set multiple manually boxed kernels for the same operator ",
+        operatorName_);
     manuallyBoxedKernel_ = func;
 
-    // make sure that all previously registered kernels get this manually boxed kernel
-    for (uint8_t iter = 0; iter != static_cast<uint8_t>(DispatchKey::NumDispatchKeys); ++iter) {
+    // make sure that all previously registered kernels get this manually boxed
+    // kernel
+    for (uint8_t iter = 0;
+         iter != static_cast<uint8_t>(DispatchKey::NumDispatchKeys);
+         ++iter) {
       auto& kernel = kernels_[static_cast<DispatchKey>(iter)];
       if (kernel.isValid()) {
         kernel.setManuallyBoxedKernel_(func);
@@ -212,18 +242,20 @@ class DispatchTable final {
     }
   }
 
-private:
-
+ private:
   impl::KernelFunctionTable kernels_;
   KernelFunction catchallKernel_;
   DispatchKeyExtractor dispatchKeyExtractor_;
   std::string operatorName_;
 
-  // This manuallyBoxedKernel_ member is a temporary hack that allows register_aten_ops.cpp to register its codegen'ed
-  // unboxing wrapper for aten operators. We still need those for some operators because not all work
-  // with the templated unboxing logic yet.
-  // TODO Delete manuallyBoxedKernel_ once all operators work with the templated boxing logic
-  c10::optional<KernelFunction::InternalBoxedKernelFunction*> manuallyBoxedKernel_;
+  // This manuallyBoxedKernel_ member is a temporary hack that allows
+  // register_aten_ops.cpp to register its codegen'ed unboxing wrapper for aten
+  // operators. We still need those for some operators because not all work with
+  // the templated unboxing logic yet.
+  // TODO Delete manuallyBoxedKernel_ once all operators work with the templated
+  // boxing logic
+  c10::optional<KernelFunction::InternalBoxedKernelFunction*>
+      manuallyBoxedKernel_;
 };
 
 } // namespace c10

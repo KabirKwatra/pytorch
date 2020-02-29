@@ -5,7 +5,7 @@ set -ex
 ignore_warning() {
   # Invert match to filter out $1.
   set +e
-  grep -v "$1" doxygen-log.txt > temp.txt
+  grep -v "$1" doxygen-log.txt >temp.txt
   set -e
   mv temp.txt doxygen-log.txt
 }
@@ -23,14 +23,14 @@ python aten/src/ATen/gen.py \
   aten/src/ATen/nn.yaml \
   aten/src/ATen/native/native_functions.yaml
 
-python tools/setup_helpers/generate_code.py                 \
+python tools/setup_helpers/generate_code.py \
   --declarations-path build/aten/src/ATen/Declarations.yaml \
   --nn-path aten/src
 
 popd
 
 # Run doxygen and log all output.
-doxygen 2> original-doxygen-log.txt
+doxygen 2>original-doxygen-log.txt
 cp original-doxygen-log.txt doxygen-log.txt
 
 # Uncomment this if you need it for debugging; we're not printing this

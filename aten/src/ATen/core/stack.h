@@ -91,10 +91,13 @@ static inline void push_one(Stack& stack, c10::TensorOptions options) {
 
 template <typename... Types>
 static inline void push(Stack& stack, Types&&... args) {
-  (void)std::initializer_list<int>{(push_one(stack, std::forward<Types>(args)), 0)...};
+  (void)std::initializer_list<int>{
+      (push_one(stack, std::forward<Types>(args)), 0)...};
 }
 template <class T>
-static inline void push_list_elements(Stack& stack, const c10::List<T>& elements) {
+static inline void push_list_elements(
+    Stack& stack,
+    const c10::List<T>& elements) {
   for (T elem : elements) {
     stack.push_back(std::move(elem));
   }

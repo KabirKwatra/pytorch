@@ -7,7 +7,7 @@
 
 namespace c10 {
 namespace impl {
-  class OperatorEntry;
+class OperatorEntry;
 }
 
 namespace impl {
@@ -15,7 +15,7 @@ namespace impl {
 // This is a private class used inside the Dispatcher to represent an operator
 // and its dispatch table. This is not part of the public API.
 class OperatorEntry final {
-public:
+ public:
   explicit OperatorEntry(FunctionSchema&& schema, OperatorOptions&& options);
 
   OperatorEntry(const OperatorEntry&) = delete;
@@ -33,7 +33,9 @@ public:
 
   void prepareForDeregistration();
 
-  RegistrationHandleRAII registerKernel(DispatchKey dispatch_key, KernelFunction kernel);
+  RegistrationHandleRAII registerKernel(
+      DispatchKey dispatch_key,
+      KernelFunction kernel);
   RegistrationHandleRAII registerCatchallKernel(KernelFunction kernel);
 
   const OperatorOptions& options() {
@@ -44,16 +46,21 @@ public:
     options_.setAliasAnalysis(a);
   }
 
-  // This function is a temporary hack that allows register_aten_ops.cpp to register its codegen'ed
-  // unboxing wrapper for aten operators. We still need those for some operators because not all work
-  // with the templated unboxing logic yet.
-  // TODO Delete setManuallyBoxedKernel_ once all operators work with the templated boxing logic
-  void setManuallyBoxedKernel_(KernelFunction::InternalBoxedKernelFunction* func) {
+  // This function is a temporary hack that allows register_aten_ops.cpp to
+  // register its codegen'ed unboxing wrapper for aten operators. We still need
+  // those for some operators because not all work with the templated unboxing
+  // logic yet.
+  // TODO Delete setManuallyBoxedKernel_ once all operators work with the
+  // templated boxing logic
+  void setManuallyBoxedKernel_(
+      KernelFunction::InternalBoxedKernelFunction* func) {
     dispatchTable_.setManuallyBoxedKernel_(func);
   }
 
-private:
-  void deregisterKernel_(DispatchKey dispatch_key, std::list<KernelFunction>::iterator kernel);
+ private:
+  void deregisterKernel_(
+      DispatchKey dispatch_key,
+      std::list<KernelFunction>::iterator kernel);
   void deregisterCatchallKernel_(std::list<KernelFunction>::iterator kernel);
 
   FunctionSchema schema_;
@@ -63,8 +70,8 @@ private:
 
   // kernels_ stores all registered kernels for the corresponding dispatch key
   // and catchAllKernels_ stores the catch-all kernels.
-  // If an operator library gets loaded that overwrites an already existing kernel,
-  // both kernels will be in that list but only the newer one will be in
+  // If an operator library gets loaded that overwrites an already existing
+  // kernel, both kernels will be in that list but only the newer one will be in
   // dispatchTable. If any of the kernels go away (say the library gets
   // unloaded), we remove the kernel from this list and update the
   // dispatchTable if necessary.
@@ -107,5 +114,5 @@ private:
   void updateCatchallDispatchTable_();
 };
 
-}
-}
+} // namespace impl
+} // namespace c10

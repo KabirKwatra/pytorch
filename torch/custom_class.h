@@ -10,15 +10,14 @@
 #include <c10/util/Metaprogramming.h>
 #include <c10/util/TypeList.h>
 #include <c10/util/TypeTraits.h>
-#include <torch/csrc/jit/api/custom_class.h>
-#include <torch/csrc/jit/runtime/operator.h>
 #include <torch/csrc/jit/api/compilation_unit.h>
+#include <torch/csrc/jit/api/custom_class.h>
 #include <torch/csrc/jit/frontend/tracer.h>
+#include <torch/csrc/jit/runtime/operator.h>
 #include <torch/csrc/utils/variadic.h>
 #include <torch/custom_class_detail.h>
 #include <iostream>
 #include <sstream>
-
 
 namespace torch {
 namespace jit {
@@ -42,8 +41,9 @@ detail::types<void, Types...> init() {
 
 template <class CurClass>
 class class_ {
-  static_assert(std::is_base_of<CustomClassHolder, CurClass>::value,
-    "torch::jit::class_<T> requires T to inherit from CustomClassHolder");
+  static_assert(
+      std::is_base_of<CustomClassHolder, CurClass>::value,
+      "torch::jit::class_<T> requires T to inherit from CustomClassHolder");
 
   std::string className;
   std::string qualClassName;
@@ -62,20 +62,24 @@ class class_ {
         ClassType::create(c10::QualifiedName(qualClassName), classCU());
     classTypePtr->addAttribute("capsule", CapsuleType::get());
 
-    c10::getCustomClassTypeMap().insert({typeid(c10::intrusive_ptr<CurClass>).name(),
-                              c10::StrongTypePtr(classCU(), classTypePtr)});
-    c10::getCustomClassTypeMap().insert({typeid(c10::tagged_capsule<CurClass>).name(),
-                              c10::StrongTypePtr(classCU(), classTypePtr)});
+    c10::getCustomClassTypeMap().insert(
+        {typeid(c10::intrusive_ptr<CurClass>).name(),
+         c10::StrongTypePtr(classCU(), classTypePtr)});
+    c10::getCustomClassTypeMap().insert(
+        {typeid(c10::tagged_capsule<CurClass>).name(),
+         c10::StrongTypePtr(classCU(), classTypePtr)});
 
     classCU()->register_type(classTypePtr);
   }
 
   template <typename... Types>
   class_& def(detail::types<void, Types...>) { // Used in combination with
-                                               // torch::jit::init<...>()
+    // torch::jit::init<...>()
     auto func = [](c10::tagged_capsule<CurClass> self, Types... args) {
       auto classObj = c10::make_intrusive<CurClass>(args...);
-      auto genericPtr = c10::static_intrusive_pointer_cast<torch::jit::CustomClassHolder>(std::move(classObj));
+      auto genericPtr =
+          c10::static_intrusive_pointer_cast<torch::jit::CustomClassHolder>(
+              std::move(classObj));
       auto capsule = IValue(std::move(genericPtr));
       auto object = std::move(self.ivalue).toObject();
       object->setSlot(0, std::move(capsule));
@@ -171,14 +175,14 @@ class class_ {
     auto func_symbol = c10::Symbol::fromQualString(qualFuncName);
     auto ops = torch::jit::getAllOperatorsFor(func_symbol);
     TORCH_CHECK(ops.size() == 1);
-    auto &schema = ops[0]->schema();
+    auto& schema = ops[0]->schema();
 
     for (const auto& arg : schema.arguments()) {
       graph->addInput()->setType(arg.type());
     }
 
-    auto opCall = graph->insertNode(graph->create(
-        func_symbol, graph->inputs(), schema.returns().size()));
+    auto opCall = graph->insertNode(
+        graph->create(func_symbol, graph->inputs(), schema.returns().size()));
     Value* res;
     if (schema.returns().size() > 1) {
       const auto& returns = schema.returns();
