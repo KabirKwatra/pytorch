@@ -21,7 +21,7 @@ using shrink_backward_fn = void (*)(TensorIterator&, Scalar);
 using elu_fn = void (*)(TensorIterator&, Scalar, Scalar, Scalar);
 using leaky_relu_fn = void (*)(TensorIterator&, Scalar);
 using leaky_relu_backward_fn = void (*)(TensorIterator&, Scalar);
-using log_sigmoid_cpu_fn = void (*)(Tensor&, Tensor&, const Tensor& );
+using log_sigmoid_cpu_fn = void (*)(Tensor&, Tensor&, const Tensor&);
 
 DECLARE_DISPATCH(elu_fn, elu_stub);
 DECLARE_DISPATCH(elu_fn, elu_backward_stub);
