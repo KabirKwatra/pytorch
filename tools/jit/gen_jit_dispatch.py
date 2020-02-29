@@ -11,15 +11,18 @@ Where $OUTPUT_DIR is where you would like the files to be
 generated.  In the full build system, OUTPUT_DIR is
 torch/csrc/jit/generated/
 """
-
 import argparse
 import copy
 import re
-import yaml
 from itertools import groupby
-from ..autograd.utils import CodeTemplate, YamlLoader, write
+
+import yaml
+
 from ..autograd.gen_autograd import load_aten_declarations
 from ..autograd.gen_autograd import RETURNS_VIEWS_OF_INPUT
+from ..autograd.utils import CodeTemplate
+from ..autograd.utils import write
+from ..autograd.utils import YamlLoader
 
 # JIT has a type system of
 # Scalar = int | float | bool # int is the largest int (int64_t),
