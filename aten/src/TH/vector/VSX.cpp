@@ -413,14 +413,14 @@ static void standardFloat_fill(float *x, const float c, const ptrdiff_t n)
 
 static void standardDouble_muls(double *y, const double *x, const double c, const ptrdiff_t n)
 {
-  for (ptrdiff_t i = 0; i < n; i++)
-    y[i] = c * x[i];
+    for (ptrdiff_t i = 0; i < n; i++)
+        y[i] = c * x[i];
 }
 
 static void standardFloat_muls(float *y, const float *x, const float c, const ptrdiff_t n)
 {
-  for (ptrdiff_t i = 0; i < n; i++)
-    y[i] = c * x[i];
+    for (ptrdiff_t i = 0; i < n; i++)
+        y[i] = c * x[i];
 }
 
 double randDouble()
@@ -765,7 +765,7 @@ int main()
 
     test_THDoubleVector_fill_VSX();
     test_THFloatVector_fill_VSX();
- 
+
     test_THDoubleVector_muls_VSX();
     test_THFloatVector_muls_VSX();
 

@@ -5,51 +5,51 @@
 #include <ATen/Context.h>
 
 void THVector_(fill_DEFAULT)(scalar_t *x, const scalar_t c, const ptrdiff_t n) {
-  ptrdiff_t i = 0;
+    ptrdiff_t i = 0;
 
-  for(; i <n-4; i+=4)
-  {
-    x[i] = c;
-    x[i+1] = c;
-    x[i+2] = c;
-    x[i+3] = c;
-  }
+    for(; i <n-4; i+=4)
+    {
+        x[i] = c;
+        x[i+1] = c;
+        x[i+2] = c;
+        x[i+3] = c;
+    }
 
-  for(; i < n; i++)
-    x[i] = c;
+    for(; i < n; i++)
+        x[i] = c;
 }
 
 #if !defined(TH_REAL_IS_BOOL) /* non bool only part */
 
 void THVector_(copy_DEFAULT)(scalar_t *x, const scalar_t *y, const ptrdiff_t n) {
-  ptrdiff_t i = 0;
+    ptrdiff_t i = 0;
 
-  for(; i <n-4; i+=4)
-  {
-    x[i] = y[i];
-    x[i+1] = y[i+1];
-    x[i+2] = y[i+2];
-    x[i+3] = y[i+3];
-  }
+    for(; i <n-4; i+=4)
+    {
+        x[i] = y[i];
+        x[i+1] = y[i+1];
+        x[i+2] = y[i+2];
+        x[i+3] = y[i+3];
+    }
 
-  for(; i < n; i++)
-    x[i] = y[i];
+    for(; i < n; i++)
+        x[i] = y[i];
 }
 
 void THVector_(muls_DEFAULT)(scalar_t *y, const scalar_t *x, const scalar_t c, const ptrdiff_t n)
 {
-  ptrdiff_t i = 0;
+    ptrdiff_t i = 0;
 
-  for(; i <n-4; i+=4)
-  {
-    y[i] = x[i] * c;
-    y[i+1] = x[i+1] * c;
-    y[i+2] = x[i+2] * c;
-    y[i+3] = x[i+3] * c;
-  }
+    for(; i <n-4; i+=4)
+    {
+        y[i] = x[i] * c;
+        y[i+1] = x[i+1] * c;
+        y[i+2] = x[i+2] * c;
+        y[i+3] = x[i+3] * c;
+    }
 
-  for(; i < n; i++)
-    y[i] = x[i] * c;
+    for(; i < n; i++)
+        y[i] = x[i] * c;
 }
 
 #define VECTOR_IMPLEMENT_FUNCTION(NAME, CFUNC)  \

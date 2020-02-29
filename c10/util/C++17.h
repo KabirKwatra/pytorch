@@ -28,13 +28,14 @@
  * This header adds some polyfills with C++17 functionality
  */
 
-namespace c10 { namespace guts {
+namespace c10 {
+namespace guts {
 
 
 template <typename Base, typename Child, typename... Args>
 typename std::enable_if<!std::is_array<Base>::value && !std::is_array<Base>::value && std::is_base_of<Base, Child>::value, std::unique_ptr<Base>>::type
 make_unique_base(Args&&... args) {
-  return std::unique_ptr<Base>(new Child(std::forward<Args>(args)...));
+    return std::unique_ptr<Base>(new Child(std::forward<Args>(args)...));
 }
 
 
@@ -58,14 +59,14 @@ template<class...> struct conjunction : std::true_type { };
 template<class B1> struct conjunction<B1> : B1 { };
 template<class B1, class... Bn>
 struct conjunction<B1, Bn...>
-    : std::conditional_t<bool(B1::value), conjunction<Bn...>, B1> {};
+: std::conditional_t<bool(B1::value), conjunction<Bn...>, B1> {};
 
 // Implementation taken from http://en.cppreference.com/w/cpp/types/disjunction
 template<class...> struct disjunction : std::false_type { };
 template<class B1> struct disjunction<B1> : B1 { };
 template<class B1, class... Bn>
 struct disjunction<B1, Bn...>
-    : std::conditional_t<bool(B1::value), B1, disjunction<Bn...>>  { };
+: std::conditional_t<bool(B1::value), B1, disjunction<Bn...>>  { };
 
 // Implementation taken from http://en.cppreference.com/w/cpp/types/integral_constant
 template <bool B>
@@ -88,7 +89,9 @@ template<class T> using void_t = std::void_t<T>;
 
 // Implementation taken from http://en.cppreference.com/w/cpp/types/void_t
 // (it takes CWG1558 into account and also works for older compilers)
-template<typename... Ts> struct make_void { typedef void type;};
+template<typename... Ts> struct make_void {
+    typedef void type;
+};
 template<typename... Ts> using void_t = typename make_void<Ts...>::type;
 
 #endif
@@ -104,7 +107,7 @@ template<typename... Ts> using void_t = typename make_void<Ts...>::type;
 
 template <class F, class Tuple>
 CUDA_HOST_DEVICE inline constexpr decltype(auto) apply(F&& f, Tuple&& t) {
-  return std::apply(std::forward<F>(f), std::forward<Tuple>(t));
+    return std::apply(std::forward<F>(f), std::forward<Tuple>(t));
 }
 
 #else
@@ -128,12 +131,12 @@ CUDA_HOST_DEVICE constexpr auto apply_impl(F&& f, Tuple&& t, std::index_sequence
 
 template <class F, class Tuple>
 CUDA_HOST_DEVICE constexpr auto apply(F&& f, Tuple&& t) -> decltype(detail::apply_impl(
-    std::forward<F>(f), std::forward<Tuple>(t),
-    std::make_index_sequence<std::tuple_size<std::remove_reference_t<Tuple>>::value>{}))
+            std::forward<F>(f), std::forward<Tuple>(t),
+std::make_index_sequence<std::tuple_size<std::remove_reference_t<Tuple>>::value> {}))
 {
     return detail::apply_impl(
-        std::forward<F>(f), std::forward<Tuple>(t),
-        std::make_index_sequence<std::tuple_size<std::remove_reference_t<Tuple>>::value>{});
+               std::forward<F>(f), std::forward<Tuple>(t),
+               std::make_index_sequence<std::tuple_size<std::remove_reference_t<Tuple>>::value> {});
 }
 
 #endif
@@ -143,18 +146,18 @@ CUDA_HOST_DEVICE constexpr auto apply(F&& f, Tuple&& t) -> decltype(detail::appl
 
 template <typename Functor, typename... Args>
 typename std::enable_if<
-    std::is_member_pointer<typename std::decay<Functor>::type>::value,
+std::is_member_pointer<typename std::decay<Functor>::type>::value,
     typename std::result_of<Functor && (Args && ...)>::type>::type
 invoke(Functor&& f, Args&&... args) {
-  return std::mem_fn(std::forward<Functor>(f))(std::forward<Args>(args)...);
+    return std::mem_fn(std::forward<Functor>(f))(std::forward<Args>(args)...);
 }
 
 template <typename Functor, typename... Args>
 typename std::enable_if<
-    !std::is_member_pointer<typename std::decay<Functor>::type>::value,
-    typename std::result_of<Functor && (Args && ...)>::type>::type
+!std::is_member_pointer<typename std::decay<Functor>::type>::value,
+typename std::result_of<Functor && (Args && ...)>::type>::type
 invoke(Functor&& f, Args&&... args) {
-  return std::forward<Functor>(f)(std::forward<Args>(args)...);
+    return std::forward<Functor>(f)(std::forward<Args>(args)...);
 }
 
 
@@ -162,17 +165,23 @@ invoke(Functor&& f, Args&&... args) {
 // GCC 4.8 doesn't define std::to_string, even though that's in C++11. Let's define it.
 namespace detail {
 class DummyClassForToString final {};
-}}}
+}
+}
+}
 namespace std {
 // We use SFINAE to detect if std::to_string exists for a type, but that only works
 // if the function name is defined. So let's define a std::to_string for a dummy type.
 // If you're getting an error here saying that this overload doesn't match your
 // std::to_string() call, then you're calling std::to_string() but should be calling
 // c10::guts::to_string().
-inline std::string to_string(c10::guts::detail::DummyClassForToString) { return ""; }
+inline std::string to_string(c10::guts::detail::DummyClassForToString) {
+    return "";
+}
 
 }
-namespace c10 { namespace guts { namespace detail {
+namespace c10 {
+namespace guts {
+namespace detail {
 
 template<class T, class Enable = void>
 struct to_string_ final {
@@ -196,14 +205,15 @@ template<class T> inline std::string to_string(T value) {
 
 template <class T>
 constexpr const T& min(const T& a, const T& b) {
-  return (b < a) ? b : a;
+    return (b < a) ? b : a;
 }
 
 template <class T>
 constexpr const T& max(const T& a, const T& b) {
-  return (a < b) ? b : a;
+    return (a < b) ? b : a;
 }
 
-}}
+}
+}
 
 #endif // C10_UTIL_CPP17_H_
