@@ -11,7 +11,6 @@ Where $OUTPUT_DIR is where you would like the files to be
 generated.  In the full build system, OUTPUT_DIR is
 torch/csrc/autograd/generated/
 """
-
 # gen_autograd.py generates C++ autograd functions and Python bindings.
 #
 # It delegates to the following scripts:
@@ -20,14 +19,16 @@ torch/csrc/autograd/generated/
 #  gen_variable_type.py: generates VariableType.h which contains all tensor methods
 #  gen_python_functions.py: generates Python bindings to THPVariable
 #
-
 import argparse
 import copy
 import os
-import yaml
 import re
 from collections import defaultdict
-from .utils import YamlLoader, split_name_params
+
+import yaml
+
+from .utils import split_name_params
+from .utils import YamlLoader
 
 # See NOTE [ Autograd View Variables ] in variable.h for details.
 # If you update list VIEW_FUNCTIONS or RETURNS_VIEWS_OF_INPUT,
