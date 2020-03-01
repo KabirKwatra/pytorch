@@ -4,8 +4,7 @@ import torch
 import torch.distributed.rpc as rpc
 from torch.testing._internal.dist_utils import dist_init
 from torch.testing._internal.distributed.rpc.rpc_agent_test_fixture import (
-    RpcAgentTestFixture,
-)
+    RpcAgentTestFixture, )
 
 
 def rpc_return_rref(dst):
@@ -101,31 +100,32 @@ def rref_script_annotation(rref_var):
     return rref_python_annotation(rref_var).to_here()
 
 
-@unittest.skipIf(
-    not torch._six.PY3, "Pytorch distributed rpc package does not support python2"
-)
+@unittest.skipIf(not torch._six.PY3,
+                 "Pytorch distributed rpc package does not support python2")
 class JitRpcTest(RpcAgentTestFixture):
     @dist_init
     def test_torchscript_function(self):
         dst_worker_name = "worker{}".format((self.rank + 1) % self.world_size)
         local_ret = one_arg(torch.ones(2, 2))
-        ret = rpc.rpc_sync(dst_worker_name, one_arg, args=(torch.ones(2, 2),))
+        ret = rpc.rpc_sync(dst_worker_name, one_arg, args=(torch.ones(2, 2), ))
         self.assertEqual(ret, local_ret)
-        rref = rpc.remote(dst_worker_name, one_arg, args=(torch.ones(2, 2),))
+        rref = rpc.remote(dst_worker_name, one_arg, args=(torch.ones(2, 2), ))
         self.assertEqual(rref.to_here(), local_ret)
         # create rref to itself
-        local_rref = rpc.remote(
-            "worker{}".format(self.rank), one_arg, args=(torch.ones(2, 2),)
-        )
+        local_rref = rpc.remote("worker{}".format(self.rank),
+                                one_arg,
+                                args=(torch.ones(2, 2), ))
         self.assertEqual(local_rref.to_here(), local_ret)
 
     @dist_init
     def test_torchscript_function_exception(self):
         dst_worker_name = "worker{}".format((self.rank + 1) % self.world_size)
-        with self.assertRaisesRegex(RuntimeError, r"one_arg\(\) expected at most"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    r"one_arg\(\) expected at most"):
             ret = rpc.rpc_sync(dst_worker_name, one_arg, args=(10, 20))
 
-        with self.assertRaisesRegex(RuntimeError, r"one_arg\(\) expected at most"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    r"one_arg\(\) expected at most"):
             rref = rpc.remote(dst_worker_name, one_arg, args=(10, 20))
 
     @dist_init
@@ -138,9 +138,8 @@ class JitRpcTest(RpcAgentTestFixture):
         # accept script module and script module method.
         n = self.rank + 1
         dst_rank = n % self.world_size
-        with self.assertRaisesRegex(
-            RuntimeError, "attempted to get undefined function"
-        ):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "attempted to get undefined function"):
             ret = rpc._rpc_sync_torchscript(
                 "worker{}".format(dst_rank),
                 torch.jit._qualified_name(MyScriptClass),
@@ -148,18 +147,16 @@ class JitRpcTest(RpcAgentTestFixture):
             )
         ret = rpc.rpc_sync("worker{}".format(dst_rank), MyScriptClass, args=())
 
-        with self.assertRaisesRegex(
-            RuntimeError, "attempted to get undefined function"
-        ):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "attempted to get undefined function"):
             ret = rpc._rpc_sync_torchscript(
                 "worker{}".format(dst_rank),
                 torch.jit._qualified_name(MyScriptModule),
-                args=(self.rank,),
+                args=(self.rank, ),
             )
 
-        with self.assertRaisesRegex(
-            RuntimeError, "attempted to get undefined function"
-        ):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "attempted to get undefined function"):
             ret = rpc._rpc_sync_torchscript(
                 "worker{}".format(dst_rank),
                 torch.jit._qualified_name(MyScriptModule(self.rank).forward),
@@ -168,9 +165,9 @@ class JitRpcTest(RpcAgentTestFixture):
         # Python 3.5 and Python 3.6 throw different error message, the only
         # common word can be greped is "pickle".
         with self.assertRaisesRegex(Exception, "pickle"):
-            ret = rpc.rpc_sync(
-                "worker{}".format(dst_rank), MyScriptModule(self.rank).forward, args=()
-            )
+            ret = rpc.rpc_sync("worker{}".format(dst_rank),
+                               MyScriptModule(self.rank).forward,
+                               args=())
 
     @dist_init
     def test_rref_as_arg_and_return(self):
@@ -179,24 +176,32 @@ class JitRpcTest(RpcAgentTestFixture):
         local_ret = one_arg(torch.ones(2, 2))
 
         # create rref on current rank
-        rref = rpc.remote(
-            "worker{}".format(self.rank), one_arg, args=(torch.ones(2, 2),)
-        )
+        rref = rpc.remote("worker{}".format(self.rank),
+                          one_arg,
+                          args=(torch.ones(2, 2), ))
 
         # pass rref to another user in rpc call
-        ret = rpc.rpc_sync("worker{}".format(dst_rank), rref_to_here, args=(rref,))
+        ret = rpc.rpc_sync("worker{}".format(dst_rank),
+                           rref_to_here,
+                           args=(rref, ))
         self.assertEqual(ret, local_ret)
 
         # return rref in rpc call
-        rref1 = rpc.rpc_sync("worker{}".format(dst_rank), return_rref, args=(rref,))
+        rref1 = rpc.rpc_sync("worker{}".format(dst_rank),
+                             return_rref,
+                             args=(rref, ))
         self.assertEqual(rref1.to_here(), local_ret)
 
         # pass rref to another user in remote call
-        rref2 = rpc.remote("worker{}".format(dst_rank), rref_to_here, args=(rref,))
+        rref2 = rpc.remote("worker{}".format(dst_rank),
+                           rref_to_here,
+                           args=(rref, ))
         self.assertEqual(rref2.to_here(), local_ret)
 
         # return rref in remote call
-        rref3 = rpc.remote("worker{}".format(dst_rank), return_rref, args=(rref,))
+        rref3 = rpc.remote("worker{}".format(dst_rank),
+                           return_rref,
+                           args=(rref, ))
         self.assertEqual(rref3.to_here().to_here(), local_ret)
 
     @dist_init
@@ -213,9 +218,9 @@ class JitRpcTest(RpcAgentTestFixture):
 
         n = self.rank + 1
         dst_rank = n % self.world_size
-        remote_ref = rpc.remote(
-            "worker{}".format(dst_rank), construct_my_script_module, args=(self.rank,)
-        )
+        remote_ref = rpc.remote("worker{}".format(dst_rank),
+                                construct_my_script_module,
+                                args=(self.rank, ))
 
         # pass rref arg to owner
         ret = rpc.rpc_sync(
@@ -244,7 +249,8 @@ class JitRpcTest(RpcAgentTestFixture):
         n = self.rank + 1
         dst_rank = n % self.world_size
 
-        module_with_rrefs = MyScriptModuleWithRRefs("worker{}".format(dst_rank))
+        module_with_rrefs = MyScriptModuleWithRRefs(
+            "worker{}".format(dst_rank))
         res = module_with_rrefs()
         self.assertEqual(res, torch.ones(2, 2) * 9)
 
@@ -266,4 +272,5 @@ class JitRpcTest(RpcAgentTestFixture):
 
         # create a local RRef that holds a ScriptModule
         rref_local_script_mod = rpc.RRef(MyScriptModule(3)._c)
-        self.assertEqual(rref_local_script_mod.to_here().forward(), torch.ones(3))
+        self.assertEqual(rref_local_script_mod.to_here().forward(),
+                         torch.ones(3))
