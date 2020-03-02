@@ -14,10 +14,12 @@ class _DecoratorContextManager:
         def decorate_context(*args, **kwargs):
             with self:
                 return func(*args, **kwargs)
+
         return decorate_context
 
     def _wrap_generator(self, func):
         """Wrap each generator invocation with the context manager"""
+
         @functools.wraps(func)
         def generator_context(*args, **kwargs):
             gen = func(*args, **kwargs)
@@ -28,6 +30,7 @@ class _DecoratorContextManager:
                     yield x
                 except StopIteration:
                     break
+
         return generator_context
 
 
