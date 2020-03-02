@@ -1,6 +1,8 @@
-import torch
 import functools
 import inspect
+
+import torch
+
 
 class _DecoratorContextManager:
     """Allow a context manager to be used as a decorator"""
@@ -13,10 +15,12 @@ class _DecoratorContextManager:
         def decorate_context(*args, **kwargs):
             with self:
                 return func(*args, **kwargs)
+
         return decorate_context
 
     def _wrap_generator(self, func):
         """Wrap each generator invocation with the context manager"""
+
         @functools.wraps(func)
         def generator_context(*args, **kwargs):
             gen = func(*args, **kwargs)
@@ -27,6 +31,7 @@ class _DecoratorContextManager:
                     yield x
                 except StopIteration:
                     break
+
         return generator_context
 
 
@@ -62,6 +67,7 @@ class no_grad(_DecoratorContextManager):
         >>> z.requires_grad
         False
     """
+
     def __enter__(self):
         self.prev = torch.is_grad_enabled()
         torch._C.set_grad_enabled(False)
@@ -102,6 +108,7 @@ class enable_grad(_DecoratorContextManager):
         True
 
     """
+
     def __enter__(self):
         self.prev = torch.is_grad_enabled()
         torch._C.set_grad_enabled(True)
