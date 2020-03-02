@@ -87,13 +87,13 @@ __global__ void indexing_backward_kernel(
 }
 
 
-}    
+}
 
 
 namespace at { namespace native {
 
 static Tensor wrapIndexOnce(const Tensor & index, int64_t dim, int64_t dim_size, bool check_range=true) {
-//we don't need to check range in backward - if there were out of bounds indices forward should already have errored out 
+//we don't need to check range in backward - if there were out of bounds indices forward should already have errored out
   if (index.numel() != 0 && check_range) {
     auto max_idx = index.max().item<int64_t>();
     auto min_idx = index.min().item<int64_t>();
@@ -116,7 +116,7 @@ static std::vector<int64_t> computeLinearStride(const Tensor & tensor) {
   return stride;
 }
 
-static std::tuple<Tensor, int64_t, int64_t, int64_t> 
+static std::tuple<Tensor, int64_t, int64_t, int64_t>
 computeLinearIndex(const Tensor & src, TensorList indices, bool check_range) {
   auto strides = computeLinearStride(src);
   const auto& backend = src.type().backend();
@@ -195,18 +195,18 @@ void index_put_accum_kernel(Tensor & self, TensorList indices, const Tensor & va
       auto orig_indices = at::empty_like(linearIndex, LEGACY_CONTIGUOUS_MEMORY_FORMAT);
       using device_ptr = thrust::device_ptr<int64_t>;
       const cudaStream_t stream = at::cuda::getCurrentCUDAStream();
-    
+
       linearIndex.div_(sliceSize);
       {
       sorted_indices.copy_(linearIndex);
       auto allocator = THCThrustAllocator(globalContext().lazyInitCUDA());
       auto policy = thrust::cuda::par(allocator).on(stream);
-    
+
       // Fill sortedOrigIndices with sequential indices
       const auto count_iter = thrust::counting_iterator<int64_t>(0);
       auto orig_data = device_ptr(orig_indices.data_ptr<int64_t>());
       thrust::copy(policy, count_iter, count_iter + num_indices, orig_data);
-    
+
       // Sort the inputs into sorted with the corresponding indices; we
       // don't need a stable or multidimensional sort, so just use Thrust
       // directly
@@ -222,7 +222,7 @@ void index_put_accum_kernel(Tensor & self, TensorList indices, const Tensor & va
            std::min<int>(at::cuda::getCurrentDeviceProperties()->maxGridSize[1], THCCeilDiv(sliceSize, (int64_t) (C10_WARP_SIZE*UNROLL))),
            std::min(std::max<int>(1,nElemBefore), at::cuda::getCurrentDeviceProperties()->maxGridSize[2]));
       dim3 block(C10_WARP_SIZE, indices_per_block);
-      
+
       AT_DISPATCH_ALL_TYPES_AND2(at::ScalarType::Half, at::ScalarType::Bool,
       value_.scalar_type(), "indexing_backward", [&] {
       indexing_backward_kernel<scalar_t, UNROLL><<<grid, block, 0, stream>>>(
@@ -245,5 +245,3 @@ REGISTER_CUDA_DISPATCH(index_put_accum_stub, &index_put_accum_kernel);
 } //anonymous
 } //at
 } //native
-
-
