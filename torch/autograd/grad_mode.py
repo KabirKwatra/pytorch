@@ -2,6 +2,7 @@ import torch
 import functools
 import inspect
 
+
 class _DecoratorContextManager:
     """Allow a context manager to be used as a decorator"""
 
@@ -62,6 +63,7 @@ class no_grad(_DecoratorContextManager):
         >>> z.requires_grad
         False
     """
+
     def __enter__(self):
         self.prev = torch.is_grad_enabled()
         torch._C.set_grad_enabled(False)
@@ -102,6 +104,7 @@ class enable_grad(_DecoratorContextManager):
         True
 
     """
+
     def __enter__(self):
         self.prev = torch.is_grad_enabled()
         torch._C.set_grad_enabled(True)
