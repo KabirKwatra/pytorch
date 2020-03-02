@@ -20,7 +20,7 @@ class TestIndexing(TestCase):
     def test_multiple_int(self, device):
         v = torch.randn(5, 7, 3, device=device)
         self.assertEqual(v[4].shape, (7, 3))
-        self.assertEqual(v[4, :, 1].shape, (7,))
+        self.assertEqual(v[4, :, 1].shape, (7, ))
 
     def test_none(self, device):
         v = torch.randn(5, 7, 3, device=device)
@@ -45,29 +45,30 @@ class TestIndexing(TestCase):
 
     def test_bool_indices(self, device):
         v = torch.randn(5, 7, 3, device=device)
-        boolIndices = torch.tensor(
-            [True, False, True, True, False], dtype=torch.bool, device=device
-        )
+        boolIndices = torch.tensor([True, False, True, True, False],
+                                   dtype=torch.bool,
+                                   device=device)
         self.assertEqual(v[boolIndices].shape, (3, 7, 3))
         self.assertEqual(v[boolIndices], torch.stack([v[0], v[2], v[3]]))
 
         v = torch.tensor([True, False, True], dtype=torch.bool, device=device)
-        boolIndices = torch.tensor(
-            [True, False, False], dtype=torch.bool, device=device
-        )
-        uint8Indices = torch.tensor([1, 0, 0], dtype=torch.uint8, device=device)
+        boolIndices = torch.tensor([True, False, False],
+                                   dtype=torch.bool,
+                                   device=device)
+        uint8Indices = torch.tensor([1, 0, 0],
+                                    dtype=torch.uint8,
+                                    device=device)
         with warnings.catch_warnings(record=True) as w:
             self.assertEqual(v[boolIndices].shape, v[uint8Indices].shape)
             self.assertEqual(v[boolIndices], v[uint8Indices])
-            self.assertEqual(
-                v[boolIndices], tensor([True], dtype=torch.bool, device=device)
-            )
+            self.assertEqual(v[boolIndices],
+                             tensor([True], dtype=torch.bool, device=device))
             self.assertEquals(len(w), 2)
 
     def test_bool_indices_accumulate(self, device):
-        mask = torch.zeros(size=(10,), dtype=torch.bool, device=device)
+        mask = torch.zeros(size=(10, ), dtype=torch.bool, device=device)
         y = torch.ones(size=(10, 10), device=device)
-        y.index_put_((mask,), y[mask], accumulate=True)
+        y.index_put_((mask, ), y[mask], accumulate=True)
         self.assertEqual(y, torch.ones(size=(10, 10), device=device))
 
     def test_multiple_bool_indices(self, device):
@@ -89,10 +90,10 @@ class TestIndexing(TestCase):
         self.assertEqual(v[v == 0], torch.tensor([], device=device))
 
     def test_byte_mask_accumulate(self, device):
-        mask = torch.zeros(size=(10,), dtype=torch.uint8, device=device)
+        mask = torch.zeros(size=(10, ), dtype=torch.uint8, device=device)
         y = torch.ones(size=(10, 10), device=device)
         with warnings.catch_warnings(record=True) as w:
-            y.index_put_((mask,), y[mask], accumulate=True)
+            y.index_put_((mask, ), y[mask], accumulate=True)
             self.assertEqual(y, torch.ones(size=(10, 10), device=device))
             self.assertEquals(len(w), 2)
 
@@ -104,7 +105,7 @@ class TestIndexing(TestCase):
         indices = torch.LongTensor([0, 1, -2, -1])
         values = torch.tensor([10, 11, 12, 13], dtype=dt, device=device)
 
-        a.index_put_((indices,), values, accumulate=True)
+        a.index_put_((indices, ), values, accumulate=True)
 
         self.assertEqual(a[0], 11)
         self.assertEqual(a[1], 12)
@@ -141,7 +142,7 @@ class TestIndexing(TestCase):
     def test_index_put_src_datatype(self, device, dtype):
         src = torch.ones(3, 2, 4, device=device, dtype=dtype)
         vals = torch.ones(3, 2, 4, device=device, dtype=dtype)
-        indices = (torch.tensor([0, 2, 1]),)
+        indices = (torch.tensor([0, 2, 1]), )
         res = src.index_put_(indices, vals, accumulate=True)
         self.assertEqual(res.shape, src.shape)
 
@@ -201,15 +202,15 @@ class TestIndexing(TestCase):
 
         x = torch.empty(10, 0, device=device)
         self.assertEqual(x[[1, 2]].shape, (2, 0))
-        self.assertEqual(x[[], []].shape, (0,))
+        self.assertEqual(x[[], []].shape, (0, ))
         with self.assertRaisesRegex(IndexError, "for dimension with size 0"):
             x[:, [0, 1]]
 
     def test_empty_ndim_index_bool(self, device):
         x = torch.randn(5, device=device)
         self.assertRaises(
-            IndexError, lambda: x[torch.empty(0, 2, dtype=torch.uint8, device=device)]
-        )
+            IndexError, lambda: x[torch.empty(
+                0, 2, dtype=torch.uint8, device=device)])
 
     def test_empty_slice(self, device):
         x = torch.randn(2, 3, 4, 5, device=device)
@@ -224,7 +225,10 @@ class TestIndexing(TestCase):
         true = torch.tensor(1, dtype=torch.uint8, device=device)
         false = torch.tensor(0, dtype=torch.uint8, device=device)
 
-        tensors = [torch.randn(2, 3, device=device), torch.tensor(3, device=device)]
+        tensors = [
+            torch.randn(2, 3, device=device),
+            torch.tensor(3, device=device)
+        ]
 
         for a in tensors:
             self.assertNotEqual(a.data_ptr(), a[True].data_ptr())
@@ -238,7 +242,10 @@ class TestIndexing(TestCase):
         true = torch.tensor(1, dtype=torch.uint8, device=device)
         false = torch.tensor(0, dtype=torch.uint8, device=device)
 
-        tensors = [torch.randn(2, 3, device=device), torch.tensor(3, device=device)]
+        tensors = [
+            torch.randn(2, 3, device=device),
+            torch.tensor(3, device=device)
+        ]
 
         for a in tensors:
             # prefix with a 1,1, to ensure we are compatible with numpy which cuts off prefix 1s
@@ -429,7 +436,7 @@ class TestIndexing(TestCase):
             self.assertRaisesRegex(
                 RuntimeError,
                 "expected device",
-                lambda: torch.index_put_(b, (idx,), c, accumulate=accumulate),
+                lambda: torch.index_put_(b, (idx, ), c, accumulate=accumulate),
             )
 
 
@@ -512,7 +519,8 @@ class NumpyTests(TestCase):
         self.assertEqual(a[[]], torch.tensor([], device=device))
 
         b = tensor([], device=device).long()
-        self.assertEqual(a[[]], torch.tensor([], dtype=torch.long, device=device))
+        self.assertEqual(a[[]],
+                         torch.tensor([], dtype=torch.long, device=device))
 
         b = tensor([], device=device).float()
         self.assertRaises(IndexError, lambda: a[b])
@@ -536,7 +544,7 @@ class NumpyTests(TestCase):
 
         # Assignment with `(Ellipsis,)` on 0-d arrays
         b = torch.tensor(1)
-        b[(Ellipsis,)] = 2
+        b[(Ellipsis, )] = 2
         self.assertEqual(b, 2)
 
     def test_single_int_index(self, device):
@@ -569,7 +577,8 @@ class NumpyTests(TestCase):
 
         index = torch.ByteTensor(4, 4).to(device).zero_()
         self.assertRaisesRegex(IndexError, "mask", lambda: arr[index])
-        self.assertRaisesRegex(IndexError, "mask", lambda: arr[(slice(None), index)])
+        self.assertRaisesRegex(IndexError,
+                               "mask", lambda: arr[(slice(None), index)])
 
     def test_boolean_indexing_onedim(self, device):
         # Indexing a 2-dimensional array with
@@ -591,7 +600,8 @@ class NumpyTests(TestCase):
 
         self.assertRaisesRegex(Exception, "shape mismatch", f, a, [])
         self.assertRaisesRegex(Exception, "shape mismatch", f, a, [1, 2, 3])
-        self.assertRaisesRegex(Exception, "shape mismatch", f, a[:1], [1, 2, 3])
+        self.assertRaisesRegex(Exception, "shape mismatch", f, a[:1],
+                               [1, 2, 3])
 
     def test_boolean_indexing_twodim(self, device):
         # Indexing a 2-dimensional array with
@@ -607,15 +617,15 @@ class NumpyTests(TestCase):
 
         # boolean assignment
         a[b] = 0
-        self.assertEqual(a, tensor([[0, 2, 0], [4, 0, 6], [0, 8, 0]], device=device))
+        self.assertEqual(
+            a, tensor([[0, 2, 0], [4, 0, 6], [0, 8, 0]], device=device))
 
     def test_boolean_indexing_weirdness(self, device):
         # Weird boolean indexing things
         a = torch.ones((2, 3, 4), device=device)
         self.assertEqual((0, 2, 3, 4), a[False, True, ...].shape)
-        self.assertEqual(
-            torch.ones(1, 2, device=device), a[True, [0, 1], True, True, [1], [[2]]]
-        )
+        self.assertEqual(torch.ones(1, 2, device=device),
+                         a[True, [0, 1], True, True, [1], [[2]]])
         self.assertRaises(IndexError, lambda: a[False, [0, 1], ...])
 
     def test_boolean_indexing_weirdness_tensors(self, device):
@@ -624,9 +634,8 @@ class NumpyTests(TestCase):
         true = torch.tensor(True, device=device)
         a = torch.ones((2, 3, 4), device=device)
         self.assertEqual((0, 2, 3, 4), a[False, True, ...].shape)
-        self.assertEqual(
-            torch.ones(1, 2, device=device), a[true, [0, 1], true, true, [1], [[2]]]
-        )
+        self.assertEqual(torch.ones(1, 2, device=device),
+                         a[true, [0, 1], true, true, [1], [[2]]])
         self.assertRaises(IndexError, lambda: a[false, [0, 1], ...])
 
     def test_boolean_indexing_alldims(self, device):
@@ -656,18 +665,17 @@ class NumpyTests(TestCase):
 
     def test_broaderrors_indexing(self, device):
         a = torch.zeros(5, 5, device=device)
-        self.assertRaisesRegex(
-            IndexError, "shape mismatch", a.__getitem__, ([0, 1], [0, 1, 2])
-        )
-        self.assertRaisesRegex(
-            IndexError, "shape mismatch", a.__setitem__, ([0, 1], [0, 1, 2]), 0
-        )
+        self.assertRaisesRegex(IndexError, "shape mismatch", a.__getitem__,
+                               ([0, 1], [0, 1, 2]))
+        self.assertRaisesRegex(IndexError, "shape mismatch", a.__setitem__,
+                               ([0, 1], [0, 1, 2]), 0)
 
     def test_trivial_fancy_out_of_bounds(self, device):
         a = torch.zeros(5, device=device)
         ind = torch.ones(20, dtype=torch.int64, device=device)
         if a.is_cuda:
-            raise unittest.SkipTest("CUDA asserts instead of raising an exception")
+            raise unittest.SkipTest(
+                "CUDA asserts instead of raising an exception")
         ind[-1] = 10
         self.assertRaises(IndexError, a.__getitem__, ind)
         self.assertRaises(IndexError, a.__setitem__, ind, 0)
@@ -681,7 +689,8 @@ class NumpyTests(TestCase):
         a = torch.zeros((5, 5), device=device)
         a[[[0], [1], [2]], [0, 1, 2]] = tensor([2.0, 3.0, 4.0], device=device)
 
-        self.assertTrue((a[:3, :3] == tensor([2.0, 3.0, 4.0], device=device)).all())
+        self.assertTrue((a[:3, :3] == tensor([2.0, 3.0, 4.0],
+                                             device=device)).all())
 
     def test_broadcast_subspace(self, device):
         a = torch.zeros((100, 100), device=device)
