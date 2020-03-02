@@ -1,15 +1,15 @@
-from torch.testing._internal.common_utils import TestCase, run_tests
-from torch.testing._internal.common_device_type import (
-    instantiate_device_type_tests,
-    onlyCUDA,
-    dtypes,
-    dtypesIfCPU,
-    dtypesIfCUDA,
-)
-import torch
-from torch import tensor
 import unittest
 import warnings
+
+import torch
+from torch import tensor
+from torch.testing._internal.common_device_type import dtypes
+from torch.testing._internal.common_device_type import dtypesIfCPU
+from torch.testing._internal.common_device_type import dtypesIfCUDA
+from torch.testing._internal.common_device_type import instantiate_device_type_tests
+from torch.testing._internal.common_device_type import onlyCUDA
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import TestCase
 
 
 class TestIndexing(TestCase):
