@@ -5,6 +5,7 @@ from torch import tensor
 import unittest
 import warnings
 
+
 class TestIndexing(TestCase):
     def test_single_int(self, device):
         v = torch.randn(5, 7, 3, device=device)
@@ -83,8 +84,8 @@ class TestIndexing(TestCase):
             self.assertEqual(y, torch.ones(size=(10, 10), device=device))
             self.assertEquals(len(w), 2)
 
-    def test_index_put_accumulate_large_tensor(self, device): 
-        # This test is for tensors with number of elements >= INT_MAX (2^31 - 1). 
+    def test_index_put_accumulate_large_tensor(self, device):
+        # This test is for tensors with number of elements >= INT_MAX (2^31 - 1).
         N = (1 << 31) + 5
         dt = torch.int8
         a = torch.ones(N, dtype=dt, device=device)
@@ -395,7 +396,8 @@ class TestIndexing(TestCase):
         c = torch.tensor([1., 2.], device="cpu")
 
         for accumulate in [True, False]:
-            self.assertRaisesRegex(RuntimeError, 'expected device', lambda: torch.index_put_(b, (idx,), c, accumulate=accumulate))
+            self.assertRaisesRegex(RuntimeError, 'expected device',
+                                   lambda: torch.index_put_(b, (idx,), c, accumulate=accumulate))
 
 
 # The tests below are from NumPy test_indexing.py with some modifications to
@@ -657,6 +659,7 @@ class NumpyTests(TestCase):
         a[b] = v
         expected = b.double().unsqueeze(1).expand(100, 100)
         self.assertEqual(a, expected)
+
 
 instantiate_device_type_tests(TestIndexing, globals())
 instantiate_device_type_tests(NumpyTests, globals())
