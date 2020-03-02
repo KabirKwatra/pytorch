@@ -5,7 +5,6 @@ import unittest
 
 import torch
 
-
 path = os.path.dirname(os.path.realpath(__file__))
 rstpath = os.path.join(path, "../docs/source/")
 pypath = os.path.join(path, "../torch/_torch_docs.py")
@@ -74,22 +73,17 @@ class TestDocCoverage(unittest.TestCase):
             "conv_tbc",
         }
         has_docstring = set(
-            a
-            for a in dir(torch)
-            if getattr(torch, a).__doc__
-            and not a.startswith("_")
-            and "function" in type(getattr(torch, a)).__name__
-        )
+            a for a in dir(torch)
+            if getattr(torch, a).__doc__ and not a.startswith("_")
+            and "function" in type(getattr(torch, a)).__name__)
         self.assertEqual(
             has_docstring & whitelist,
             whitelist,
-            textwrap.dedent(
-                """
+            textwrap.dedent("""
             The whitelist in test_docs_coverage.py contains something
             that doesn't have a docstring or isn't in torch.*. If you just
             removed something from torch.*, please remove it from the whitelist
-            in test_docs_coverage.py"""
-            ),
+            in test_docs_coverage.py"""),
         )
         has_docstring -= whitelist
         # https://github.com/pytorch/pytorch/issues/32014
@@ -102,12 +96,10 @@ class TestDocCoverage(unittest.TestCase):
         self.assertEqual(
             has_docstring,
             in_rst,
-            textwrap.dedent(
-                """
+            textwrap.dedent("""
             The lists of functions documented in torch.rst and in python are different.
             Did you forget to add a new thing to torch.rst, or whitelist things you
-            don't want to document?"""
-            ),
+            don't want to document?"""),
         )
 
     def test_tensor(self):
@@ -123,22 +115,16 @@ class TestDocCoverage(unittest.TestCase):
             "rename",
         }
         classes = [torch.FloatTensor, torch.LongTensor, torch.ByteTensor]
-        has_docstring = set(
-            x
-            for c in classes
-            for x in dir(c)
-            if not x.startswith("_") and getattr(c, x).__doc__
-        )
+        has_docstring = set(x for c in classes for x in dir(c)
+                            if not x.startswith("_") and getattr(c, x).__doc__)
         has_docstring -= whitelist
         self.assertEqual(
             has_docstring,
             in_rst,
-            textwrap.dedent(
-                """
+            textwrap.dedent("""
             The lists of tensor methods documented in tensors.rst and in python are
             different. Did you forget to add a new thing to tensors.rst, or whitelist
-            things you don't want to document?"""
-            ),
+            things you don't want to document?"""),
         )
 
 
