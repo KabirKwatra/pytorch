@@ -1,4 +1,4 @@
-## @package rnn_cell
+# @package rnn_cell
 # Module caffe2.python.rnn_cell
 from __future__ import absolute_import
 from __future__ import division
@@ -58,6 +58,7 @@ class RNNCell(object):
     As optional you could add input and output preparation steps by overriding
     corresponding methods.
     '''
+
     def __init__(self, name=None, forward_only=False, initializer=None):
         self.name = name
         self.recompute_blobs = []
@@ -184,7 +185,6 @@ class RNNCell(object):
         if 'extra_inputs' in arg_names:
             rectified.append(extra_inputs)
         return rectified
-
 
     def apply_override(
         self,
@@ -1763,10 +1763,10 @@ def cudnn_LSTM(model, input_blob, initial_states, dim_in, dim_out,
 
         # Multiply by 4 since we have 4 gates per LSTM unit
         first_layer_sz = input_weight_size + recurrent_weight_size + \
-                         input_bias_size + recurrent_bias_size
+            input_bias_size + recurrent_bias_size
         upper_layer_sz = upper_layer_input_weight_size + \
-                         recurrent_weight_size + input_bias_size + \
-                         recurrent_bias_size
+            recurrent_weight_size + input_bias_size + \
+            recurrent_bias_size
         total_sz = 4 * (first_layer_sz + (num_layers - 1) * upper_layer_sz)
 
         weights = model.create_param(
