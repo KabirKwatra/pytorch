@@ -1,6 +1,7 @@
-import torch
 import functools
 import inspect
+
+import torch
 
 
 class _DecoratorContextManager:

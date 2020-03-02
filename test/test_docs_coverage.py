@@ -1,8 +1,9 @@
-import torch
-import unittest
 import os
 import re
 import textwrap
+import unittest
+
+import torch
 
 
 path = os.path.dirname(os.path.realpath(__file__))
