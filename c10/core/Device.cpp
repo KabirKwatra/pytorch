@@ -13,29 +13,29 @@
 namespace c10 {
 namespace {
 DeviceType parse_type(const std::string& device_string) {
-    static const std::array<std::pair<std::string, DeviceType>, 9> types = {{
-            {"cpu", DeviceType::CPU},
-            {"cuda", DeviceType::CUDA},
-            {"mkldnn", DeviceType::MKLDNN},
-            {"opengl", DeviceType::OPENGL},
-            {"opencl", DeviceType::OPENCL},
-            {"ideep", DeviceType::IDEEP},
-            {"hip", DeviceType::HIP},
-            {"msnpu", DeviceType::MSNPU},
-            {"xla", DeviceType::XLA},
-        }
-    };
-    auto device = std::find_if(
-                      types.begin(),
-                      types.end(),
-    [device_string](const std::pair<std::string, DeviceType>& p) {
+  static const std::array<std::pair<std::string, DeviceType>, 9> types = {{
+      {"cpu", DeviceType::CPU},
+      {"cuda", DeviceType::CUDA},
+      {"mkldnn", DeviceType::MKLDNN},
+      {"opengl", DeviceType::OPENGL},
+      {"opencl", DeviceType::OPENCL},
+      {"ideep", DeviceType::IDEEP},
+      {"hip", DeviceType::HIP},
+      {"msnpu", DeviceType::MSNPU},
+      {"xla", DeviceType::XLA},
+  }};
+  auto device = std::find_if(
+      types.begin(),
+      types.end(),
+      [device_string](const std::pair<std::string, DeviceType>& p) {
         return p.first == device_string;
-    });
-    if (device != types.end()) {
-        return device->second;
-    }
-    AT_ERROR(
-        "Expected one of cpu, cuda, mkldnn, opengl, opencl, ideep, hip, msnpu device type at start of device string: ", device_string);
+      });
+  if (device != types.end()) {
+    return device->second;
+  }
+  AT_ERROR(
+      "Expected one of cpu, cuda, mkldnn, opengl, opencl, ideep, hip, msnpu device type at start of device string: ",
+      device_string);
 }
 } // namespace
 
@@ -63,41 +63,44 @@ DeviceType parse_type(const std::string& device_string) {
 //   index_ = std::stoi(match[3].str());
 // }
 Device::Device(const std::string& device_string) : Device(Type::CPU) {
-    TORCH_CHECK(!device_string.empty(), "Device string must not be empty");
-    auto index = device_string.find(':');
-    if (index == std::string::npos) {
-        type_ = parse_type(device_string);
-    } else {
-        std::string s;
-        s = device_string.substr(0, index);
-        TORCH_CHECK(!s.empty(), "Device string must not be empty");
-        type_ = parse_type(s);
+  TORCH_CHECK(!device_string.empty(), "Device string must not be empty");
+  auto index = device_string.find(':');
+  if (index == std::string::npos) {
+    type_ = parse_type(device_string);
+  } else {
+    std::string s;
+    s = device_string.substr(0, index);
+    TORCH_CHECK(!s.empty(), "Device string must not be empty");
+    type_ = parse_type(s);
 
-        std::string device_index = device_string.substr(index + 1);
-        try {
-            index_ = c10::stoi(device_index);
-        } catch (const std::exception &) {
-            AT_ERROR("Could not parse device index '", device_index,
-                     "' in device string '", device_string, "'");
-        }
-        TORCH_CHECK(index_ >= 0,
-                    "Device index must be non-negative, got ", index_);
+    std::string device_index = device_string.substr(index + 1);
+    try {
+      index_ = c10::stoi(device_index);
+    } catch (const std::exception&) {
+      AT_ERROR(
+          "Could not parse device index '",
+          device_index,
+          "' in device string '",
+          device_string,
+          "'");
     }
-    validate();
+    TORCH_CHECK(index_ >= 0, "Device index must be non-negative, got ", index_);
+  }
+  validate();
 }
 
 std::string Device::str() const {
-    std::string str = DeviceTypeName(type(), /* lower case */ true);
-    if (has_index()) {
-        str.push_back(':');
-        str.append(to_string(index()));
-    }
-    return str;
+  std::string str = DeviceTypeName(type(), /* lower case */ true);
+  if (has_index()) {
+    str.push_back(':');
+    str.append(to_string(index()));
+  }
+  return str;
 }
 
 std::ostream& operator<<(std::ostream& stream, const Device& device) {
-    stream << device.str();
-    return stream;
+  stream << device.str();
+  return stream;
 }
 
 } // namespace c10
