@@ -523,7 +523,7 @@ def log_test_reason(file_type, filename, test, options):
         print_to_stderr(
             'Determination found {} file {} -- running {}'.format(
                 file_type,
-                filename, 
+                filename,
                 test,
             )
         )
@@ -603,8 +603,8 @@ def determine_target(test, touched_files, options):
             if touched_module.startswith('test.'):
                 touched_module = touched_module.split('test.')[1]
             if (
-                touched_module in dep_modules 
-                or touched_module == test.replace('/', '.')
+                touched_module in dep_modules or
+                touched_module == test.replace('/', '.')
             ):
                 log_test_reason(file_type, touched_file, test, options)
                 return True
@@ -635,13 +635,13 @@ def main():
     if options.determine_from is not None and os.path.exists(options.determine_from):
         with open(options.determine_from, 'r') as fh:
             touched_files = [
-                os.path.normpath(name.strip()) for name in fh.read().split('\n') 
+                os.path.normpath(name.strip()) for name in fh.read().split('\n')
                 if len(name.strip()) > 0
             ]
         # HACK: Ensure the 'test' paths can be traversed by Modulefinder
         sys.path.append('test')
         selected_tests = [
-            test for test in selected_tests 
+            test for test in selected_tests
             if determine_target(test, touched_files, options)
         ]
         sys.path.remove('test')

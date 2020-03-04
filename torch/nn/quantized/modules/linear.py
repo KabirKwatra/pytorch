@@ -7,6 +7,7 @@ import torch.nn as nn
 import torch.nn.intrinsic as nni
 from torch.nn.quantized.modules.utils import _quantize_weight
 
+
 class LinearPackedParams(torch.nn.Module):
     _version = 2
 
@@ -28,7 +29,6 @@ class LinearPackedParams(torch.nn.Module):
             self._packed_params = torch.ops.quantized.linear_prepack_fp16(weight, bias)
         else:
             raise RuntimeError('Unsupported dtype on dynamic quantized linear!')
-
 
     @torch.jit.export
     def _weight_bias(self):
@@ -79,6 +79,7 @@ class LinearPackedParams(torch.nn.Module):
         self.dtype = state[3]
         self.set_weight_bias(state[0], state[1])
         self.training = state[2]
+
 
 class Linear(torch.nn.Module):
     r"""
