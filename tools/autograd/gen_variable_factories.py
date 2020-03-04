@@ -8,7 +8,8 @@ from .utils import CodeTemplate, write
 from .gen_variable_type import format_trace
 
 
-FUNCTION_TEMPLATE = CodeTemplate("""\
+FUNCTION_TEMPLATE = CodeTemplate(
+    """\
 inline at::Tensor ${name}(${formals}) {
   ${pre_record_trace}
   at::Tensor tensor = ([&]() {
@@ -20,7 +21,8 @@ inline at::Tensor ${name}(${formals}) {
   ${post_record_trace}
   return result;
 }
-""")
+"""
+)
 
 
 OPTIONAL_TYPE_PATTERN = re.compile(r"c10::optional<(.+)>")
@@ -29,11 +31,11 @@ TYPE_PATTERN = re.compile(r"(?:const\s+)?([A-Z]\w+)")
 
 def fully_qualified_type(argument_type):
     def maybe_optional_type(t, opt_match):
-        return 'c10::optional<{}>'.format(t) if opt_match else t
+        return "c10::optional<{}>".format(t) if opt_match else t
 
     opt_match = OPTIONAL_TYPE_PATTERN.match(argument_type)
     if opt_match:
-        argument_type = argument_type[opt_match.start(1):opt_match.end(1)]
+        argument_type = argument_type[opt_match.start(1) : opt_match.end(1)]
     match = TYPE_PATTERN.match(argument_type)
     if match is None:
         return maybe_optional_type(argument_type, opt_match)
@@ -42,19 +44,30 @@ def fully_qualified_type(argument_type):
     return maybe_optional_type(qualified_type, opt_match)
 
 
-def gen_variable_factories(out, declarations, template_path, disable_autograd=False, disable_trace=False):
+def gen_variable_factories(
+    out, declarations, template_path, disable_autograd=False, disable_trace=False
+):
     function_definitions = []
     for decl in declarations:
-        has_tensor_options = any(a["simple_type"] == "TensorOptions" for a in decl["arguments"])
-        is_namespace_fn = 'namespace' in decl['method_of']
+        has_tensor_options = any(
+            a["simple_type"] == "TensorOptions" for a in decl["arguments"]
+        )
+        is_namespace_fn = "namespace" in decl["method_of"]
         if (has_tensor_options or decl["name"].endswith("_like")) and is_namespace_fn:
             function_definitions.append(
-                process_function(decl, has_tensor_options, disable_autograd=disable_autograd,
-                                 disable_trace=disable_trace))
-    write(out,
-          "variable_factories.h",
-          CodeTemplate.from_file(template_path + "/variable_factories.h"),
-          {"function_definitions": function_definitions})
+                process_function(
+                    decl,
+                    has_tensor_options,
+                    disable_autograd=disable_autograd,
+                    disable_trace=disable_trace,
+                )
+            )
+    write(
+        out,
+        "variable_factories.h",
+        CodeTemplate.from_file(template_path + "/variable_factories.h"),
+        {"function_definitions": function_definitions},
+    )
 
 
 def process_function(decl, has_tensor_options, disable_autograd, disable_trace):
@@ -73,9 +86,13 @@ def process_function(decl, has_tensor_options, disable_autograd, disable_trace):
     if not disable_autograd:
         pre_record_trace, post_record_trace = format_trace(decl, disable_trace)
     else:
-        pre_record_trace, post_record_trace = '', ''
+        pre_record_trace, post_record_trace = "", ""
 
     return FUNCTION_TEMPLATE.substitute(
-        name=decl["name"], formals=formals, actuals=actuals, requires_grad=requires_grad,
-        pre_record_trace=pre_record_trace, post_record_trace=post_record_trace
+        name=decl["name"],
+        formals=formals,
+        actuals=actuals,
+        requires_grad=requires_grad,
+        pre_record_trace=pre_record_trace,
+        post_record_trace=post_record_trace,
     )
