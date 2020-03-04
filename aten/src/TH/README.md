@@ -1,4 +1,5 @@
-Environment variables control the disabling of certain explicit SIMD optimizations.
+Environment variables control the disabling of certain explicit SIMD
+optimizations.
 
 ```
 x64 options:
