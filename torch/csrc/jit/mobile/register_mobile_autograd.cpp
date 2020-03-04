@@ -18,11 +18,11 @@ Tensor add_Scalar(const Tensor &self, Scalar other, Scalar alpha);
 
 namespace {
 static auto registry = torch::RegisterOperators().op(
-    "_aten::add.Scalar",
-    torch::RegisterOperators::options().kernel(c10::DispatchKey::VariableTensorId, &torch::autograd::VariableType::add_Scalar)
-).op(
-    "_aten::mul.Tensor(Tensor self, Tensor other) -> Tensor",
-    torch::RegisterOperators::options().kernel(c10::DispatchKey::VariableTensorId, &torch::autograd::VariableType::mul_Tensor)
-        .aliasAnalysis(c10::AliasAnalysisKind::FROM_SCHEMA)
-);
+                           "_aten::add.Scalar",
+                           torch::RegisterOperators::options().kernel(c10::DispatchKey::VariableTensorId, &torch::autograd::VariableType::add_Scalar)
+                       ).op(
+                           "_aten::mul.Tensor(Tensor self, Tensor other) -> Tensor",
+                           torch::RegisterOperators::options().kernel(c10::DispatchKey::VariableTensorId, &torch::autograd::VariableType::mul_Tensor)
+                           .aliasAnalysis(c10::AliasAnalysisKind::FROM_SCHEMA)
+                       );
 }

@@ -28,7 +28,8 @@
 using namespace at;
 using namespace torch::autograd::generated;
 
-namespace torch { namespace autograd {
+namespace torch {
+namespace autograd {
 
 namespace VariableType {
 // Comment the anonymous namespace so that the generated functions
@@ -36,15 +37,18 @@ namespace VariableType {
 // Later when we merge the mobile op registration the anonymous namespace
 // will be restored.
 // namespace {
-${type_derived_method_definitions}
+$ {type_derived_method_definitions}
 // }
 }
 
 namespace {
 
 auto registerer = torch::RegisterOperators()
-  ${wrapper_registrations};
+$ {
+    wrapper_registrations
+};
 
 }
 
-}} // namespace torch::autograd
+}
+} // namespace torch::autograd
