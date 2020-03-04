@@ -1,6 +1,5 @@
 # coding=utf-8
 r"""Quantized convolution modules."""
-
 from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
@@ -10,9 +9,9 @@ import torch
 import torch.nn as nn
 import torch.nn.intrinsic as nni
 import torch.nn.intrinsic.qat as nniqat
-
 from torch._ops import ops
-from torch.nn.modules.utils import _pair, _triple
+from torch.nn.modules.utils import _pair
+from torch.nn.modules.utils import _triple
 from torch.nn.quantized.modules.utils import _quantize_weight
 from torch.nn.utils import fuse_conv_bn_weights
 

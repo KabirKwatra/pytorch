@@ -1,10 +1,12 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import torch
-
-from torch._jit_internal import Optional  # noqa: F401
 import torch.nn as nn
 import torch.nn.intrinsic as nni
+from torch._jit_internal import Optional  # noqa: F401
 from torch.nn.quantized.modules.utils import _quantize_weight
 
 
