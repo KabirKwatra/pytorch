@@ -1,11 +1,18 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-from torch.autograd.gradcheck import gradgradcheck, gradcheck
-from torch.testing._internal.common_utils import TestCase, run_tests, TemporaryFileName
-from torch.utils import mkldnn as mkldnn_utils
-import torch.jit
-import torch
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
 import copy
 import unittest
+
+import torch.jit
+from torch.autograd.gradcheck import gradcheck
+from torch.autograd.gradcheck import gradgradcheck
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import TemporaryFileName
+from torch.testing._internal.common_utils import TestCase
+from torch.utils import mkldnn as mkldnn_utils
 
 try:
     import torchvision
