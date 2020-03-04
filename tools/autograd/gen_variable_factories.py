@@ -1,11 +1,11 @@
 # Generates C++ functions that wrap ATen tensor factory methods to turn them into Variables.
 #
 # This writes one file: variable_factories.h
-
 import re
 
-from .utils import CodeTemplate, write
 from .gen_variable_type import format_trace
+from .utils import CodeTemplate
+from .utils import write
 
 
 FUNCTION_TEMPLATE = CodeTemplate(
