@@ -70,6 +70,7 @@ VIEW_FUNCTIONS = {
 # returns a view of its inputs
 RETURNS_VIEWS_OF_INPUT = set(VIEW_FUNCTIONS.keys()).union({'chunk', 'split'})
 
+
 def format_return_type(returns):
     if len(returns) == 0:
         return 'void'
