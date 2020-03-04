@@ -42,31 +42,32 @@ c10::OperatorOptions aliasAnalysisSpecialCase() {
   return result;
 }
 
-RegisterOperators reg_rpc_ops({
-    Operator(
-        "aten::to_here(RRef(t) self) -> t",
-        [](Stack& stack) {
-          auto rref = pop(stack).toRRef();
-          IValue res;
-          if (rref->isOwner()) {
-            res = c10::dynamic_intrusive_pointer_cast<dist_rpc::OwnerRRef>(rref)
-                      ->getValue();
-          } else {
-            res = c10::dynamic_intrusive_pointer_cast<dist_rpc::UserRRef>(rref)
-                      ->toHere();
-          }
-          push(stack, std::move(res));
-          return 0;
-        },
-        aliasAnalysisFromSchema()),
-    Operator(
-        "aten::is_owner(RRef(t) self) -> bool",
-        [](Stack& stack) {
-          auto rref = pop(stack).toRRef();
-          push(stack, rref->isOwner());
-          return 0;
-        },
-        aliasAnalysisFromSchema()),
+RegisterOperators reg_rpc_ops(
+    {Operator(
+         "aten::to_here(RRef(t) self) -> t",
+         [](Stack& stack) {
+           auto rref = pop(stack).toRRef();
+           IValue res;
+           if (rref->isOwner()) {
+             res =
+                 c10::dynamic_intrusive_pointer_cast<dist_rpc::OwnerRRef>(rref)
+                     ->getValue();
+           } else {
+             res = c10::dynamic_intrusive_pointer_cast<dist_rpc::UserRRef>(rref)
+                       ->toHere();
+           }
+           push(stack, std::move(res));
+           return 0;
+         },
+         aliasAnalysisFromSchema()),
+     Operator(
+         "aten::is_owner(RRef(t) self) -> bool",
+         [](Stack& stack) {
+           auto rref = pop(stack).toRRef();
+           push(stack, rref->isOwner());
+           return 0;
+         },
+         aliasAnalysisFromSchema()),
      Operator(
          prim::rpc_async,
          [](const Node* node) -> Operation {
@@ -104,9 +105,10 @@ RegisterOperators reg_rpc_ops({
 
              // Build Stack for the user callable.
              // It's similar to
-             // Stack createStackForSchema(FunctionSchema, py::args, py::kwargs).
-             // Instead, it's
-             // Stack createStackForSchema(FunctionSchema, IValue<Tuple>, IValue<Dict>).
+             // Stack createStackForSchema(FunctionSchema, py::args,
+             // py::kwargs). Instead, it's Stack
+             // createStackForSchema(FunctionSchema, IValue<Tuple>,
+             // IValue<Dict>).
              Stack userCallableStack;
              userCallableStack.reserve(functionSchema.arguments().size());
 
@@ -163,17 +165,16 @@ RegisterOperators reg_rpc_ops({
          },
          aliasAnalysisSpecialCase())});
 
-auto reg_distributed_ops =
-    torch::RegisterOperators()
-        .op("aten::get_gradients(int context_id) -> Dict(Tensor, Tensor)",
-            torch::RegisterOperators::options()
-                .aliasAnalysis(AliasAnalysisKind::FROM_SCHEMA)
-                .catchAllKernel([](int64_t context_id) {
-                  const auto& autogradContext =
-                      dist_autograd::DistAutogradContainer::getInstance()
-                          .retrieveContext(context_id);
-                  return autogradContext->getGradients();
-                }));
+auto reg_distributed_ops = torch::RegisterOperators().op(
+    "aten::get_gradients(int context_id) -> Dict(Tensor, Tensor)",
+    torch::RegisterOperators::options()
+        .aliasAnalysis(AliasAnalysisKind::FROM_SCHEMA)
+        .catchAllKernel([](int64_t context_id) {
+          const auto& autogradContext =
+              dist_autograd::DistAutogradContainer::getInstance()
+                  .retrieveContext(context_id);
+          return autogradContext->getGradients();
+        }));
 
 } // namespace
 } // namespace jit

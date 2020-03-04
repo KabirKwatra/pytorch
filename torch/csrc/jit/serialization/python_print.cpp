@@ -1,13 +1,13 @@
-#include <torch/csrc/jit/serialization/python_print.h>
 #include <ATen/core/qualified_name.h>
 #include <c10/util/Exception.h>
 #include <c10/util/StringUtil.h>
+#include <torch/csrc/jit/api/module.h>
+#include <torch/csrc/jit/frontend/error_report.h>
 #include <torch/csrc/jit/ir/attributes.h>
 #include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/ir/ir_views.h>
 #include <torch/csrc/jit/resource_guard.h>
-#include <torch/csrc/jit/frontend/error_report.h>
-#include <torch/csrc/jit/api/module.h>
+#include <torch/csrc/jit/serialization/python_print.h>
 
 using c10::QualifiedName;
 
@@ -249,7 +249,7 @@ struct PythonPrintImpl {
 
     if (n == block_point &&
         canInline(v)) { // the node must be at the expected point of the typical
-                        // tree traversal
+      // tree traversal
       // recursively see if we can inline the inputs to this input
       block_point = scanNode(block_point);
       output_inline_.insert(n);
@@ -296,7 +296,8 @@ struct PythonPrintImpl {
     // because it doesn't hash any information about the tensors.
     // We will probably need to optimize this at some point using hashing.
     for (size_t i = 0; i < tensor_table_.size(); ++i) {
-      if (t.options().type_equal(tensor_table_[i].options()) && t.equal(tensor_table_[i])) {
+      if (t.options().type_equal(tensor_table_[i].options()) &&
+          t.equal(tensor_table_[i])) {
         return i;
       }
     }
@@ -937,8 +938,7 @@ struct PythonPrintImpl {
         //   - the dict is empty
         //   - the dict has potentially ambiguous element types
         //       (e.g. Tensor vs. Optional[Tensor])
-        if (
-            node->inputs().size() == 0 ||
+        if (node->inputs().size() == 0 ||
             !elementTypeCanBeInferredFromMembers(dict_type->getKeyType()) ||
             !elementTypeCanBeInferredFromMembers(dict_type->getValueType())) {
           stmt << "annotate(" << node->output()->type()->python_str() << ", ";

@@ -3,10 +3,10 @@ This is a script for end-to-end mobile custom build test purpose. It prepares
 MobileNetV2 TorchScript model, and dumps root ops used by the model for custom
 build script to create a tailored build which only contains these used ops.
 """
-
-import torch
 import torchvision
 import yaml
+
+import torch
 
 # Download and trace the model.
 model = torchvision.models.mobilenet_v2(pretrained=True)
@@ -32,8 +32,8 @@ ops = torch.jit.export_opnames(traced_script_module)
 # in static dispatch case these extra ops will be kept by linker automatically.
 #
 # For CI purpose this one-off hack is probably fine? :)
-EXTRA_CI_ROOT_OPS = ['aten::ones']
+EXTRA_CI_ROOT_OPS = ["aten::ones"]
 
 ops.extend(EXTRA_CI_ROOT_OPS)
-with open('MobileNetV2.yaml', 'w') as output:
+with open("MobileNetV2.yaml", "w") as output:
     yaml.dump(ops, output)

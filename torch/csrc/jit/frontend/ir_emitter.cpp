@@ -1,10 +1,12 @@
-#include <torch/csrc/jit/frontend/ir_emitter.h>
 #include <c10/util/Exception.h>
 #include <c10/util/StringUtil.h>
-#include <torch/csrc/jit/testing/hooks_for_testing.h>
-#include <torch/csrc/jit/runtime/interpreter.h>
+#include <torch/csrc/jit/frontend/canonicalize_modified_loop.h>
+#include <torch/csrc/jit/frontend/convert_to_ssa.h>
+#include <torch/csrc/jit/frontend/ir_emitter.h>
+#include <torch/csrc/jit/frontend/parser.h>
+#include <torch/csrc/jit/frontend/schema_matching.h>
+#include <torch/csrc/jit/frontend/script_type_parser.h>
 #include <torch/csrc/jit/ir/ir.h>
-#include <torch/csrc/jit/runtime/operator.h>
 #include <torch/csrc/jit/passes/canonicalize.h>
 #include <torch/csrc/jit/passes/constant_pooling.h>
 #include <torch/csrc/jit/passes/constant_propagation.h>
@@ -13,11 +15,9 @@
 #include <torch/csrc/jit/passes/inliner.h>
 #include <torch/csrc/jit/passes/lift_closures.h>
 #include <torch/csrc/jit/passes/lower_tuples.h>
-#include <torch/csrc/jit/frontend/canonicalize_modified_loop.h>
-#include <torch/csrc/jit/frontend/convert_to_ssa.h>
-#include <torch/csrc/jit/frontend/parser.h>
-#include <torch/csrc/jit/frontend/schema_matching.h>
-#include <torch/csrc/jit/frontend/script_type_parser.h>
+#include <torch/csrc/jit/runtime/interpreter.h>
+#include <torch/csrc/jit/runtime/operator.h>
+#include <torch/csrc/jit/testing/hooks_for_testing.h>
 
 #include <torch/csrc/jit/ir/constants.h>
 
@@ -164,12 +164,12 @@ struct CondValue {
   RefinementSet refinements_;
   c10::optional<bool>
       static_if_; // certain expression cause us to emit a static if statement
-                  // this value is present if this is the case.
-                  // this is not equivalent to value_ being a constant
-                  // it is possible for value_ to be constant but for
-                  // the expression that produced it to not trigger the
-                  // static if behavior. e.g. use of a variable assigned
-                  // to a constant
+  // this value is present if this is the case.
+  // this is not equivalent to value_ being a constant
+  // it is possible for value_ to be constant but for
+  // the expression that produced it to not trigger the
+  // static if behavior. e.g. use of a variable assigned
+  // to a constant
 };
 
 enum NoneStatus { ALWAYS, MAYBE, NEVER };
@@ -862,7 +862,7 @@ struct to_ir {
           def,
           nullptr,
           closure_block); // ignore schema return, we just wont use it for now
-                          // since we never create a Method for the closure
+      // since we never create a Method for the closure
     };
     auto closure_value = emitClosure(emit_body);
     environment_stack->setSugaredVar(
@@ -1538,9 +1538,9 @@ struct to_ir {
             return false;
           }
           if ((typ->isSubtypeOf(AnyListType::get()) &&
-                  maybeOfKind(ListType::Kind, actual_type)) ||
+               maybeOfKind(ListType::Kind, actual_type)) ||
               (typ->isSubtypeOf(AnyTupleType::get()) &&
-                  maybeOfKind(TupleType::Kind, actual_type))) {
+               maybeOfKind(TupleType::Kind, actual_type))) {
             return false;
           }
         }
@@ -1863,9 +1863,7 @@ struct to_ir {
     environment_stack->setVar(lhs.range(), lhs.name().name(), result);
   }
 
-  Value* emitAugAssignmentHelper(
-      const AugAssign& stmt,
-      Value* lhs) {
+  Value* emitAugAssignmentHelper(const AugAssign& stmt, Value* lhs) {
     if (lhs->type()->kind() == TypeKind::ClassType) {
       // Call `__iadd__` so updates happen in place on class types
       // https://docs.python.org/3/reference/datamodel.html#object.__iadd__
@@ -2792,7 +2790,7 @@ struct to_ir {
       // Unroll args from a Var that is known to be a Tuple.
       auto& args_tree = args_kwargs_trees[0];
       auto entry_sugared_values = emitSugaredExpr(Expr(args_tree), 1)
-                                       ->asTuple(args_tree->range(), method);
+                                      ->asTuple(args_tree->range(), method);
       args.reserve(entry_sugared_values.size());
       for (const auto& entrie_sugared_value : entry_sugared_values) {
         args.emplace_back(
@@ -2804,7 +2802,8 @@ struct to_ir {
       // users can construct kwargs = {"first" + "_arg" : 1}.
       // Notice the key is determined at run time.
       // We can do it at compile time, unless one day the RPC API is
-      // rpc_async(to, user_callable, arg_0, arg_1, kwarg_0="foo", kwarg_1="bar")
+      // rpc_async(to, user_callable, arg_0, arg_1, kwarg_0="foo",
+      // kwarg_1="bar")
     }
     matchSchema(functionSchema, loc, *graphPtr, args, kwargs);
 
