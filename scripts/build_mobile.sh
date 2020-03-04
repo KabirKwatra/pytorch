@@ -9,7 +9,10 @@
 set -e
 
 export BUILD_PYTORCH_MOBILE_WITH_HOST_TOOLCHAIN=1
-CAFFE2_ROOT="$( cd "$(dirname "$0")"/.. ; pwd -P)"
+CAFFE2_ROOT="$(
+  cd "$(dirname "$0")"/..
+  pwd -P
+)"
 
 echo "Bash: $(/bin/bash --version | head -1)"
 echo "Caffe2 path: $CAFFE2_ROOT"
@@ -55,9 +58,9 @@ fi
 CMAKE_ARGS+=("$@")
 
 cmake "$CAFFE2_ROOT" \
-    -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" \
-    -DCMAKE_BUILD_TYPE=Release \
-    "${CMAKE_ARGS[@]}"
+  -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" \
+  -DCMAKE_BUILD_TYPE=Release \
+  "${CMAKE_ARGS[@]}"
 
 # Cross-platform parallel build
 if [ -z "$MAX_JOBS" ]; then
