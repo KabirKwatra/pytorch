@@ -233,7 +233,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_torchscript_in_torchscript_with_assorted_types(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = (torch.tensor([1, 1]), "str_arg", 1)
             # Must annotate the value type as `Any`, because JIT type inference
@@ -266,7 +266,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_torchscript_in_torchscript_without_kwargs_passed(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = ()
             fut = rpc.rpc_async(dst_worker_name, no_arg, args)
@@ -287,7 +287,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_torchscript_in_torchscript_without_args_kwargs_passed(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             fut = rpc.rpc_async(dst_worker_name, no_arg)
             ret = fut.wait()
@@ -406,7 +406,7 @@ class JitRpcAsyncOpTest:
         # no matter what exception type and excetpion message are in the statement,
         @torch.jit.script
         def rpc_async_call_remote_raising_torchscript_in_torchscript(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = ()
             kwargs = {}
@@ -433,7 +433,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_nonexisting_torchscript_in_torchscript(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = ()
             kwargs = {}
