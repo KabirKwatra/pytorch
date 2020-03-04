@@ -2,8 +2,8 @@
 set -x
 set -e
 
-VALGRIND_SUP="${PWD}/`dirname $0`/valgrind.sup"
-pushd $1
+VALGRIND_SUP="$PWD/$(dirname "$0")/valgrind.sup"
+pushd "$1"
 
 VALGRIND=${VALGRIND:=ON}
 ./basic
@@ -51,8 +51,7 @@ fi
 if [[ -x ./cuda_tensor_interop_test ]]; then
   ./cuda_tensor_interop_test
 fi
-if [ "$VALGRIND" == "ON" ]
-then
+if [ "$VALGRIND" == "ON" ]; then
   valgrind --suppressions="$VALGRIND_SUP" --error-exitcode=1 ./basic --gtest_filter='-*CUDA'
   valgrind --suppressions="$VALGRIND_SUP" --error-exitcode=1 ./tensor_interop_test
 fi

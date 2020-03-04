@@ -1,4 +1,7 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import torch
 
@@ -6,14 +9,16 @@ import torch
 class MkldnnLinear(torch.jit.ScriptModule):
     def __init__(self, dense_module):
         super(MkldnnLinear, self).__init__()
-        self.register_buffer('weight', dense_module.weight.to_mkldnn())
+        self.register_buffer("weight", dense_module.weight.to_mkldnn())
         if dense_module.bias is not None:
-            self.register_buffer('bias', dense_module.bias.to_mkldnn())
+            self.register_buffer("bias", dense_module.bias.to_mkldnn())
         else:
             # TODO: Remove this once ScriptModule supports registering None buffer
             self.register_buffer(
-                'bias',
-                torch.zeros([dense_module.weight.size(0)], dtype=torch.float).to_mkldnn())
+                "bias",
+                torch.zeros([dense_module.weight.size(0)],
+                            dtype=torch.float).to_mkldnn(),
+            )
 
     @torch.jit.script_method
     def __getstate__(self):
@@ -34,7 +39,7 @@ class MkldnnLinear(torch.jit.ScriptModule):
 
 
 class MkldnnConv2d(torch.jit.ScriptModule):
-    __constants__ = ['stride', 'padding', 'dilation', 'groups']
+    __constants__ = ["stride", "padding", "dilation", "groups"]
 
     def __init__(self, dense_module):
         super(MkldnnConv2d, self).__init__()
@@ -44,19 +49,25 @@ class MkldnnConv2d(torch.jit.ScriptModule):
         self.dilation = dense_module.dilation
         self.groups = dense_module.groups
 
-        self.register_buffer('weight', torch._C._nn.mkldnn_reorder_conv2d_weight(
-            dense_module.weight.to_mkldnn(),
-            self.padding,
-            self.stride,
-            self.dilation,
-            self.groups))
+        self.register_buffer(
+            "weight",
+            torch._C._nn.mkldnn_reorder_conv2d_weight(
+                dense_module.weight.to_mkldnn(),
+                self.padding,
+                self.stride,
+                self.dilation,
+                self.groups,
+            ),
+        )
         if dense_module.bias is not None:
-            self.register_buffer('bias', dense_module.bias.to_mkldnn())
+            self.register_buffer("bias", dense_module.bias.to_mkldnn())
         else:
             # TODO: Remove this once ScriptModule supports registering None buffer
             self.register_buffer(
-                'bias',
-                torch.zeros([dense_module.weight.size(0)], dtype=torch.float).to_mkldnn())
+                "bias",
+                torch.zeros([dense_module.weight.size(0)],
+                            dtype=torch.float).to_mkldnn(),
+            )
 
     @torch.jit.script_method
     def __getstate__(self):
@@ -65,10 +76,7 @@ class MkldnnConv2d(torch.jit.ScriptModule):
     @torch.jit.script_method
     def __setstate__(self, state):
         self.weight = torch._C._nn.mkldnn_reorder_conv2d_weight(
-            state[0].to_mkldnn(),
-            self.padding,
-            self.stride,
-            self.dilation,
+            state[0].to_mkldnn(), self.padding, self.stride, self.dilation,
             self.groups)
         self.bias = state[1].to_mkldnn()
         self.training = state[2]
@@ -82,18 +90,19 @@ class MkldnnConv2d(torch.jit.ScriptModule):
             self.stride,
             self.padding,
             self.dilation,
-            self.groups)
+            self.groups,
+        )
 
 
 class MkldnnBatchNorm2d(torch.jit.ScriptModule):
-    __constants__ = ['exponential_average_factor', 'eps']
+    __constants__ = ["exponential_average_factor", "eps"]
 
     def __init__(self, dense_module):
         super(MkldnnBatchNorm2d, self).__init__()
 
-        assert(not dense_module.training)
-        assert(dense_module.track_running_stats)
-        assert(dense_module.affine)
+        assert not dense_module.training
+        assert dense_module.track_running_stats
+        assert dense_module.affine
 
         if dense_module.momentum is None:
             self.exponential_average_factor = 0.0
@@ -101,10 +110,12 @@ class MkldnnBatchNorm2d(torch.jit.ScriptModule):
             self.exponential_average_factor = dense_module.momentum
         self.eps = dense_module.eps
 
-        self.register_buffer('weight', dense_module.weight.to_mkldnn())
-        self.register_buffer('bias', dense_module.bias.to_mkldnn())
-        self.register_buffer('running_mean', dense_module.running_mean.to_mkldnn())
-        self.register_buffer('running_var', dense_module.running_var.to_mkldnn())
+        self.register_buffer("weight", dense_module.weight.to_mkldnn())
+        self.register_buffer("bias", dense_module.bias.to_mkldnn())
+        self.register_buffer("running_mean",
+                             dense_module.running_mean.to_mkldnn())
+        self.register_buffer("running_var",
+                             dense_module.running_var.to_mkldnn())
 
     @torch.jit.script_method
     def __getstate__(self):

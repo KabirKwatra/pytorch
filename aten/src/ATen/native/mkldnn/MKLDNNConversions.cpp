@@ -1,10 +1,11 @@
 #include <ATen/ATen.h>
-#include <ATen/NativeFunctions.h>
 #include <ATen/Config.h>
+#include <ATen/NativeFunctions.h>
 #include <ATen/native/mkldnn/MKLDNNCommon.h>
 #include <ATen/native/utils/ParamUtils.h>
 
-namespace at { namespace native {
+namespace at {
+namespace native {
 
 #if AT_MKLDNN_ENABLED()
 
@@ -13,28 +14,35 @@ Tensor mkldnn_to_dense(const Tensor& mkldnn_tensor) {
   auto dims = stensor.get_dims();
   // NOTE: int32_t dims from ideep::tensor but sizes needs int64_t
   Tensor cpu_tensor = at::empty(
-    std::vector<int64_t>(dims.begin(), dims.end()),
-    mkldnn_tensor.options().layout(c10::kStrided));
+      std::vector<int64_t>(dims.begin(), dims.end()),
+      mkldnn_tensor.options().layout(c10::kStrided));
   stensor.to_public(cpu_tensor.template data_ptr<float>());
   return cpu_tensor;
 }
 
 Tensor dense_to_mkldnn(const Tensor& cpu_tensor) {
-  AT_ASSERTM(cpu_tensor.device().type() == DeviceType::CPU,
-             "dense_to_mkldnn expects CPU tensor input");
-  AT_ASSERTM(cpu_tensor.layout() == Layout::Strided,
-             "dense_to_mkldnn expects strided tensor input");
-  AT_ASSERTM(cpu_tensor.scalar_type() == ScalarType::Float,
-             "dense_to_mkldnn expects float tensor input");
-  AT_ASSERTM(cpu_tensor.dim() <= 5,
-             "Can't convert cpu tensor with the number of dimensions > 5");
-  // TODO: consider to convert non-contiguous tensor to `ideep::tensor` directly.
+  AT_ASSERTM(
+      cpu_tensor.device().type() == DeviceType::CPU,
+      "dense_to_mkldnn expects CPU tensor input");
+  AT_ASSERTM(
+      cpu_tensor.layout() == Layout::Strided,
+      "dense_to_mkldnn expects strided tensor input");
+  AT_ASSERTM(
+      cpu_tensor.scalar_type() == ScalarType::Float,
+      "dense_to_mkldnn expects float tensor input");
+  AT_ASSERTM(
+      cpu_tensor.dim() <= 5,
+      "Can't convert cpu tensor with the number of dimensions > 5");
+  // TODO: consider to convert non-contiguous tensor to `ideep::tensor`
+  // directly.
   auto cpu_tensor_cont = cpu_tensor.contiguous();
-  Tensor mkldnn_tensor = empty_mkldnn(cpu_tensor_cont.sizes(), cpu_tensor_cont.options());
+  Tensor mkldnn_tensor =
+      empty_mkldnn(cpu_tensor_cont.sizes(), cpu_tensor_cont.options());
   ideep::tensor& dtensor = itensor_from_mkldnn(mkldnn_tensor);
-  dtensor.feed_from(dtensor.get_dims(),
-                    ideep::tensor::data_type::f32,
-                    (cpu_tensor_cont.template data_ptr<float>()));
+  dtensor.feed_from(
+      dtensor.get_dims(),
+      ideep::tensor::data_type::f32,
+      (cpu_tensor_cont.template data_ptr<float>()));
   return mkldnn_tensor;
 }
 
@@ -50,7 +58,6 @@ Tensor mkldnn_reorder_conv2d_weight(
     IntArrayRef stride,
     IntArrayRef dilation,
     int64_t groups) {
-
   auto stride_vec = expand_param_if_needed(stride, "stride", 2);
   auto padding_vec = expand_param_if_needed(padding, "padding", 2);
   auto dilation_vec = expand_param_if_needed(dilation, "dilation", 2);
@@ -106,4 +113,5 @@ Tensor mkldnn_reorder_conv2d_weight(
 
 #endif // AT_MKLDNN_ENABLED()
 
-}}
+} // namespace native
+} // namespace at
