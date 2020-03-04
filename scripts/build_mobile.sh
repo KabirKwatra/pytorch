@@ -16,9 +16,9 @@ echo "Caffe2 path: $CAFFE2_ROOT"
 
 # Now, actually build the Android target.
 BUILD_ROOT=${BUILD_ROOT:-"$CAFFE2_ROOT/build_mobile"}
-INSTALL_PREFIX=${BUILD_ROOT}/install
-mkdir -p $BUILD_ROOT
-cd $BUILD_ROOT
+INSTALL_PREFIX=$BUILD_ROOT/install
+mkdir -p "$BUILD_ROOT"
+cd "$BUILD_ROOT"
 
 CMAKE_ARGS=()
 CMAKE_ARGS+=("-DBUILD_CAFFE2_MOBILE=OFF")
@@ -28,8 +28,8 @@ CMAKE_ARGS+=("-DPYTHON_EXECUTABLE=$(python -c 'import sys; print(sys.executable)
 CMAKE_ARGS+=("-DBUILD_CUSTOM_PROTOBUF=OFF")
 CMAKE_ARGS+=("-DBUILD_SHARED_LIBS=OFF")
 # custom build with selected ops
-if [ -n "${SELECTED_OP_LIST}" ]; then
-  CMAKE_ARGS+=("-DSELECTED_OP_LIST=${SELECTED_OP_LIST}")
+if [ -n "$SELECTED_OP_LIST" ]; then
+  CMAKE_ARGS+=("-DSELECTED_OP_LIST=$SELECTED_OP_LIST")
 fi
 
 # If Ninja is installed, prefer it to Make
@@ -55,7 +55,7 @@ fi
 CMAKE_ARGS+=("$@")
 
 cmake "$CAFFE2_ROOT" \
-    -DCMAKE_INSTALL_PREFIX=$INSTALL_PREFIX \
+    -DCMAKE_INSTALL_PREFIX="$INSTALL_PREFIX" \
     -DCMAKE_BUILD_TYPE=Release \
     "${CMAKE_ARGS[@]}"
 
@@ -69,5 +69,5 @@ if [ -z "$MAX_JOBS" ]; then
 fi
 
 echo "Will install headers and libs to $INSTALL_PREFIX for further project usage."
-cmake --build . --target install -- "-j${MAX_JOBS}"
+cmake --build . --target install -- "-j$MAX_JOBS"
 echo "Installation completed, now you can copy the headers/libs from $INSTALL_PREFIX to your project directory."

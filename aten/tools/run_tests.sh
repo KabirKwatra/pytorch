@@ -2,8 +2,8 @@
 set -x
 set -e
 
-VALGRIND_SUP="${PWD}/`dirname $0`/valgrind.sup"
-pushd $1
+VALGRIND_SUP="$PWD/$(dirname "$0")/valgrind.sup"
+pushd "$1"
 
 VALGRIND=${VALGRIND:=ON}
 ./basic
