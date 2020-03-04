@@ -30,7 +30,6 @@ from .internal import _start_record_function
 from .internal import PythonUDF
 from .internal import RPCExecMode
 
-
 logging.basicConfig()
 logger = logging.getLogger(__name__)
 
@@ -64,10 +63,8 @@ def _require_initialized(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         if not _is_current_rpc_agent_set():
-            raise RuntimeError(
-                "RPC has not been initialized. Call "
-                "torch.distributed.rpc.init_rpc first."
-            )
+            raise RuntimeError("RPC has not been initialized. Call "
+                               "torch.distributed.rpc.init_rpc first.")
         return func(*args, **kwargs)
 
     return wrapper
@@ -95,33 +92,31 @@ class WaitAllWorkersStates(object):
 _ALL_WORKER_NAMES = None
 _wait_all_workers_dict_lock = threading.Lock()
 _wait_all_workers_sequence_id = 0
-_wait_all_workers_sequence_id_to_states = collections.defaultdict(WaitAllWorkersStates)
+_wait_all_workers_sequence_id_to_states = collections.defaultdict(
+    WaitAllWorkersStates)
 
 
 def _on_leader_follower_report_shutdown_intent(sequence_id, worker_name):
-    assert (
-        worker_name in _ALL_WORKER_NAMES
-    ), "{worker_name} is not expected by leader.".format(worker_name=worker_name)
+    assert (worker_name in _ALL_WORKER_NAMES
+            ), "{worker_name} is not expected by leader.".format(
+                worker_name=worker_name)
     intent_worker_names = _wait_all_workers_sequence_id_to_states[
-        sequence_id
-    ].intent_worker_names
+        sequence_id].intent_worker_names
     assert (
         worker_name not in intent_worker_names
     ), "{worker_name} reported intent sequence id {sequence_id} twice. ".format(
-        worker_name=worker_name, sequence_id=sequence_id
-    )
+        worker_name=worker_name, sequence_id=sequence_id)
     intent_worker_names.add(worker_name)
     if _ALL_WORKER_NAMES == intent_worker_names:
         _set_proceed_shutdown_signal(sequence_id)
 
 
 def _set_proceed_shutdown_signal(sequence_id):
-    proceed_signal = _wait_all_workers_sequence_id_to_states[sequence_id].proceed_signal
-    assert (
-        not proceed_signal.is_set()
-    ), "Termination signal sequence id {} got set twice.".format(
-        sequence_id=sequence_id
-    )
+    proceed_signal = _wait_all_workers_sequence_id_to_states[
+        sequence_id].proceed_signal
+    assert (not proceed_signal.is_set()
+            ), "Termination signal sequence id {} got set twice.".format(
+                sequence_id=sequence_id)
     proceed_signal.set()
 
 
@@ -151,15 +146,20 @@ def _wait_all_workers():
     # Phase 1: Followers send intents.
     # All followers report intents to the leader.
     if is_leader_worker:
-        _on_leader_follower_report_shutdown_intent(sequence_id, self_worker_name)
+        _on_leader_follower_report_shutdown_intent(sequence_id,
+                                                   self_worker_name)
     else:
         rpc_sync(
             leader_worker_name,
             _on_leader_follower_report_shutdown_intent,
-            args=(sequence_id, self_worker_name,),
+            args=(
+                sequence_id,
+                self_worker_name,
+            ),
         )
 
-    proceed_signal = _wait_all_workers_sequence_id_to_states[sequence_id].proceed_signal
+    proceed_signal = _wait_all_workers_sequence_id_to_states[
+        sequence_id].proceed_signal
     proceed_signal.wait()
 
     # Phase 2: Leader asks followers to proceed.
@@ -171,19 +171,18 @@ def _wait_all_workers():
         _set_rpc_timeout(timeout)
         worker_name_to_response_future_dict = dict()
         for follower_worker_name in _ALL_WORKER_NAMES - {leader_worker_name}:
-            fut = rpc_async(
-                follower_worker_name, _set_proceed_shutdown_signal, args=(sequence_id,)
-            )
+            fut = rpc_async(follower_worker_name,
+                            _set_proceed_shutdown_signal,
+                            args=(sequence_id, ))
             worker_name_to_response_future_dict[follower_worker_name] = fut
-        for follower_worker_name, fut in worker_name_to_response_future_dict.items():
+        for follower_worker_name, fut in worker_name_to_response_future_dict.items(
+        ):
             try:
                 fut.wait()
             except RuntimeError as ex:
                 logger.error(
-                    "{worker_name} failed to respond to 'Shutdown Proceed.' request in {timeout}".format(
-                        worker_name=follower_worker_name, timeout=timeout
-                    )
-                )
+                    "{worker_name} failed to respond to 'Shutdown Proceed.' request in {timeout}"
+                    .format(worker_name=follower_worker_name, timeout=timeout))
 
 
 @_require_initialized
@@ -248,18 +247,19 @@ def shutdown(graceful=True):
 
 # TODO: add a context manager to wrap _init_rpc_backend and shutdown
 def _init_rpc_backend(
-    backend=backend_registry.BackendType.PROCESS_GROUP,
-    store=None,
-    name=None,
-    rank=-1,
-    world_size=-1,
-    rpc_backend_options=None,
+        backend=backend_registry.BackendType.PROCESS_GROUP,
+        store=None,
+        name=None,
+        rank=-1,
+        world_size=-1,
+        rpc_backend_options=None,
 ):
 
     if sys.version_info < (3, 0):
         raise RuntimeError("RPC package does not support Python2.")
 
-    _validate_rpc_args(backend, store, name, rank, world_size, rpc_backend_options)
+    _validate_rpc_args(backend, store, name, rank, world_size,
+                       rpc_backend_options)
 
     if _is_current_rpc_agent_set():
         raise RuntimeError("RPC is already initialized")
@@ -309,10 +309,12 @@ def _to_worker_info(name_or_info):
     elif isinstance(name_or_info, str):
         return get_worker_info(name_or_info)
     else:
-        raise ValueError("Cannot get WorkerInfo from name {}".format(name_or_info))
+        raise ValueError(
+            "Cannot get WorkerInfo from name {}".format(name_or_info))
 
 
-def _validate_rpc_args(backend, store, name, rank, world_size, rpc_backend_options):
+def _validate_rpc_args(backend, store, name, rank, world_size,
+                       rpc_backend_options):
     type_mapping = {
         backend: backend_registry.BackendType,
         store: dist.Store,
@@ -325,9 +327,7 @@ def _validate_rpc_args(backend, store, name, rank, world_size, rpc_backend_optio
         if not isinstance(arg, arg_type):
             raise RuntimeError(
                 "Argument {} must be of type {} but got type {}".format(
-                    arg, arg_type, type(arg)
-                )
-            )
+                    arg, arg_type, type(arg)))
 
 
 @_require_initialized
@@ -406,7 +406,8 @@ def remote(to, func, args=None, kwargs=None):
     if torch.autograd._profiler_enabled():
         rf = _start_record_function(
             RPCExecMode.REMOTE,
-            str(qualified_name) if qualified_name is not None else func.__qualname__,
+            str(qualified_name)
+            if qualified_name is not None else func.__qualname__,
             get_worker_info().name,
             dst_worker_info.name,
         )
@@ -415,9 +416,8 @@ def remote(to, func, args=None, kwargs=None):
     kwargs = kwargs if kwargs else {}
 
     if qualified_name is not None:
-        return _invoke_remote_builtin(
-            dst_worker_info, qualified_name, rf, *args, **kwargs
-        )
+        return _invoke_remote_builtin(dst_worker_info, qualified_name, rf,
+                                      *args, **kwargs)
     elif isinstance(func, torch.jit.ScriptFunction):
         return _remote_torchscript(
             dst_worker_info.name,
@@ -426,12 +426,10 @@ def remote(to, func, args=None, kwargs=None):
             kwargs,
         )
     else:
-        (pickled_python_udf, tensors) = _default_pickler.serialize(
-            PythonUDF(func, args, kwargs)
-        )
-        return _invoke_remote_python_udf(
-            dst_worker_info, pickled_python_udf, tensors, rf
-        )
+        (pickled_python_udf,
+         tensors) = _default_pickler.serialize(PythonUDF(func, args, kwargs))
+        return _invoke_remote_python_udf(dst_worker_info, pickled_python_udf,
+                                         tensors, rf)
 
 
 def _invoke_rpc(to, func, rpc_type, args=None, kwargs=None):
@@ -446,7 +444,8 @@ def _invoke_rpc(to, func, rpc_type, args=None, kwargs=None):
     if torch.autograd._profiler_enabled():
         rf = _start_record_function(
             rpc_type,
-            str(qualified_name) if qualified_name is not None else func.__qualname__,
+            str(qualified_name)
+            if qualified_name is not None else func.__qualname__,
             get_worker_info().name,
             dst_worker_info.name,
         )
@@ -455,14 +454,15 @@ def _invoke_rpc(to, func, rpc_type, args=None, kwargs=None):
     kwargs = kwargs if kwargs else {}
 
     if qualified_name is not None:
-        fut = _invoke_rpc_builtin(dst_worker_info, qualified_name, rf, *args, **kwargs)
+        fut = _invoke_rpc_builtin(dst_worker_info, qualified_name, rf, *args,
+                                  **kwargs)
     elif isinstance(func, torch.jit.ScriptFunction):
         fut = _invoke_rpc_torchscript(dst_worker_info.name, func, args, kwargs)
     else:
-        (pickled_python_udf, tensors) = _default_pickler.serialize(
-            PythonUDF(func, args, kwargs)
-        )
-        fut = _invoke_rpc_python_udf(dst_worker_info, pickled_python_udf, tensors, rf)
+        (pickled_python_udf,
+         tensors) = _default_pickler.serialize(PythonUDF(func, args, kwargs))
+        fut = _invoke_rpc_python_udf(dst_worker_info, pickled_python_udf,
+                                     tensors, rf)
     return fut
 
 
