@@ -3,10 +3,10 @@ This is a script for end-to-end mobile custom build test purpose. It prepares
 MobileNetV2 TorchScript model, and dumps root ops used by the model for custom
 build script to create a tailored build which only contains these used ops.
 """
-
-import torch
 import torchvision
 import yaml
+
+import torch
 
 # Download and trace the model.
 model = torchvision.models.mobilenet_v2(pretrained=True)

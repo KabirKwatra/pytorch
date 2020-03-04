@@ -3,11 +3,10 @@ This util takes the op dependency graph of ATen and the list of root ops, and
 outputs all transitive dependencies of the root ops. It is invoked from cmake
 for custom mobile build.
 """
-
 import argparse
-import yaml
-
 from collections import defaultdict
+
+import yaml
 
 
 def canonical_name(opname):
