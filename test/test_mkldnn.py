@@ -1,4 +1,9 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
+from torch.autograd.gradcheck import gradgradcheck, gradcheck
+from torch.testing._internal.common_utils import TestCase, run_tests, TemporaryFileName
+from torch.utils import mkldnn as mkldnn_utils
+import torch.jit
+import torch
 import copy
 import unittest
 
@@ -9,13 +14,6 @@ except ImportError:
     HAS_TORCHVISION = False
 
 skipIfNoTorchVision = unittest.skipIf(not HAS_TORCHVISION, "no torchvision")
-
-import torch
-import torch.jit
-from torch.utils import mkldnn as mkldnn_utils
-from torch.testing._internal.common_utils import TestCase, run_tests, TemporaryFileName
-
-from torch.autograd.gradcheck import gradgradcheck, gradcheck
 
 
 # Comment the line below to find out the CI machines having MKL-DNN build disabled
