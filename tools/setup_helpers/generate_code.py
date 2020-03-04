@@ -20,17 +20,18 @@ def all_generator_source():
 
 
 def generate_code(
-    ninja_global=None,
-    declarations_path=None,
-    nn_path=None,
-    install_dir=None,
-    subset=None,
-    disable_autograd=False,
-    selected_op_list_path=None,
-    disable_trace=False,
+        ninja_global=None,
+        declarations_path=None,
+        nn_path=None,
+        install_dir=None,
+        subset=None,
+        disable_autograd=False,
+        selected_op_list_path=None,
+        disable_trace=False,
 ):
     # cwrap depends on pyyaml, so we can't import it earlier
-    root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    root = os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     sys.path.insert(0, root)
     from tools.autograd.gen_autograd import gen_autograd, gen_autograd_python
     from tools.jit.gen_jit_dispatch import gen_jit_dispatch
@@ -43,9 +44,8 @@ def generate_code(
             os.makedirs(d)
 
     if subset == "pybindings" or not subset:
-        gen_autograd_python(
-            declarations_path or DECLARATIONS_PATH, autograd_gen_dir, "tools/autograd"
-        )
+        gen_autograd_python(declarations_path or DECLARATIONS_PATH,
+                            autograd_gen_dir, "tools/autograd")
 
     if subset == "libtorch" or not subset:
         gen_autograd(
@@ -72,17 +72,20 @@ def main():
     parser.add_argument("--install_dir")
     parser.add_argument(
         "--subset",
-        help='Subset of source files to generate. Can be "libtorch" or "pybindings". Generates both when omitted.',
+        help=
+        'Subset of source files to generate. Can be "libtorch" or "pybindings". Generates both when omitted.',
     )
     parser.add_argument(
         "--disable-autograd",
         default=False,
         action="store_true",
-        help="It can skip generating autograd related code when the flag is set",
+        help=
+        "It can skip generating autograd related code when the flag is set",
     )
     parser.add_argument(
         "--selected-op-list-path",
-        help="Path to the yaml file that contains the list of operators to include for custom build.",
+        help=
+        "Path to the yaml file that contains the list of operators to include for custom build.",
     )
     parser.add_argument(
         "--disable_gen_tracing",
