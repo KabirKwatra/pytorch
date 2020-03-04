@@ -37,18 +37,17 @@ namespace VariableType {
 // Later when we merge the mobile op registration the anonymous namespace
 // will be restored.
 // namespace {
-$ {type_derived_method_definitions}
-// }
+$ {
+  type_derived_method_definitions
 }
+// }
+} // namespace VariableType
 
 namespace {
 
-auto registerer = torch::RegisterOperators()
-$ {
-    wrapper_registrations
-};
+auto registerer = torch::RegisterOperators() ${wrapper_registrations};
 
 }
 
-}
-} // namespace torch::autograd
+} // namespace autograd
+} // namespace torch
