@@ -16,9 +16,8 @@ class MkldnnLinear(torch.jit.ScriptModule):
             # TODO: Remove this once ScriptModule supports registering None buffer
             self.register_buffer(
                 "bias",
-                torch.zeros(
-                    [dense_module.weight.size(0)], dtype=torch.float
-                ).to_mkldnn(),
+                torch.zeros([dense_module.weight.size(0)],
+                            dtype=torch.float).to_mkldnn(),
             )
 
     @torch.jit.script_method
@@ -66,9 +65,8 @@ class MkldnnConv2d(torch.jit.ScriptModule):
             # TODO: Remove this once ScriptModule supports registering None buffer
             self.register_buffer(
                 "bias",
-                torch.zeros(
-                    [dense_module.weight.size(0)], dtype=torch.float
-                ).to_mkldnn(),
+                torch.zeros([dense_module.weight.size(0)],
+                            dtype=torch.float).to_mkldnn(),
             )
 
     @torch.jit.script_method
@@ -78,8 +76,8 @@ class MkldnnConv2d(torch.jit.ScriptModule):
     @torch.jit.script_method
     def __setstate__(self, state):
         self.weight = torch._C._nn.mkldnn_reorder_conv2d_weight(
-            state[0].to_mkldnn(), self.padding, self.stride, self.dilation, self.groups
-        )
+            state[0].to_mkldnn(), self.padding, self.stride, self.dilation,
+            self.groups)
         self.bias = state[1].to_mkldnn()
         self.training = state[2]
 
@@ -114,8 +112,10 @@ class MkldnnBatchNorm2d(torch.jit.ScriptModule):
 
         self.register_buffer("weight", dense_module.weight.to_mkldnn())
         self.register_buffer("bias", dense_module.bias.to_mkldnn())
-        self.register_buffer("running_mean", dense_module.running_mean.to_mkldnn())
-        self.register_buffer("running_var", dense_module.running_var.to_mkldnn())
+        self.register_buffer("running_mean",
+                             dense_module.running_mean.to_mkldnn())
+        self.register_buffer("running_var",
+                             dense_module.running_var.to_mkldnn())
 
     @torch.jit.script_method
     def __getstate__(self):
