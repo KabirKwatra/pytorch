@@ -31,7 +31,7 @@ fi
 
 # realpath might not be available on MacOS
 script_path=$(python -c "import os; import sys; print(os.path.realpath(sys.argv[1]))" "${BASH_SOURCE[0]}")
-top_dir=$(dirname $(dirname $(dirname "$script_path")))
+top_dir=$(dirname "$(dirname "$(dirname "$script_path")")")
 test_paths=(
     "$top_dir/test/onnx"
 )
@@ -68,7 +68,7 @@ if [[ "$BUILD_ENVIRONMENT" == *ort1-py3.6* ]]; then
 fi
 if [[ "$BUILD_ENVIRONMENT" == *ort2-py3.6* ]]; then
   # Update the loop for new opsets
-  for i in $(seq 10 12); do
+  for i in "$(seq 10 12)"; do
     pytest "${args[@]}" \
       "$top_dir/test/onnx/test_pytorch_onnx_onnxruntime.py::TestONNXRuntime_opset$i"
   done
