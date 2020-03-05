@@ -14,6 +14,7 @@ def einsum(g, equation, tensor_list):
     tensors = sym_help._unpack_list(tensor_list)
     return g.op("Einsum", *tensors, equation_s=equation)
 
+
 def nll_loss(g, self, target, weight, reduction, ignore_index):
     # none reduction : onnx::Constant[value={0}]
     # mean reduction : onnx::Constant[value={1}]
@@ -68,6 +69,7 @@ def nll_loss(g, self, target, weight, reduction, ignore_index):
     denominator = g.op("ReduceSum", denominator)
     nllloss = g.op("Div", nllloss, denominator)
     return nllloss
+
 
 def nll_loss2d(g, self, target, weight, reduction, ignore_index):
     return nll_loss(g, self, target, weight, reduction, ignore_index)

@@ -149,7 +149,7 @@ def get_jit_class_def(cls, self_name):
         cls, predicate=lambda m: (inspect.ismethod(m) or inspect.isfunction(m)) and m.__name__ in cls.__dict__)
 
     method_defs = [get_jit_def(method[1],
-                   self_name=self_name) for method in methods]
+                               self_name=self_name) for method in methods]
 
     sourcelines, file_lineno, filename = get_source_lines_and_file(cls)
     source = ''.join(sourcelines)
@@ -385,6 +385,7 @@ class StmtBuilder(Builder):
     def build_Continue(ctx, stmt):
         r = ctx.make_range(stmt.lineno, stmt.col_offset, stmt.col_offset + len("continue"))
         return Continue(r)
+
 
 class ExprBuilder(Builder):
     binop_map = {
@@ -701,6 +702,7 @@ class ExprBuilder(Builder):
     def build_Starred(ctx, expr):
         r = ctx.make_range(expr.lineno, expr.col_offset, expr.col_offset + 1)
         return Starred(r, build_expr(ctx, expr.value))
+
 
 build_expr = ExprBuilder()
 build_stmt = StmtBuilder()

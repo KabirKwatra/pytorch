@@ -156,15 +156,14 @@ class TestONNXRuntime(unittest.TestCase):
                                   dynamic_axes=dynamic_axes,
                                   input_names=input_names, output_names=output_names,
                                   use_external_data_format=True)
-                # compute onnxruntime output prediction                
+                # compute onnxruntime output prediction
                 ort_sess_opt = onnxruntime.SessionOptions()
                 ort_sess_opt.graph_optimization_level = \
                     onnxruntime.GraphOptimizationLevel.ORT_ENABLE_EXTENDED if ort_optim_on else \
                     onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
-                ort_sess = onnxruntime.InferenceSession(model_file_name, sess_options=ort_sess_opt)                
+                ort_sess = onnxruntime.InferenceSession(model_file_name, sess_options=ort_sess_opt)
                 input_copy = copy.deepcopy(input)
                 ort_test_with_input(ort_sess, input_copy, output, rtol, atol)
-
 
     @skipIfUnsupportedMinOpsetVersion(9)  # Because external data format was released with Opset 9.
     def test_embedding_model_with_external_data(self):
@@ -194,7 +193,7 @@ class TestONNXRuntime(unittest.TestCase):
         # We are turning off Onnx Runtime optimization off in this test,
         # because external data format is not supported to in ORT optimizer.
         # Once that support is added, we can set ort_optim_on=True (default).
-        self.run_model_test_with_external_data(model, x, rtol=1e-3, atol=1e-5, 
+        self.run_model_test_with_external_data(model, x, rtol=1e-3, atol=1e-5,
                                                ort_optim_on=False)
 
     # Export Torchvision models
@@ -487,7 +486,6 @@ class TestONNXRuntime(unittest.TestCase):
 
         x = torch.arange(16).view(4, 4).float()
         self.run_test(ClampMaxModel(), x)
-
 
         class ClampMinModel(torch.jit.ScriptModule):
             @torch.jit.script_method
@@ -792,7 +790,7 @@ class TestONNXRuntime(unittest.TestCase):
         x = torch.rand(5, 5, 5)
         self.run_test(DynamicSliceExportMod(), x,
                       dynamic_axes={'input_1': [0, 1, 2],
-                      'output_1': [0, 1, 2]})
+                                    'output_1': [0, 1, 2]})
 
     @skipIfUnsupportedMinOpsetVersion(9)
     def test_arange_dynamic(self):
@@ -859,8 +857,10 @@ class TestONNXRuntime(unittest.TestCase):
         self._test_index_generic(
             lambda input: input[:, torch.tensor([[0, 2], [1, 1]]), :, torch.tensor([2, 1]), torch.tensor([0, 3])])
         self._test_index_generic(lambda input: input[..., torch.tensor([2, 1]), torch.tensor([0, 3])])
-        self._test_index_generic(lambda input: input[:, torch.tensor([0, 2]), None, 2:4, torch.tensor([[1, 3], [4, 0]])])
-        self._test_index_generic(lambda input: input[:, torch.tensor([0, 2]), torch.tensor([1]), 2:4, torch.tensor([[1], [4]])])
+        self._test_index_generic(lambda input: input[:, torch.tensor(
+            [0, 2]), None, 2:4, torch.tensor([[1, 3], [4, 0]])])
+        self._test_index_generic(lambda input: input[:, torch.tensor(
+            [0, 2]), torch.tensor([1]), 2:4, torch.tensor([[1], [4]])])
 
     def test_tensor_index_advanced_indexing_consecutive(self):
         self._test_index_generic(lambda input: input[:, torch.tensor([0, 2]), torch.tensor([[1, 3], [4, 0]]), None])
@@ -1148,7 +1148,8 @@ class TestONNXRuntime(unittest.TestCase):
 
     def _interpolate_script(self, x, mode, use_size, is_upsample, align_corners=False):
         class MyModel(torch.jit.ScriptModule):
-            __constants__ = ['mode', 'use_size', 'is_upsample', 'size', 'scale', 'size_array', 'scale_array', 'align_corners']
+            __constants__ = ['mode', 'use_size', 'is_upsample', 'size',
+                             'scale', 'size_array', 'scale_array', 'align_corners']
 
             def __init__(self, mode, use_size, is_upsample, align_corners):
                 super(MyModel, self).__init__()
@@ -1604,7 +1605,7 @@ class TestONNXRuntime(unittest.TestCase):
         input = torch.randn(RNN_SEQUENCE_LENGTH, 1, RNN_INPUT_SIZE)
         # verify with different input of different batch size
         input2 = torch.randn(RNN_SEQUENCE_LENGTH, BATCH_SIZE, RNN_INPUT_SIZE)
-        self.run_test(model, input, dynamic_axes={'input' : {0 : 'seq', 1 : 'batch'}},
+        self.run_test(model, input, dynamic_axes={'input': {0: 'seq', 1: 'batch'}},
                       test_with_inputs=[input2])
 
     def test_lstm_constant_folding(self):
@@ -2797,7 +2798,7 @@ class TestONNXRuntime(unittest.TestCase):
 
         def run_model():
             SplitModel(x)
-        self.assertRaises(TypeError, run_model)            
+        self.assertRaises(TypeError, run_model)
 
     def _dispatch_rnn_test(self, name, *args, **kwargs):
         if name == 'elman':
@@ -3040,7 +3041,7 @@ TestONNXRuntime_opset12 = type(str("TestONNXRuntime_opset12"),
 TestONNXRuntime_opset9_IRv4 = type(str("TestONNXRuntime_opset9_IRv4"),
                                    (unittest.TestCase,),
                                    dict(TestONNXRuntime.__dict__,
-                                   keep_initializers_as_inputs=False))
+                                        keep_initializers_as_inputs=False))
 
 
 # opset 10 tests, with keep_initializers_as_inputs=False for
@@ -3048,7 +3049,7 @@ TestONNXRuntime_opset9_IRv4 = type(str("TestONNXRuntime_opset9_IRv4"),
 TestONNXRuntime_opset10_IRv4 = type(str("TestONNXRuntime_opset10_IRv4"),
                                     (unittest.TestCase,),
                                     dict(TestONNXRuntime.__dict__, opset_version=10,
-                                    keep_initializers_as_inputs=False))
+                                         keep_initializers_as_inputs=False))
 
 
 # opset 11 tests, with keep_initializers_as_inputs=False for
@@ -3056,14 +3057,14 @@ TestONNXRuntime_opset10_IRv4 = type(str("TestONNXRuntime_opset10_IRv4"),
 TestONNXRuntime_opset11_IRv4 = type(str("TestONNXRuntime_opset11_IRv4"),
                                     (unittest.TestCase,),
                                     dict(TestONNXRuntime.__dict__, opset_version=11,
-                                    keep_initializers_as_inputs=False))
+                                         keep_initializers_as_inputs=False))
 
 # opset 12 tests, with keep_initializers_as_inputs=False for
 # IR version 4 style export.
 TestONNXRuntime_opset12_IRv4 = type(str("TestONNXRuntime_opset12_IRv4"),
                                     (unittest.TestCase,),
                                     dict(TestONNXRuntime.__dict__, opset_version=12,
-                                    keep_initializers_as_inputs=False))
+                                         keep_initializers_as_inputs=False))
 
 
 if __name__ == '__main__':
