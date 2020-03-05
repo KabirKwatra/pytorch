@@ -135,7 +135,10 @@ class DNNLowPFullyConnectedOpTest(hu.HypothesisTestCase):
             )
             w_q_param = None
             if do_quantize_weight:
-                int8_given_tensor_fill, w_q_param = dnnlowp_utils.create_int8_given_tensor_fill(
+                (
+                    int8_given_tensor_fill,
+                    w_q_param,
+                ) = dnnlowp_utils.create_int8_given_tensor_fill(
                     W, "W_q", preserve_weight_sparsity
                 )
                 init_net.Proto().op.extend([int8_given_tensor_fill])
@@ -153,7 +156,9 @@ class DNNLowPFullyConnectedOpTest(hu.HypothesisTestCase):
                 pack = core.CreateOperator(
                     "Int8FCPackWeight",
                     inputs,
-                    ["W_packed", "B_q32"] if do_dequantize and output_packed_bias else ["W_packed"],
+                    ["W_packed", "B_q32"]
+                    if do_dequantize and output_packed_bias
+                    else ["W_packed"],
                     preserve_weight_sparsity=preserve_weight_sparsity,
                     in_scale=x_q_param.scale,
                     engine=engine,
@@ -201,7 +206,9 @@ class DNNLowPFullyConnectedOpTest(hu.HypothesisTestCase):
             if output_packed_bias and do_prepack_weight and do_dequantize:
                 bias_int32 = self.ws.blobs["B_q32"].fetch()
                 if do_quantize_weight:
-                    np.testing.assert_equal(bias_int32[0], np.round(b / (x_q_param.scale * w_q_param.scale)))
+                    np.testing.assert_equal(
+                        bias_int32[0], np.round(b / (x_q_param.scale * w_q_param.scale))
+                    )
                 np.testing.assert_equal(bias_int32[0].dtype, np.int32)
 
         check_quantized_results_close(outputs, symmetric=preserve_activation_sparsity)
