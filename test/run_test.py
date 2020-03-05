@@ -1,9 +1,7 @@
 #!/usr/bin/env python
-
 from __future__ import print_function
 
 import argparse
-from datetime import datetime
 import modulefinder
 import os
 import shutil
@@ -11,12 +9,13 @@ import signal
 import subprocess
 import sys
 import tempfile
+from datetime import datetime
 
-import torch
 import torch._six
-from torch.utils import cpp_extension
-from torch.testing._internal.common_utils import TEST_WITH_ROCM, shell
 import torch.distributed as dist
+from torch.testing._internal.common_utils import shell
+from torch.testing._internal.common_utils import TEST_WITH_ROCM
+from torch.utils import cpp_extension
 
 PY2 = sys.version_info <= (3,)
 PY33 = sys.version_info >= (3, 3)
