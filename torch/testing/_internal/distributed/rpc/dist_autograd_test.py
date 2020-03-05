@@ -39,6 +39,8 @@ requires_grad_tensor = torch.ones(3, 3, requires_grad=True)
 # dst_rank = (self.rank + rank_distance) % self.world_size
 # we don't need a lock here since the GIL is held while executing remote
 # python UDFs, so access is serialized across several workers.
+
+
 def _set_rpc_done(ctx_id, rank_distance):
     global rpc_done
     global ctx_ids
@@ -58,6 +60,8 @@ def _torch_ones(sizes, requires_grad=False):
 
 # This method must be called on the rref owner, and verifies that the grad of
 # rref tensor equals to the given grad.
+
+
 def _compare_owner_value(context_id, rref, grad):
     grads = dist_autograd.get_gradients(context_id)
     return torch.equal(grads[rref.local_value()], grad)
@@ -151,6 +155,8 @@ def _run_trainer(rref_t1, t2, ps, rank_diff):
 
 # This function is the same as _run_trainer, except rpc calls torchscript
 # function "my_script_ref_add" instead of python funciton "my_rref_add"
+
+
 def _run_trainer_torchscript(rref_t1, t2, ps, rank_diff):
     with dist_autograd.context() as context_id:
         ret = rpc.rpc_sync(ps, my_script_ref_add, args=(rref_t1, t2))
@@ -859,7 +865,7 @@ class DistAutogradTest(RpcAgentTestFixture):
             self.assertIsNone(t1.grad)
             self.assertIsNone(t2.grad)
 
-            # Now populate .grad with local autograd engine and 
+            # Now populate .grad with local autograd engine and
             # verify dist autograd doesn't mess with it.
             loss_local = torch.add(t1, t2).sum()
             loss_local.backward()
@@ -1806,6 +1812,7 @@ class DistAutogradTest(RpcAgentTestFixture):
             # Run backward in a loop multiple times.
             for i in range(1000):
                 dist_autograd.backward(context_id, [loss], retain_graph=True)
+
 
 @unittest.skipIf(
     not torch._six.PY3,
