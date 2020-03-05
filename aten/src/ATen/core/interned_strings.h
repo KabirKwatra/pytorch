@@ -310,78 +310,78 @@ const std::string& domain_prefix();
 // structure; it is namespaced via SymbolNamespace and the resulting
 // intern pointers support efficient namespace testing.
 struct CAFFE2_API Symbol {
-  explicit constexpr Symbol() : value(0) {};
-  explicit constexpr Symbol(unique_t uniq)
-  : value(uniq) {}
+    explicit constexpr Symbol() : value(0) {};
+    explicit constexpr Symbol(unique_t uniq)
+        : value(uniq) {}
 
-  // Get a Symbol for a qualified string like "attr::bar"
-  static Symbol fromQualString(const std::string & s);
+    // Get a Symbol for a qualified string like "attr::bar"
+    static Symbol fromQualString(const std::string & s);
 
-  // Get a Symbol from a domain and an unqualified string like "org.pytorch.attr" and "bar"
-  static Symbol fromDomainAndUnqualString(const std::string & d, const std::string & s);
+    // Get a Symbol from a domain and an unqualified string like "org.pytorch.attr" and "bar"
+    static Symbol fromDomainAndUnqualString(const std::string & d, const std::string & s);
 
-  // Constructors for our various namespaced strings.  This will construct
-  // the appropriate namespaced string, e.g., "attr::foo" for the
-  // argument "foo", and then attempt to intern it.  DO NOT USE THIS
-  // with a string literal; attr::foo should be available in that case
-  // (and if it's not, you should add it to the built-ins list above.)
-  static Symbol attr(const std::string & s);
-  static Symbol aten(const std::string & s);
-  static Symbol onnx(const std::string & s);
-  static Symbol prim(const std::string & s);
-  static Symbol user(const std::string & s);
-  static Symbol caffe2(const std::string & s);
-  static Symbol dimname(const std::string & s);
-  // TODO: eliminate me
-  static Symbol scope(const std::string & s);
+    // Constructors for our various namespaced strings.  This will construct
+    // the appropriate namespaced string, e.g., "attr::foo" for the
+    // argument "foo", and then attempt to intern it.  DO NOT USE THIS
+    // with a string literal; attr::foo should be available in that case
+    // (and if it's not, you should add it to the built-ins list above.)
+    static Symbol attr(const std::string & s);
+    static Symbol aten(const std::string & s);
+    static Symbol onnx(const std::string & s);
+    static Symbol prim(const std::string & s);
+    static Symbol user(const std::string & s);
+    static Symbol caffe2(const std::string & s);
+    static Symbol dimname(const std::string & s);
+    // TODO: eliminate me
+    static Symbol scope(const std::string & s);
 
-  bool is_attr() const;
-  bool is_aten() const;
-  bool is_prim() const;
-  bool is_onnx() const;
-  bool is_user() const;
-  bool is_caffe2() const;
-  bool is_dimname() const;
+    bool is_attr() const;
+    bool is_aten() const;
+    bool is_prim() const;
+    bool is_onnx() const;
+    bool is_user() const;
+    bool is_caffe2() const;
+    bool is_dimname() const;
 
-  // So we can switch on this
-  constexpr operator unique_t() const {
-    return value;
-  }
+    // So we can switch on this
+    constexpr operator unique_t() const {
+        return value;
+    }
 
-  Symbol ns() const;
+    Symbol ns() const;
 
-  // Give a string corresponding to the unqualified version of this name, e.g.,
-  // "mm". Use this in a context where the intended namespace of the string is
-  // obvious; this is a *lossy* conversion.
-  const char * toUnqualString() const;
+    // Give a string corresponding to the unqualified version of this name, e.g.,
+    // "mm". Use this in a context where the intended namespace of the string is
+    // obvious; this is a *lossy* conversion.
+    const char * toUnqualString() const;
 
-  // Give a string corresponding to the qualified version of this name,
-  // e.g., "aten::mm".  This string format is made available to Python bindings
-  // (so we know how to parse it.)
-  const char * toQualString() const;
+    // Give a string corresponding to the qualified version of this name,
+    // e.g., "aten::mm".  This string format is made available to Python bindings
+    // (so we know how to parse it.)
+    const char * toQualString() const;
 
-  // This describes a symbol in a case where humans read it.  At the moment it's
-  // the same as toQualString.  This has to be a const char* returned because
-  // a lot of printf style macros use it.
-  const char * toDisplayString() const;
+    // This describes a symbol in a case where humans read it.  At the moment it's
+    // the same as toQualString.  This has to be a const char* returned because
+    // a lot of printf style macros use it.
+    const char * toDisplayString() const;
 
-  // Give a string corresponding to the domain name for the symbol,
-  // e.g., "org.pytorch.aten".
-  std::string domainString() const;
+    // Give a string corresponding to the domain name for the symbol,
+    // e.g., "org.pytorch.aten".
+    std::string domainString() const;
 
 private:
-  explicit Symbol(Symbol ns, const std::string & s);
-  unique_t value;
+    explicit Symbol(Symbol ns, const std::string & s);
+    unique_t value;
 };
 
 static inline bool operator==(Symbol lhs, Symbol rhs) {
-  return static_cast<unique_t>(lhs) == static_cast<unique_t>(rhs);
+    return static_cast<unique_t>(lhs) == static_cast<unique_t>(rhs);
 }
 
 enum class _keys : unique_t {
-    #define DEFINE_KEY(ns, s) ns##_##s,
+#define DEFINE_KEY(ns, s) ns##_##s,
     FORALL_NS_SYMBOLS(DEFINE_KEY)
-    #undef DEFINE_KEY
+#undef DEFINE_KEY
     num_symbols
 };
 
@@ -395,21 +395,51 @@ enum class _keys : unique_t {
 FORALL_NS_SYMBOLS(DEFINE_SYMBOL)
 #undef DEFINE_SYMBOL
 
-inline Symbol Symbol::attr(const std::string & s) { return Symbol::fromQualString("attr::" + s); }
-inline Symbol Symbol::aten(const std::string & s)  { return Symbol::fromQualString("aten::" + s); }
-inline Symbol Symbol::onnx(const std::string & s)  { return Symbol::fromQualString("onnx::" + s); }
-inline Symbol Symbol::prim(const std::string & s)  { return Symbol::fromQualString("prim::" + s); }
-inline Symbol Symbol::scope(const std::string & s) { return Symbol::fromQualString("scope::" + s); }
-inline Symbol Symbol::user(const std::string & s) { return Symbol::fromQualString("user::" + s); }
-inline Symbol Symbol::caffe2(const std::string & s) { return Symbol::fromQualString("_caffe2::" + s); }
-inline Symbol Symbol::dimname(const std::string & s) { return Symbol::fromQualString("dimname::" + s); }
-inline bool Symbol::is_attr() const { return ns() == namespaces::attr; }
-inline bool Symbol::is_aten() const { return ns() == namespaces::aten; }
-inline bool Symbol::is_prim() const { return ns() == namespaces::prim; }
-inline bool Symbol::is_onnx() const { return ns() == namespaces::onnx; }
-inline bool Symbol::is_user() const { return ns() == namespaces::user; }
-inline bool Symbol::is_caffe2() const { return ns() == namespaces::_caffe2; }
-inline bool Symbol::is_dimname() const { return ns() == namespaces::dimname; }
+inline Symbol Symbol::attr(const std::string & s) {
+    return Symbol::fromQualString("attr::" + s);
+}
+inline Symbol Symbol::aten(const std::string & s)  {
+    return Symbol::fromQualString("aten::" + s);
+}
+inline Symbol Symbol::onnx(const std::string & s)  {
+    return Symbol::fromQualString("onnx::" + s);
+}
+inline Symbol Symbol::prim(const std::string & s)  {
+    return Symbol::fromQualString("prim::" + s);
+}
+inline Symbol Symbol::scope(const std::string & s) {
+    return Symbol::fromQualString("scope::" + s);
+}
+inline Symbol Symbol::user(const std::string & s) {
+    return Symbol::fromQualString("user::" + s);
+}
+inline Symbol Symbol::caffe2(const std::string & s) {
+    return Symbol::fromQualString("_caffe2::" + s);
+}
+inline Symbol Symbol::dimname(const std::string & s) {
+    return Symbol::fromQualString("dimname::" + s);
+}
+inline bool Symbol::is_attr() const {
+    return ns() == namespaces::attr;
+}
+inline bool Symbol::is_aten() const {
+    return ns() == namespaces::aten;
+}
+inline bool Symbol::is_prim() const {
+    return ns() == namespaces::prim;
+}
+inline bool Symbol::is_onnx() const {
+    return ns() == namespaces::onnx;
+}
+inline bool Symbol::is_user() const {
+    return ns() == namespaces::user;
+}
+inline bool Symbol::is_caffe2() const {
+    return ns() == namespaces::_caffe2;
+}
+inline bool Symbol::is_dimname() const {
+    return ns() == namespaces::dimname;
+}
 
 } // namespace c10
 
@@ -417,8 +447,8 @@ inline bool Symbol::is_dimname() const { return ns() == namespaces::dimname; }
 namespace std {
 template <>
 struct hash<c10::Symbol> {
-  size_t operator()(c10::Symbol s) const {
-    return std::hash<uint32_t>()(static_cast<uint32_t>(s));
-  }
+    size_t operator()(c10::Symbol s) const {
+        return std::hash<uint32_t>()(static_cast<uint32_t>(s));
+    }
 };
 }
