@@ -17,7 +17,8 @@ from torch._utils_internal import get_source_lines_and_file
 
 _reserved_prefix = "__jit"
 _reserved_names = {"print"}
-_identifier_chars = set(string.ascii_lowercase + string.ascii_uppercase + string.digits)
+_identifier_chars = set(string.ascii_lowercase + string.ascii_uppercase +
+                        string.digits)
 
 
 def is_reserved_name(name):
@@ -55,48 +56,40 @@ node_start_tokens = {
 }
 
 if PY2:
-    pretty_node_names.update(
-        {
-            ast.Print: "print statements",
-            ast.TryExcept: "try blocks",
-            ast.TryFinally: "try blocks",
-            ast.Exec: "exec statements",
-        }
-    )
+    pretty_node_names.update({
+        ast.Print: "print statements",
+        ast.TryExcept: "try blocks",
+        ast.TryFinally: "try blocks",
+        ast.Exec: "exec statements",
+    })
 
-    node_start_tokens.update(
-        {
-            ast.Print: "print",
-            ast.TryExcept: "try",
-            ast.TryFinally: "try",
-            ast.Exec: "exec",
-        }
-    )
+    node_start_tokens.update({
+        ast.Print: "print",
+        ast.TryExcept: "try",
+        ast.TryFinally: "try",
+        ast.Exec: "exec",
+    })
 else:
-    pretty_node_names.update(
-        {
-            ast.AsyncFunctionDef: "async function definitions",
-            ast.AsyncFor: "async for loops",
-            ast.AsyncWith: "async with statements",
-            ast.Try: "try blocks",
-            ast.Nonlocal: "nonlocal variables",
-        }
-    )
+    pretty_node_names.update({
+        ast.AsyncFunctionDef: "async function definitions",
+        ast.AsyncFor: "async for loops",
+        ast.AsyncWith: "async with statements",
+        ast.Try: "try blocks",
+        ast.Nonlocal: "nonlocal variables",
+    })
 
-    node_start_tokens.update(
-        {
-            ast.AsyncFunctionDef: "async def",
-            ast.AsyncFor: "async for",
-            ast.AsyncWith: "async with",
-            ast.Try: "try",
-            ast.Nonlocal: "nonlocal",
-        }
-    )
+    node_start_tokens.update({
+        ast.AsyncFunctionDef: "async def",
+        ast.AsyncFor: "async for",
+        ast.AsyncWith: "async with",
+        ast.Try: "try",
+        ast.Nonlocal: "nonlocal",
+    })
 
 if sys.version_info >= (3, 6):
-    pretty_node_names.update(
-        {ast.AnnAssign: "annotated assignments",}
-    )
+    pretty_node_names.update({
+        ast.AnnAssign: "annotated assignments",
+    })
     # NB: no specific token for AnnAssign
 
 
@@ -128,9 +121,8 @@ class UnsupportedNodeError(NotSupportedError):
             offending_node.col_offset + range_len,
         )
         feature_name = pretty_node_names.get(node_type, node_type.__name__)
-        msg = "{} {}aren't supported".format(
-            feature_name, reason + " " if reason else ""
-        )
+        msg = "{} {}aren't supported".format(feature_name,
+                                             reason + " " if reason else "")
         super(UnsupportedNodeError, self).__init__(source_range, msg)
 
 
@@ -152,8 +144,8 @@ def _uses_true_division(fn):
         return fn.__globals__.get("division") is __future__.division
     else:
         raise RuntimeError(
-            "_uses_true_division: expected function or method, got {}".format(type(fn))
-        )
+            "_uses_true_division: expected function or method, got {}".format(
+                type(fn)))
 
 
 def get_jit_class_def(cls, self_name):
@@ -161,20 +153,22 @@ def get_jit_class_def(cls, self_name):
     # TODO: proper overriding analysis when implementing class inheritance
     methods = inspect.getmembers(
         cls,
-        predicate=lambda m: (inspect.ismethod(m) or inspect.isfunction(m))
-        and m.__name__ in cls.__dict__,
+        predicate=lambda m: (inspect.ismethod(m) or inspect.isfunction(m)) and
+        m.__name__ in cls.__dict__,
     )
 
-    method_defs = [get_jit_def(method[1], self_name=self_name) for method in methods]
+    method_defs = [
+        get_jit_def(method[1], self_name=self_name) for method in methods
+    ]
 
     sourcelines, file_lineno, filename = get_source_lines_and_file(cls)
     source = "".join(sourcelines)
     dedent_src = dedent(source)
     py_ast = ast.parse(dedent_src)
     leading_whitespace_len = len(source.split("\n", 1)[0]) - len(
-        dedent_src.split("\n", 1)[0]
-    )
-    ctx = SourceContext(source, filename, file_lineno, leading_whitespace_len, False)
+        dedent_src.split("\n", 1)[0])
+    ctx = SourceContext(source, filename, file_lineno, leading_whitespace_len,
+                        False)
     return build_class_def(ctx, py_ast.body[0], method_defs, self_name)
 
 
@@ -183,15 +177,14 @@ def get_jit_def(fn, self_name=None):
     source = "".join(sourcelines)
     dedent_src = dedent(source)
     py_ast = ast.parse(dedent_src)
-    if len(py_ast.body) != 1 or not isinstance(py_ast.body[0], ast.FunctionDef):
+    if len(py_ast.body) != 1 or not isinstance(py_ast.body[0],
+                                               ast.FunctionDef):
         raise RuntimeError("Expected a single top-level function")
     leading_whitespace_len = len(source.split("\n", 1)[0]) - len(
-        dedent_src.split("\n", 1)[0]
-    )
+        dedent_src.split("\n", 1)[0])
     type_line = torch.jit.annotations.get_type_line(source)
-    ctx = SourceContext(
-        source, filename, file_lineno, leading_whitespace_len, _uses_true_division(fn)
-    )
+    ctx = SourceContext(source, filename, file_lineno, leading_whitespace_len,
+                        _uses_true_division(fn))
     return build_def(ctx, py_ast.body[0], type_line, self_name)
 
 
@@ -204,9 +197,8 @@ class Builder(object):
 
 
 def build_class_def(ctx, py_def, methods, self_name):
-    r = ctx.make_range(
-        py_def.lineno, py_def.col_offset, py_def.col_offset + len("class")
-    )
+    r = ctx.make_range(py_def.lineno, py_def.col_offset,
+                       py_def.col_offset + len("class"))
     return ClassDef(Ident(r, self_name), [Stmt(method) for method in methods])
 
 
@@ -225,28 +217,26 @@ def build_def(ctx, py_def, type_line, self_name=None):
     is_method = self_name is not None
     if type_line is not None:
         type_comment_decl = torch._C.parse_type_comment(type_line)
-        decl = torch._C.merge_type_from_type_comment(decl, type_comment_decl, is_method)
+        decl = torch._C.merge_type_from_type_comment(decl, type_comment_decl,
+                                                     is_method)
     return Def(Ident(r, py_def.name), decl, build_stmts(ctx, body))
 
 
 _vararg_kwarg_err = (
     "Compiled functions can't take variable number of arguments "
-    "or use keyword-only arguments with defaults"
-)
+    "or use keyword-only arguments with defaults")
 
 
 def build_param_list(ctx, py_args, self_name):
     if py_args.kwarg is not None:
         expr = py_args.kwarg
-        ctx_range = ctx.make_range(
-            expr.lineno, expr.col_offset - 1, expr.col_offset + len(expr.arg)
-        )
+        ctx_range = ctx.make_range(expr.lineno, expr.col_offset - 1,
+                                   expr.col_offset + len(expr.arg))
         raise NotSupportedError(ctx_range, _vararg_kwarg_err)
     if py_args.vararg is not None:
         expr = py_args.vararg
-        ctx_range = ctx.make_range(
-            expr.lineno, expr.col_offset - 1, expr.col_offset + len(expr.arg)
-        )
+        ctx_range = ctx.make_range(expr.lineno, expr.col_offset - 1,
+                                   expr.col_offset + len(expr.arg))
         raise NotSupportedError(ctx_range, _vararg_kwarg_err)
     if not PY2 and len(py_args.kw_defaults) > 0:
         # kw_defaults is a list of the values for the kwargs (which default to None),
@@ -257,7 +247,10 @@ def build_param_list(ctx, py_args, self_name):
                 raise NotSupportedError(ctx_range, _vararg_kwarg_err)
     result = [build_param(ctx, arg, self_name, False) for arg in py_args.args]
     if not PY2:
-        result += [build_param(ctx, arg, self_name, True) for arg in py_args.kwonlyargs]
+        result += [
+            build_param(ctx, arg, self_name, True)
+            for arg in py_args.kwonlyargs
+        ]
     return result
 
 
@@ -265,7 +258,8 @@ def build_param(ctx, py_arg, self_name, kwarg_only):
     # NB: In Python3 py_arg is a pair of (str arg, expr? annotation)
     #     In Python2 py_arg is a Name (Expr subclass)
     name = py_arg.id if PY2 else py_arg.arg
-    r = ctx.make_range(py_arg.lineno, py_arg.col_offset, py_arg.col_offset + len(name))
+    r = ctx.make_range(py_arg.lineno, py_arg.col_offset,
+                       py_arg.col_offset + len(name))
     if getattr(py_arg, "annotation", None) is not None:
         annotation_expr = build_expr(ctx, py_arg.annotation)
     elif self_name is not None and name == "self":
@@ -282,7 +276,8 @@ def get_default_args(fn):
     if PY2:
         argspec = inspect.getargspec(fn)
         if argspec.defaults is not None:
-            return dict(zip(argspec.args[-len(argspec.defaults) :], argspec.defaults))
+            return dict(
+                zip(argspec.args[-len(argspec.defaults):], argspec.defaults))
         else:
             return {}
     else:
@@ -321,7 +316,9 @@ class StmtBuilder(Builder):
     @staticmethod
     def build_AnnAssign(ctx, stmt):
         if stmt.value is None:
-            raise UnsupportedNodeError(ctx, stmt, reason="without assigned value")
+            raise UnsupportedNodeError(ctx,
+                                       stmt,
+                                       reason="without assigned value")
         rhs = build_expr(ctx, stmt.value)
         lhs = build_expr(ctx, stmt.target)
         the_type = build_expr(ctx, stmt.annotation)
@@ -333,19 +330,19 @@ class StmtBuilder(Builder):
 
     @staticmethod
     def build_Return(ctx, stmt):
-        r = ctx.make_range(
-            stmt.lineno, stmt.col_offset, stmt.col_offset + len("return")
-        )
-        return Return(r, None if stmt.value is None else build_expr(ctx, stmt.value))
+        r = ctx.make_range(stmt.lineno, stmt.col_offset,
+                           stmt.col_offset + len("return"))
+        return Return(
+            r, None if stmt.value is None else build_expr(ctx, stmt.value))
 
     @staticmethod
     def build_Raise(ctx, stmt):
-        r = ctx.make_range(stmt.lineno, stmt.col_offset, stmt.col_offset + len("raise"))
+        r = ctx.make_range(stmt.lineno, stmt.col_offset,
+                           stmt.col_offset + len("raise"))
         if PY2:
             if stmt.tback:
                 raise NotSupportedError(
-                    r, "tracebacks with exceptions is not supported"
-                )
+                    r, "tracebacks with exceptions is not supported")
             # TODO use stmt.type once instantiating exceptions is supported
             expr = build_expr(ctx, stmt.inst) if stmt.inst else None
         else:
@@ -354,9 +351,8 @@ class StmtBuilder(Builder):
 
     @staticmethod
     def build_Assert(ctx, stmt):
-        r = ctx.make_range(
-            stmt.lineno, stmt.col_offset, stmt.col_offset + len("assert")
-        )
+        r = ctx.make_range(stmt.lineno, stmt.col_offset,
+                           stmt.col_offset + len("assert"))
         test = build_expr(ctx, stmt.test)
         msg = build_expr(ctx, stmt.msg) if stmt.msg is not None else None
         return Assert(r, test, msg)
@@ -381,14 +377,16 @@ class StmtBuilder(Builder):
             # TODO: try to recover the location of else:? Python doesn't give us useful
             # annotations in this case
             raise NotSupportedError(
-                None, "else branches of while loops aren't supported"
-            )
-        r = ctx.make_range(stmt.lineno, stmt.col_offset, stmt.col_offset + len("while"))
-        return While(r, build_expr(ctx, stmt.test), build_stmts(ctx, stmt.body))
+                None, "else branches of while loops aren't supported")
+        r = ctx.make_range(stmt.lineno, stmt.col_offset,
+                           stmt.col_offset + len("while"))
+        return While(r, build_expr(ctx, stmt.test),
+                     build_stmts(ctx, stmt.body))
 
     @staticmethod
     def build_For(ctx, stmt):
-        r = ctx.make_range(stmt.lineno, stmt.col_offset, stmt.col_offset + len("for"))
+        r = ctx.make_range(stmt.lineno, stmt.col_offset,
+                           stmt.col_offset + len("for"))
         return For(
             r,
             [build_expr(ctx, stmt.target)],
@@ -398,7 +396,8 @@ class StmtBuilder(Builder):
 
     @staticmethod
     def build_If(ctx, stmt):
-        r = ctx.make_range(stmt.lineno, stmt.col_offset, stmt.col_offset + len("if"))
+        r = ctx.make_range(stmt.lineno, stmt.col_offset,
+                           stmt.col_offset + len("if"))
         return If(
             r,
             build_expr(ctx, stmt.test),
@@ -408,29 +407,32 @@ class StmtBuilder(Builder):
 
     @staticmethod
     def build_Print(ctx, stmt):
-        r = ctx.make_range(stmt.lineno, stmt.col_offset, stmt.col_offset + len("print"))
+        r = ctx.make_range(stmt.lineno, stmt.col_offset,
+                           stmt.col_offset + len("print"))
         if stmt.dest:
             raise NotSupportedError(
-                r, "print statements with non-default destinations aren't supported"
+                r,
+                "print statements with non-default destinations aren't supported"
             )
         args = [build_expr(ctx, val) for val in stmt.values]
         return ExprStmt(Apply(Var(Ident(r, "print")), args, []))
 
     @staticmethod
     def build_Pass(ctx, stmt):
-        r = ctx.make_range(stmt.lineno, stmt.col_offset, stmt.col_offset + len("pass"))
+        r = ctx.make_range(stmt.lineno, stmt.col_offset,
+                           stmt.col_offset + len("pass"))
         return Pass(r)
 
     @staticmethod
     def build_Break(ctx, stmt):
-        r = ctx.make_range(stmt.lineno, stmt.col_offset, stmt.col_offset + len("break"))
+        r = ctx.make_range(stmt.lineno, stmt.col_offset,
+                           stmt.col_offset + len("break"))
         return Break(r)
 
     @staticmethod
     def build_Continue(ctx, stmt):
-        r = ctx.make_range(
-            stmt.lineno, stmt.col_offset, stmt.col_offset + len("continue")
-        )
+        r = ctx.make_range(stmt.lineno, stmt.col_offset,
+                           stmt.col_offset + len("continue"))
         return Continue(r)
 
 
@@ -508,21 +510,20 @@ class ExprBuilder(Builder):
             # XXX: we could do a better job at figuring out the range for the name here
             if not kw.arg:
                 raise NotSupportedError(
-                    kw_expr.range(), "keyword-arg expansion is not supported"
-                )
+                    kw_expr.range(), "keyword-arg expansion is not supported")
             kwargs.append(Attribute(Ident(kw_expr.range(), kw.arg), kw_expr))
         return Apply(func, args, kwargs)
 
     @staticmethod
     def build_Ellipsis(ctx, expr):
-        r = ctx.make_range(
-            expr.lineno, expr.col_offset, expr.col_offset + 3
-        )  # len("...") == 3
+        r = ctx.make_range(expr.lineno, expr.col_offset,
+                           expr.col_offset + 3)  # len("...") == 3
         return Dots(r)
 
     @staticmethod
     def build_Name(ctx, expr):
-        r = ctx.make_range(expr.lineno, expr.col_offset, expr.col_offset + len(expr.id))
+        r = ctx.make_range(expr.lineno, expr.col_offset,
+                           expr.col_offset + len(expr.id))
         if expr.id.startswith(_reserved_prefix):
             raise NotSupportedError(
                 r,
@@ -539,9 +540,8 @@ class ExprBuilder(Builder):
 
     @staticmethod
     def build_NameConstant(ctx, expr):
-        r = ctx.make_range(
-            expr.lineno, expr.col_offset, expr.col_offset + len(str(expr.value))
-        )
+        r = ctx.make_range(expr.lineno, expr.col_offset,
+                           expr.col_offset + len(str(expr.value)))
         if expr.value is True:
             return TrueLiteral(r)
         elif expr.value is False:
@@ -549,7 +549,8 @@ class ExprBuilder(Builder):
         elif expr.value is None:
             return NoneLiteral(r)
         else:
-            raise ValueError("Name constant value unsupported: " + str(expr.value))
+            raise ValueError("Name constant value unsupported: " +
+                             str(expr.value))
 
     @staticmethod
     def build_BinOp(ctx, expr):
@@ -569,8 +570,7 @@ class ExprBuilder(Builder):
         if op_token is None:
             err_range = ctx.make_raw_range(lhs.range().end, rhs.range().start)
             raise NotSupportedError(
-                err_range, "unsupported binary operator: " + op.__name__
-            )
+                err_range, "unsupported binary operator: " + op.__name__)
         return BinOp(op_token, lhs, rhs)
 
     @staticmethod
@@ -578,32 +578,28 @@ class ExprBuilder(Builder):
         sub_expr = build_expr(ctx, expr.operand)
         op = type(expr.op)
         op_token = ExprBuilder.unop_map.get(op)
-        r = ctx.make_range(
-            expr.lineno, expr.col_offset, expr.col_offset + len(op_token)
-        )
+        r = ctx.make_range(expr.lineno, expr.col_offset,
+                           expr.col_offset + len(op_token))
         if op_token is None:
             err_range = ctx.make_raw_range(r.start, sub_expr.range().end)
             raise NotSupportedError(
-                err_range, "unsupported unary operator: " + op.__name__
-            )
+                err_range, "unsupported unary operator: " + op.__name__)
         return UnaryOp(r, op_token, sub_expr)
 
     @staticmethod
     def build_BoolOp(ctx, expr):
         if len(expr.values) < 2:
             raise AssertionError(
-                "expected at least 2 values in BoolOp, but got " + str(len(expr.values))
-            )
+                "expected at least 2 values in BoolOp, but got " +
+                str(len(expr.values)))
         sub_exprs = [build_expr(ctx, sub_expr) for sub_expr in expr.values]
         op = type(expr.op)
         op_token = ExprBuilder.boolop_map.get(op)
         if op_token is None:
-            err_range = ctx.make_raw_range(
-                sub_exprs[0].range().end, sub_exprs[1].range().start
-            )
+            err_range = ctx.make_raw_range(sub_exprs[0].range().end,
+                                           sub_exprs[1].range().start)
             raise NotSupportedError(
-                err_range, "unsupported boolean operator: " + op.__name__
-            )
+                err_range, "unsupported boolean operator: " + op.__name__)
         lhs = sub_exprs[0]
         for rhs in sub_exprs[1:]:
             lhs = BinOp(op_token, lhs, rhs)
@@ -619,7 +615,9 @@ class ExprBuilder(Builder):
 
     @staticmethod
     def build_Compare(ctx, expr):
-        operands = [build_expr(ctx, e) for e in [expr.left] + list(expr.comparators)]
+        operands = [
+            build_expr(ctx, e) for e in [expr.left] + list(expr.comparators)
+        ]
         result = None
         for lhs, op_, rhs in zip(operands, expr.ops, operands[1:]):
             op = type(op_)
@@ -627,8 +625,7 @@ class ExprBuilder(Builder):
             r = ctx.make_raw_range(lhs.range().end, rhs.range().start)
             if op_token is None:
                 raise NotSupportedError(
-                    r, "unsupported comparison operator: " + op.__name__
-                )
+                    r, "unsupported comparison operator: " + op.__name__)
 
             if op == ast.NotIn:
                 # NB: `not in` is just `not( in )`, so we don't introduce new tree view
@@ -647,30 +644,21 @@ class ExprBuilder(Builder):
     @staticmethod
     def build_Subscript(ctx, expr):
         def build_SliceExpr(ctx, base, slice_expr):
-            lower = (
-                build_expr(ctx, slice_expr.lower)
-                if slice_expr.lower is not None
-                else None
-            )
-            upper = (
-                build_expr(ctx, slice_expr.upper)
-                if slice_expr.upper is not None
-                else None
-            )
-            step = (
-                build_expr(ctx, slice_expr.step)
-                if slice_expr.step is not None
-                else None
-            )
+            lower = (build_expr(ctx, slice_expr.lower)
+                     if slice_expr.lower is not None else None)
+            upper = (build_expr(ctx, slice_expr.upper)
+                     if slice_expr.upper is not None else None)
+            step = (build_expr(ctx, slice_expr.step)
+                    if slice_expr.step is not None else None)
             return SliceExpr(base.range(), lower, upper, step)
 
         def build_Index(ctx, base, index_expr):
             if isinstance(index_expr.value, ast.Tuple) or isinstance(
-                index_expr.value, ast.List
-            ):
+                    index_expr.value, ast.List):
                 raise NotSupportedError(
                     base.range(),
-                    "slicing multiple dimensions with " "sequences not supported yet",
+                    "slicing multiple dimensions with "
+                    "sequences not supported yet",
                 )
             return build_expr(ctx, index_expr.value)
 
@@ -696,8 +684,7 @@ class ExprBuilder(Builder):
         sub_type = type(expr.slice)
         if sub_type is ast.Index:
             if isinstance(expr.slice.value, ast.Tuple) or isinstance(
-                expr.slice.value, ast.List
-            ):
+                    expr.slice.value, ast.List):
                 indices = []
                 for index_expr in expr.slice.value.elts:
                     indices.append(build_expr(ctx, index_expr))
@@ -736,7 +723,8 @@ class ExprBuilder(Builder):
     @staticmethod
     def build_Num(ctx, expr):
         value = str(expr.n)
-        r = ctx.make_range(expr.lineno, expr.col_offset, expr.col_offset + len(value))
+        r = ctx.make_range(expr.lineno, expr.col_offset,
+                           expr.col_offset + len(value))
         return Const(r, value)
 
     @staticmethod
@@ -753,10 +741,10 @@ class ExprBuilder(Builder):
         elif isinstance(value, type(Ellipsis)):
             return ExprBuilder.build_Ellipsis(ctx, expr)
         else:
-            error_range = ctx.make_range(
-                expr.lineno, expr.col_offset, expr.col_offset + len(str(value))
-            )
-            raise FrontendError(error_range, "Unknown Constant expression type")
+            error_range = ctx.make_range(expr.lineno, expr.col_offset,
+                                         expr.col_offset + len(str(value)))
+            raise FrontendError(error_range,
+                                "Unknown Constant expression type")
 
     @staticmethod
     def build_Str(ctx, expr):
@@ -769,12 +757,15 @@ class ExprBuilder(Builder):
         s = ""
         args = []
         for value in expr.values:
-            r = ctx.make_range(value.lineno, value.col_offset, value.col_offset + 1)
+            r = ctx.make_range(value.lineno, value.col_offset,
+                               value.col_offset + 1)
             if isinstance(value, ast.FormattedValue):
                 if value.conversion != -1:
-                    raise NotSupportedError(r, "Don't support conversion in JoinedStr")
+                    raise NotSupportedError(
+                        r, "Don't support conversion in JoinedStr")
                 if value.format_spec is not None:
-                    raise NotSupportedError(r, "Don't support formatting in JoinedStr")
+                    raise NotSupportedError(
+                        r, "Don't support formatting in JoinedStr")
                 s += "{}"
                 args.append(build_expr(ctx, value.value))
             elif isinstance(value, ast.Str):
@@ -790,8 +781,7 @@ class ExprBuilder(Builder):
         r = ctx.make_range(stmt.lineno, stmt.col_offset, stmt.col_offset)
         if len(stmt.generators) > 1:
             raise NotSupportedError(
-                r, "multiple comprehension generators not supported yet"
-            )
+                r, "multiple comprehension generators not supported yet")
 
         if len(stmt.generators[0].ifs) != 0:
             raise NotSupportedError(r, "comprehension ifs not supported yet")
@@ -814,4 +804,5 @@ build_stmt = StmtBuilder()
 
 def find_before(ctx, pos, substr, offsets=(0, 0)):
     new_pos = ctx.source[:pos].rindex(substr)
-    return ctx.make_raw_range(new_pos + offsets[0], new_pos + len(substr) + offsets[1])
+    return ctx.make_raw_range(new_pos + offsets[0],
+                              new_pos + len(substr) + offsets[1])

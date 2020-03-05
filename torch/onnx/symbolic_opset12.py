@@ -6,7 +6,6 @@ from __future__ import unicode_literals
 import torch.onnx.symbolic_helper as sym_help
 from torch.onnx.symbolic_helper import parse_args
 
-
 # EDITING THIS FILE? READ THIS FIRST!
 # see Note [Edit Symbolic Files] in symbolic_helper.py
 
@@ -30,21 +29,29 @@ def nll_loss(g, self, target, weight, reduction, ignore_index):
     # when ignore_index is not specified, ignore_index == onnx::Constant[value={-100}]
     if sym_help._maybe_get_const(ignore_index, "i") == -100:
         if weight.node().mustBeNone():
-            return g.op(
-                "NegativeLogLikelihoodLoss", self, target, reduction_s=reduction
-            )
+            return g.op("NegativeLogLikelihoodLoss",
+                        self,
+                        target,
+                        reduction_s=reduction)
         else:
-            return g.op(
-                "NegativeLogLikelihoodLoss", self, target, weight, reduction_s=reduction
-            )
+            return g.op("NegativeLogLikelihoodLoss",
+                        self,
+                        target,
+                        weight,
+                        reduction_s=reduction)
 
     # if ignore_index is specified, compute nllloss with no reduction and apply the reduction afterwards
     if weight.node().mustBeNone():
-        nllloss = g.op("NegativeLogLikelihoodLoss", self, target, reduction_s="none")
+        nllloss = g.op("NegativeLogLikelihoodLoss",
+                       self,
+                       target,
+                       reduction_s="none")
     else:
-        nllloss = g.op(
-            "NegativeLogLikelihoodLoss", self, target, weight, reduction_s="none"
-        )
+        nllloss = g.op("NegativeLogLikelihoodLoss",
+                       self,
+                       target,
+                       weight,
+                       reduction_s="none")
 
     from torch.onnx.symbolic_opset9 import (
         zeros_like,

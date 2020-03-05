@@ -17,7 +17,7 @@ from torch.testing._internal.common_utils import shell
 from torch.testing._internal.common_utils import TEST_WITH_ROCM
 from torch.utils import cpp_extension
 
-PY2 = sys.version_info <= (3,)
+PY2 = sys.version_info <= (3, )
 PY33 = sys.version_info >= (3, 3)
 PY36 = sys.version_info >= (3, 6)
 
@@ -75,20 +75,20 @@ TESTS = [
 # skip < 3.3 because mock is added in 3.3 and is used in rpc_spawn
 # skip python2 for rpc and dist_autograd tests that do not support python2
 if PY33:
-    TESTS.extend(
-        [
-            "distributed/rpc/test_rpc_spawn",
-            "distributed/rpc/test_dist_autograd_spawn",
-            "distributed/rpc/test_dist_optimizer_spawn",
-            "distributed/rpc/jit/test_dist_autograd_spawn",
-        ]
-    )
+    TESTS.extend([
+        "distributed/rpc/test_rpc_spawn",
+        "distributed/rpc/test_dist_autograd_spawn",
+        "distributed/rpc/test_dist_optimizer_spawn",
+        "distributed/rpc/jit/test_dist_autograd_spawn",
+    ])
 
 # skip < 3.6 b/c fstrings added in 3.6
 if PY36:
-    TESTS.extend(
-        ["test_jit_py3", "test_determination", "distributed/rpc/jit/test_rpc_spawn",]
-    )
+    TESTS.extend([
+        "test_jit_py3",
+        "test_determination",
+        "distributed/rpc/jit/test_rpc_spawn",
+    ])
 
 WINDOWS_BLACKLIST = [
     "distributed/test_distributed",
@@ -146,7 +146,6 @@ _DEP_MODULES_CACHE = {}
 
 DISTRIBUTED_TESTS_CONFIG = {}
 
-
 if dist.is_available():
     if not TEST_WITH_ROCM and dist.is_mpi_available():
         DISTRIBUTED_TESTS_CONFIG["mpi"] = {
@@ -166,7 +165,8 @@ if dist.is_available():
 
 # https://stackoverflow.com/questions/2549939/get-signal-names-from-numbers-in-python
 SIGNALS_TO_NAMES_DICT = {
-    getattr(signal, n): n for n in dir(signal) if n.startswith("SIG") and "_" not in n
+    getattr(signal, n): n
+    for n in dir(signal) if n.startswith("SIG") and "_" not in n
 }
 
 CPP_EXTENSIONS_ERROR = """
@@ -181,7 +181,8 @@ def print_to_stderr(message):
     print(message, file=sys.stderr)
 
 
-def run_test(executable, test_module, test_directory, options, *extra_unittest_args):
+def run_test(executable, test_module, test_directory, options,
+             *extra_unittest_args):
     unittest_args = options.additional_unittest_args
     if options.verbose:
         unittest_args.append("--verbose")
@@ -194,12 +195,12 @@ def run_test(executable, test_module, test_directory, options, *extra_unittest_a
 
 
 def test_cuda_primary_ctx(executable, test_module, test_directory, options):
-    return run_test(executable, test_module, test_directory, options, "--subprocess")
+    return run_test(executable, test_module, test_directory, options,
+                    "--subprocess")
 
 
-def _test_cpp_extensions_aot(
-    executable, test_module, test_directory, options, use_ninja
-):
+def _test_cpp_extensions_aot(executable, test_module, test_directory, options,
+                             use_ninja):
     if use_ninja:
         try:
             cpp_extension.verify_ninja_availability()
@@ -209,7 +210,8 @@ def _test_cpp_extensions_aot(
 
     # Wipe the build folder, if it exists already
     cpp_extensions_test_dir = os.path.join(test_directory, "cpp_extensions")
-    cpp_extensions_test_build_dir = os.path.join(cpp_extensions_test_dir, "build")
+    cpp_extensions_test_build_dir = os.path.join(cpp_extensions_test_dir,
+                                                 "build")
     if os.path.exists(cpp_extensions_test_build_dir):
         shutil.rmtree(cpp_extensions_test_build_dir)
 
@@ -223,7 +225,8 @@ def _test_cpp_extensions_aot(
     if sys.platform != "win32":
         return_code = shell(
             cmd,
-            cwd=os.path.join(cpp_extensions_test_dir, "no_python_abi_suffix_test"),
+            cwd=os.path.join(cpp_extensions_test_dir,
+                             "no_python_abi_suffix_test"),
             env=shell_env,
         )
         if return_code != 0:
@@ -235,34 +238,43 @@ def _test_cpp_extensions_aot(
         cpp_extensions = os.path.join(test_directory, "cpp_extensions")
         install_directory = ""
         # install directory is the one that is named site-packages
-        for root, directories, _ in os.walk(os.path.join(cpp_extensions, "install")):
+        for root, directories, _ in os.walk(
+                os.path.join(cpp_extensions, "install")):
             for directory in directories:
                 if "-packages" in directory:
                     install_directory = os.path.join(root, directory)
 
         assert install_directory, "install_directory must not be empty"
-        os.environ["PYTHONPATH"] = os.pathsep.join([install_directory, python_path])
+        os.environ["PYTHONPATH"] = os.pathsep.join(
+            [install_directory, python_path])
         return run_test(executable, test_module, test_directory, options)
     finally:
         os.environ["PYTHONPATH"] = python_path
 
 
-def test_cpp_extensions_aot_ninja(executable, test_module, test_directory, options):
-    return _test_cpp_extensions_aot(
-        executable, "test_cpp_extensions_aot", test_directory, options, use_ninja=True
-    )
+def test_cpp_extensions_aot_ninja(executable, test_module, test_directory,
+                                  options):
+    return _test_cpp_extensions_aot(executable,
+                                    "test_cpp_extensions_aot",
+                                    test_directory,
+                                    options,
+                                    use_ninja=True)
 
 
-def test_cpp_extensions_aot_no_ninja(executable, test_module, test_directory, options):
-    return _test_cpp_extensions_aot(
-        executable, "test_cpp_extensions_aot", test_directory, options, use_ninja=False
-    )
+def test_cpp_extensions_aot_no_ninja(executable, test_module, test_directory,
+                                     options):
+    return _test_cpp_extensions_aot(executable,
+                                    "test_cpp_extensions_aot",
+                                    test_directory,
+                                    options,
+                                    use_ninja=False)
 
 
 def test_distributed(executable, test_module, test_directory, options):
     mpi_available = subprocess.call("command -v mpiexec", shell=True) == 0
     if options.verbose and not mpi_available:
-        print_to_stderr("MPI not available -- MPI backend tests will be skipped")
+        print_to_stderr(
+            "MPI not available -- MPI backend tests will be skipped")
     config = DISTRIBUTED_TESTS_CONFIG
     for backend, env_vars in config.items():
         if backend == "mpi" and not mpi_available:
@@ -273,9 +285,7 @@ def test_distributed(executable, test_module, test_directory, options):
                 with_init = " with file init_method" if with_init_file else ""
                 print_to_stderr(
                     "Running distributed tests for the {} backend{}".format(
-                        backend, with_init
-                    )
-                )
+                        backend, with_init))
             os.environ["TEMP_DIR"] = tmp_dir
             os.environ["BACKEND"] = backend
             os.environ["INIT_METHOD"] = "env://"
@@ -292,27 +302,20 @@ def test_distributed(executable, test_module, test_directory, options):
                 if backend == "mpi":
                     # test mpiexec for --noprefix option
                     with open(os.devnull, "w") as devnull:
-                        noprefix_opt = (
-                            "--noprefix"
-                            if subprocess.call(
-                                'mpiexec -n 1 --noprefix bash -c ""',
-                                shell=True,
-                                stdout=devnull,
-                                stderr=subprocess.STDOUT,
-                            )
-                            == 0
-                            else ""
-                        )
+                        noprefix_opt = ("--noprefix" if subprocess.call(
+                            'mpiexec -n 1 --noprefix bash -c ""',
+                            shell=True,
+                            stdout=devnull,
+                            stderr=subprocess.STDOUT,
+                        ) == 0 else "")
 
                     mpiexec = ["mpiexec", "-n", "3", noprefix_opt] + executable
 
-                    return_code = run_test(
-                        mpiexec, test_module, test_directory, options
-                    )
+                    return_code = run_test(mpiexec, test_module,
+                                           test_directory, options)
                 else:
-                    return_code = run_test(
-                        executable, test_module, test_directory, options
-                    )
+                    return_code = run_test(executable, test_module,
+                                           test_directory, options)
                 if return_code != 0:
                     return return_code
             finally:
@@ -351,7 +354,10 @@ def parse_args():
         action="store_true",
         help="print verbose information and test-by-test results",
     )
-    parser.add_argument("--jit", "--jit", action="store_true", help="run all jit tests")
+    parser.add_argument("--jit",
+                        "--jit",
+                        action="store_true",
+                        help="run all jit tests")
     parser.add_argument(
         "-pt",
         "--pytest",
@@ -360,7 +366,10 @@ def parse_args():
         "TestTorch with pytest in verbose and coverage mode: "
         "python run_test.py -vci torch -pt",
     )
-    parser.add_argument("-c", "--coverage", action="store_true", help="enable coverage")
+    parser.add_argument("-c",
+                        "--coverage",
+                        action="store_true",
+                        help="enable coverage")
     parser.add_argument(
         "-i",
         "--include",
@@ -412,7 +421,8 @@ def parse_args():
     )
     parser.add_argument(
         "--determine-from",
-        help="File of affected source filenames to determine which tests to run.",
+        help=
+        "File of affected source filenames to determine which tests to run.",
     )
     parser.add_argument(
         "additional_unittest_args",
@@ -476,7 +486,8 @@ def exclude_tests(exclude_list, selected_tests, exclude_message=None):
         for test in tests_copy:
             if test.startswith(exclude_test):
                 if exclude_message is not None:
-                    print_to_stderr("Excluding {} {}".format(test, exclude_message))
+                    print_to_stderr("Excluding {} {}".format(
+                        test, exclude_message))
                 selected_tests.remove(test)
     return selected_tests
 
@@ -487,16 +498,17 @@ def get_selected_tests(options):
     if options.bring_to_front:
         to_front = set(options.bring_to_front)
         selected_tests = options.bring_to_front + list(
-            filter(lambda name: name not in to_front, selected_tests)
-        )
+            filter(lambda name: name not in to_front, selected_tests))
 
     if options.first:
         first_index = find_test_index(options.first, selected_tests)
         selected_tests = selected_tests[first_index:]
 
     if options.last:
-        last_index = find_test_index(options.last, selected_tests, find_last_index=True)
-        selected_tests = selected_tests[: last_index + 1]
+        last_index = find_test_index(options.last,
+                                     selected_tests,
+                                     find_last_index=True)
+        selected_tests = selected_tests[:last_index + 1]
 
     selected_tests = exclude_tests(options.exclude, selected_tests)
 
@@ -509,10 +521,12 @@ def get_selected_tests(options):
             WINDOWS_BLACKLIST.append("jit")
             WINDOWS_BLACKLIST.append("jit_fuser")
 
-        selected_tests = exclude_tests(WINDOWS_BLACKLIST, selected_tests, "on Windows")
+        selected_tests = exclude_tests(WINDOWS_BLACKLIST, selected_tests,
+                                       "on Windows")
 
     elif TEST_WITH_ROCM:
-        selected_tests = exclude_tests(ROCM_BLACKLIST, selected_tests, "on ROCm")
+        selected_tests = exclude_tests(ROCM_BLACKLIST, selected_tests,
+                                       "on ROCm")
 
     return selected_tests
 
@@ -548,11 +562,11 @@ def test_impact_of_file(filename):
 
 def log_test_reason(file_type, filename, test, options):
     if options.verbose:
-        print_to_stderr(
-            "Determination found {} file {} -- running {}".format(
-                file_type, filename, test,
-            )
-        )
+        print_to_stderr("Determination found {} file {} -- running {}".format(
+            file_type,
+            filename,
+            test,
+        ))
 
 
 def get_dep_modules(test):
@@ -580,8 +594,7 @@ def get_dep_modules(test):
             "urllib",
             "json",
             "collections",
-        ],
-    )
+        ], )
     # HACK: some platforms default to ascii, so we can't just run_script :(
     if PY2:
         finder.run_script(test_location)
@@ -603,9 +616,9 @@ def determine_target(test, touched_files, options):
         return True
     # HACK: "no_ninja" is not a real module
     if test.endswith("_no_ninja"):
-        test = test[: (-1 * len("_no_ninja"))]
+        test = test[:(-1 * len("_no_ninja"))]
     if test.endswith("_ninja"):
-        test = test[: (-1 * len("_ninja"))]
+        test = test[:(-1 * len("_ninja"))]
 
     dep_modules = get_dep_modules(test)
 
@@ -629,8 +642,7 @@ def determine_target(test, touched_files, options):
             if touched_module.startswith("test."):
                 touched_module = touched_module.split("test.")[1]
             if touched_module in dep_modules or touched_module == test.replace(
-                "/", "."
-            ):
+                    "/", "."):
                 log_test_reason(file_type, touched_file, test, options)
                 return True
 
@@ -657,18 +669,17 @@ def main():
     if options.jit:
         selected_tests = filter(lambda test_name: "jit" in test_name, TESTS)
 
-    if options.determine_from is not None and os.path.exists(options.determine_from):
+    if options.determine_from is not None and os.path.exists(
+            options.determine_from):
         with open(options.determine_from, "r") as fh:
             touched_files = [
                 os.path.normpath(name.strip())
-                for name in fh.read().split("\n")
-                if len(name.strip()) > 0
+                for name in fh.read().split("\n") if len(name.strip()) > 0
             ]
         # HACK: Ensure the 'test' paths can be traversed by Modulefinder
         sys.path.append("test")
         selected_tests = [
-            test
-            for test in selected_tests
+            test for test in selected_tests
             if determine_target(test, touched_files, options)
         ]
         sys.path.remove("test")
@@ -682,8 +693,7 @@ def main():
         handler = CUSTOM_HANDLERS.get(test, run_test)
         return_code = handler(executable, test_module, test_directory, options)
         assert isinstance(return_code, int) and not isinstance(
-            return_code, bool
-        ), "Return code should be an integer"
+            return_code, bool), "Return code should be an integer"
         if return_code != 0:
             message = "{} failed!".format(test)
             if return_code < 0:
