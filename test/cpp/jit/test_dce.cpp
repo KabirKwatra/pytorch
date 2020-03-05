@@ -7,18 +7,18 @@
 namespace torch {
 namespace jit {
 void testDCE() {
-    auto graph = std::make_shared<Graph>();
+  auto graph = std::make_shared<Graph>();
 
-    // Consider the following loop:
-    //   for i in range(3):
-    //     tot += a[0][0]
-    //     b = a[0]
-    //     b[0] += 1
-    //   print(tot)
-    // We want to check that b[0] and b are properly marked as live and thus not
-    // DCE'd.
-    const std::string input =
-        R"IR(
+  // Consider the following loop:
+  //   for i in range(3):
+  //     tot += a[0][0]
+  //     b = a[0]
+  //     b[0] += 1
+  //   print(tot)
+  // We want to check that b[0] and b are properly marked as live and thus not
+  // DCE'd.
+  const std::string input =
+      R"IR(
 graph():
   %48 : None = prim::Constant()
   %50 : bool = prim::Constant[value=1]()

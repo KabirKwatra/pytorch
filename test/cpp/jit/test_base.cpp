@@ -6,9 +6,9 @@
 namespace torch {
 namespace jit {
 inline c10::OperatorOptions aliasAnalysisFromSchema() {
-    c10::OperatorOptions result;
-    result.setAliasAnalysis(c10::AliasAnalysisKind::FROM_SCHEMA);
-    return result;
+  c10::OperatorOptions result;
+  result.setAliasAnalysis(c10::AliasAnalysisKind::FROM_SCHEMA);
+  return result;
 }
 
 RegisterOperators reg({
@@ -18,11 +18,11 @@ RegisterOperators reg({
     // because it always produces empty Tensors.
     Operator(
         "prim::MakeTestTensor() -> Tensor",
-    [](Stack& stack) {
-        push(stack, at::Tensor());
-        return 0;
-    },
-    aliasAnalysisFromSchema()),
+        [](Stack& stack) {
+          push(stack, at::Tensor());
+          return 0;
+        },
+        aliasAnalysisFromSchema()),
 });
 
 } // namespace jit
