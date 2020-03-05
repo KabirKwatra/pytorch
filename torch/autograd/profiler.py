@@ -1,8 +1,9 @@
 import itertools
-import torch
-
-from collections import defaultdict, namedtuple
+from collections import defaultdict
+from collections import namedtuple
 from operator import attrgetter
+
+import torch
 
 try:
     # Available in Python >= 3.2
