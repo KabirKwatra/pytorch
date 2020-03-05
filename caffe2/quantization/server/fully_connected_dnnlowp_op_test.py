@@ -1,18 +1,22 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import collections
 
-import caffe2.python.hypothesis_test_util as hu
 import hypothesis.strategies as st
 import numpy as np
-from caffe2.python import core, dyndep, workspace
-from caffe2.quantization.server import utils as dnnlowp_utils
-from dnnlowp_test_utils import (
-    avoid_vpmaddubsw_overflow_fc,
-    check_quantized_results_close,
-    run_conv_or_fc,
-)
+from dnnlowp_test_utils import avoid_vpmaddubsw_overflow_fc
+from dnnlowp_test_utils import check_quantized_results_close
+from dnnlowp_test_utils import run_conv_or_fc
 from hypothesis import given
+
+import caffe2.python.hypothesis_test_util as hu
+from caffe2.python import core
+from caffe2.python import dyndep
+from caffe2.python import workspace
+from caffe2.quantization.server import utils as dnnlowp_utils
 
 
 dyndep.InitOpsLibrary("//caffe2/caffe2/quantization/server:dnnlowp_ops")

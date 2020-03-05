@@ -1,16 +1,21 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
-from test_pytorch_common import TestCase, run_tests
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
-import torch
-import torch.onnx
-from torch.onnx import utils, OperatorExportTypes
-from torch.onnx.symbolic_helper import _set_opset_version, _set_operator_export_type
+import copy
+import io
+import unittest
 
 import onnx
+from test_pytorch_common import run_tests
+from test_pytorch_common import TestCase
 
-import io
-import copy
-import unittest
+import torch.onnx
+from torch.onnx import OperatorExportTypes
+from torch.onnx import utils
+from torch.onnx.symbolic_helper import _set_operator_export_type
+from torch.onnx.symbolic_helper import _set_opset_version
 
 
 skip = unittest.skip
