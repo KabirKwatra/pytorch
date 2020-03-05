@@ -3,33 +3,29 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import unittest
-import onnxruntime  # noqa
-import torch
-
-import numpy as np
+import copy
 import io
 import itertools
-import copy
+import unittest
 
-from torch.nn.utils import rnn as rnn_utils
+import model_defs.word_language_model as word_language_model
+import numpy as np
+import onnx
+import onnxruntime  # noqa
+import torchvision
 from model_defs.lstm_flattening_result import LstmFlatteningResult
 from model_defs.rnn_model_with_packed_sequence import RnnModelWithPackedSequence
-from test_pytorch_common import (
-    skipIfUnsupportedMinOpsetVersion,
-    enableScriptTest,
-    skipIfNoLapack,
-)
 from test_pytorch_common import BATCH_SIZE
-from test_pytorch_common import (
-    RNN_BATCH_SIZE,
-    RNN_SEQUENCE_LENGTH,
-    RNN_INPUT_SIZE,
-    RNN_HIDDEN_SIZE,
-)
-import model_defs.word_language_model as word_language_model
-import torchvision
-import onnx
+from test_pytorch_common import enableScriptTest
+from test_pytorch_common import RNN_BATCH_SIZE
+from test_pytorch_common import RNN_HIDDEN_SIZE
+from test_pytorch_common import RNN_INPUT_SIZE
+from test_pytorch_common import RNN_SEQUENCE_LENGTH
+from test_pytorch_common import skipIfNoLapack
+from test_pytorch_common import skipIfUnsupportedMinOpsetVersion
+
+import torch
+from torch.nn.utils import rnn as rnn_utils
 
 
 def ort_test_with_input(ort_sess, input, output, rtol, atol):

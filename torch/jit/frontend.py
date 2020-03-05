@@ -1,15 +1,16 @@
 import __future__
-import torch
-import sys
+
 import ast
 import inspect
 import string
+import sys
 from textwrap import dedent
-from torch._six import PY2
-from torch._C._jit_tree_views import *
-from torch._utils_internal import get_source_lines_and_file
 
+import torch
+from torch._C._jit_tree_views import *
 from torch._jit_internal import SourceContext
+from torch._six import PY2
+from torch._utils_internal import get_source_lines_and_file
 
 # Borrowed from cPython implementation
 # https://github.com/python/cpython/blob/561612d8456cfab5672c9b445521113b847bd6b3/Lib/textwrap.py#L411#
