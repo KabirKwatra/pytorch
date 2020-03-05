@@ -23,7 +23,7 @@ struct AtomicAddIntegerImpl<T, 1> {
     do {
       assumed = old;
       old_byte = (old >> shift) & 0xff;
-      // preserve size in initial cast. Casting directly to uint32_t pads 
+      // preserve size in initial cast. Casting directly to uint32_t pads
       // negative signed values with 1's (e.g. signed -1 = unsigned ~0).
       newval = static_cast<uint8_t>(THCNumerics<T>::add(val, old_byte));
       newval = (old & ~(0x000000ff << shift)) | (newval << shift);
@@ -46,7 +46,7 @@ struct AtomicAddIntegerImpl<T, 2> {
     do {
       assumed = old;
       old_bytes = is_32_align ? old >> 16 : old & 0xffff;
-      // preserve size in initial cast. Casting directly to uint32_t pads 
+      // preserve size in initial cast. Casting directly to uint32_t pads
       // negative signed values with 1's (e.g. signed -1 = unsigned ~0).
       newval = static_cast<uint16_t>(THCNumerics<T>::add(val, old_bytes));
       newval = is_32_align ? (old & 0xffff) | (newval << 16) : (old & 0xffff0000) | newval;
@@ -207,7 +207,7 @@ static inline __device__ void gpuAtomicAdd(float *address, float val) {
  * without a return. These may either be resolved through library functions or
  * implemented internally. Some extensions such as torchvision call atomicAdd()
  * directly and require non-library provided data type support. Only for these, we
- * continue to provide atomicAdd overloads. 
+ * continue to provide atomicAdd overloads.
  */
 static inline __device__ void atomicAdd(at::Half *address, at::Half val) {
   gpuAtomicAdd(address, val);

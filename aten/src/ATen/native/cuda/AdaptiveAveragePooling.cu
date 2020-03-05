@@ -643,7 +643,7 @@ namespace {
         const dim3 block(block_x, block_y, block_z);
         int kernel_stride_C = cuda::ATenCeilDiv(sizeC, block_x * 4);
         int kernel_size_C = cuda::ATenCeilDiv(sizeC, block_x * kernel_stride_C);
-        
+
         // Do NOT clip grid_x, striding on Batch dimension is not in the kernel,
         // although it could be easily implemented given current kernel.
         int grid_x = sizeB*kernel_stride_C;
