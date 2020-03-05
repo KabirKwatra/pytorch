@@ -45,7 +45,7 @@ class TestUtilityFuns(TestCase):
         with warnings.catch_warnings(record=True) as w:
             warnings.simplefilter("always")
             utils._validate_dynamic_axes({'input1': {}, 'output': {},
-                                         'invalid_name1': {}, 'invalid_name2': {}},
+                                          'invalid_name1': {}, 'invalid_name2': {}},
                                          None, ['input1', 'input2'], ['output'])
             messages = [str(warning.message) for warning in w]
         assert "Provided key invalid_name1 for dynamic axes is not a valid input/output name" in messages
