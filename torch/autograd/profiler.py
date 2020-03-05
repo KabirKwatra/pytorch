@@ -22,6 +22,7 @@ except ImportError:
 
 class EventList(list):
     """A list of Events (for pretty printing)"""
+
     def __init__(self, *args, **kwargs):
         use_cuda = kwargs.pop('use_cuda', True)
         super(EventList, self).__init__(*args, **kwargs)
@@ -259,6 +260,7 @@ class profile(object):
         -----------------------------------  ---------------  ---------------  ---------------
 
     """
+
     def __init__(self, enabled=True, use_cuda=False, record_shapes=False):
         self.enabled = enabled
         self.use_cuda = use_cuda
@@ -364,6 +366,7 @@ class record_function(ContextDecorator):
         CUDA time total: 0.000us
 
     """
+
     def __init__(self, name):
         self.name = name
 
@@ -456,6 +459,7 @@ class emit_nvtx(object):
         backward Function object.  You may need to make a judgment based on analytic knowledge of what
         the expected correspondence should be.
     """
+
     def __init__(self, enabled=True, record_shapes=False):
         self.enabled = enabled
         self.entered = False
@@ -554,6 +558,7 @@ Kernel = namedtuple('Kernel', ['name', 'device', 'interval'])
 # TODO: record TID too
 class FunctionEvent(FormattedTimesMixin):
     """Profiling information about a single function."""
+
     def __init__(self, id, name, thread, cpu_start, cpu_end, input_shapes=None):
         self.id = id
         self.name = name
@@ -613,6 +618,7 @@ class FunctionEvent(FormattedTimesMixin):
 
 class FunctionEventAvg(FormattedTimesMixin):
     """Used to average stats over multiple FunctionEvent objects."""
+
     def __init__(self):
         self.key = None
         self.count = 0
@@ -628,8 +634,8 @@ class FunctionEventAvg(FormattedTimesMixin):
                 self.input_shapes = other.input_shapes
 
         assert (
-            not group_by_input_shapes or
-            other.input_shapes == self.input_shapes
+            not group_by_input_shapes
+            or other.input_shapes == self.input_shapes
         )
         assert isinstance(other, (FunctionEvent, FunctionEventAvg))
         assert other.key == self.key
@@ -727,6 +733,7 @@ def parse_cpu_trace(thread_records):
 
 class EnforceUnique(object):
     """Raises an error if a key is seen more than once."""
+
     def __init__(self):
         self.seen = set()
 
