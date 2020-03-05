@@ -4,19 +4,16 @@ import time
 import unittest
 from enum import Enum
 
-import torch
 import torch.distributed as dist
 import torch.distributed.autograd as dist_autograd
 import torch.distributed.rpc as rpc
 import torch.testing._internal.dist_utils
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
-from torch.testing._internal.dist_utils import (
-    dist_init,
-    get_shutdown_error_regex,
-    initialize_pg,
-    wait_until_node_failure,
-)
+from torch.testing._internal.dist_utils import dist_init
+from torch.testing._internal.dist_utils import get_shutdown_error_regex
+from torch.testing._internal.dist_utils import initialize_pg
+from torch.testing._internal.dist_utils import wait_until_node_failure
 from torch.testing._internal.distributed.rpc.rpc_agent_test_fixture import (
     RpcAgentTestFixture,
 )
