@@ -9,6 +9,7 @@ import torch
 import torch.nn as nn
 from torch._jit_internal import List, Optional
 
+
 def _with_args(cls_or_self, **kwargs):
     r"""Wrapper that allows creation of class factories.
 
@@ -54,6 +55,7 @@ class ObserverBase(ABC, nn.Module):
     Args:
         dtype: Quantized data type
     """
+
     def __init__(self, dtype):
         super(ObserverBase, self).__init__()
         self.dtype = dtype
@@ -182,8 +184,10 @@ class _ObserverBase(ObserverBase):
                 scales = (max_vals - min_vals) / float(qmax - qmin)
                 scales = torch.max(scales, torch.tensor([self.eps], device=scales.device))
                 zero_points = qmin - torch.round(min_vals / scales)
-                zero_points = torch.max(zero_points, torch.tensor([qmin], dtype=zero_points.dtype, device=zero_points.device))
-                zero_points = torch.min(zero_points, torch.tensor([qmax], dtype=zero_points.dtype, device=zero_points.device))
+                zero_points = torch.max(zero_points, torch.tensor(
+                    [qmin], dtype=zero_points.dtype, device=zero_points.device))
+                zero_points = torch.min(zero_points, torch.tensor(
+                    [qmax], dtype=zero_points.dtype, device=zero_points.device))
                 zero_points = zero_points.to(dtype=torch.int64)
         scales.to(dtype=torch.float)
 
@@ -249,6 +253,7 @@ class _ObserverBase(ObserverBase):
     def get_qparams(self):
         r"""Get all quantization parameters needed for quantize call"""
         return self.calculate_qparams()
+
 
 class MinMaxObserver(_ObserverBase):
     r"""Observer module for computing the quantization parameters based on the
@@ -417,6 +422,7 @@ class MovingAverageMinMaxObserver(MinMaxObserver):
     .. note:: If the running minimum equals to the running maximum, the scale
               and zero_point are set to 1.0 and 0.
     """
+
     def __init__(self, averaging_constant=0.01, dtype=torch.quint8,
                  qscheme=torch.per_tensor_affine, reduce_range=False):
         self.averaging_constant = averaging_constant
@@ -472,9 +478,9 @@ class PerChannelMinMaxObserver(_ObserverBase):
         self.register_buffer('min_vals', torch.tensor([]))
         self.register_buffer('max_vals', torch.tensor([]))
         if (
-            self.qscheme == torch.per_channel_symmetric
-            and self.reduce_range
-            and self.dtype == torch.quint8
+            self.qscheme == torch.per_channel_symmetric and
+            self.reduce_range and
+            self.dtype == torch.quint8
         ):
             raise NotImplementedError(
                 "Cannot reduce range for symmetric quantization for quint8"
@@ -535,6 +541,7 @@ class PerChannelMinMaxObserver(_ObserverBase):
         super(PerChannelMinMaxObserver, self)._load_from_state_dict(state_dict, prefix, local_metadata, strict,
                                                                     missing_keys, unexpected_keys, error_msgs)
 
+
 class MovingAveragePerChannelMinMaxObserver(PerChannelMinMaxObserver):
     r"""Observer module for computing the quantization parameters based on the
     running per channel min and max values.
@@ -587,6 +594,7 @@ class MovingAveragePerChannelMinMaxObserver(PerChannelMinMaxObserver):
         self.min_vals = min_vals
         self.max_vals = max_vals
         return x_orig
+
 
 class HistogramObserver(_ObserverBase):
     r"""
@@ -647,8 +655,8 @@ class HistogramObserver(_ObserverBase):
             norm = 0.0
             if norm_type == "L2":
                 norm = (
-                    delta_end * delta_end * delta_end
-                    - delta_begin * delta_begin * delta_begin
+                    delta_end * delta_end * delta_end -
+                    delta_begin * delta_begin * delta_begin
                 ) / 3
             return density * norm
 
@@ -791,7 +799,7 @@ class HistogramObserver(_ObserverBase):
         # Compute integral histogram, double precision is needed to ensure
         # that there are no overflows
         integral_histogram = torch.cumsum(histogram_with_output_range, 0,
-                                          dtype=torch.double)[downsample_rate - 1 :: downsample_rate]
+                                          dtype=torch.double)[downsample_rate - 1:: downsample_rate]
         # Finally perform interpolation
         shifted_integral_histogram = torch.zeros((Nbins), device=orig_hist.device)
         shifted_integral_histogram[1:Nbins] = integral_histogram[0:-1]
@@ -873,6 +881,7 @@ class HistogramObserver(_ObserverBase):
         super(HistogramObserver, self)._load_from_state_dict(state_dict, prefix, local_metadata, strict,
                                                              missing_keys, unexpected_keys, error_msgs)
 
+
 class RecordingObserver(_ObserverBase):
     r"""
     The module is mainly for debug and records the tensor values during runtime.
@@ -912,6 +921,7 @@ class NoopObserver(ObserverBase):
     Args:
         dtype: Quantized data type
     """
+
     def __init__(self, dtype=torch.float16):
         if dtype != torch.float16:
             raise ValueError("Only float16 quantization can be used without calibration process")
@@ -932,4 +942,5 @@ default_observer = MinMaxObserver.with_args(reduce_range=True)
 default_debug_observer = RecordingObserver
 default_weight_observer = MinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_tensor_symmetric)
 default_histogram_observer = HistogramObserver.with_args(reduce_range=True)
-default_per_channel_weight_observer = PerChannelMinMaxObserver.with_args(dtype=torch.qint8, qscheme=torch.per_channel_symmetric)
+default_per_channel_weight_observer = PerChannelMinMaxObserver.with_args(
+    dtype=torch.qint8, qscheme=torch.per_channel_symmetric)
