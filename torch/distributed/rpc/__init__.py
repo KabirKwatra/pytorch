@@ -85,11 +85,14 @@ if is_available():
         dist_autograd._init(rank)
 
         # Initialize RPC.
-        api._init_rpc_backend(backend, store, name, rank, world_size, rpc_backend_options)
+        api._init_rpc_backend(
+            backend, store, name, rank, world_size, rpc_backend_options
+        )
 
     @api._require_initialized
     def _get_debug_info():
         from . import _rref_context_get_debug_info
+
         info = _rref_context_get_debug_info()
         info.update(api._get_current_rpc_agent().get_debug_info())
         info.update(dist_autograd._get_debug_info())

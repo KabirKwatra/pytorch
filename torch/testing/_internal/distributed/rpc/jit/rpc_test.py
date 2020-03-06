@@ -233,7 +233,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_torchscript_in_torchscript_with_assorted_types(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = (torch.tensor([1, 1]), "str_arg", 1)
             # Must annotate the value type as `Any`, because JIT type inference
@@ -266,7 +266,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_torchscript_in_torchscript_without_kwargs_passed(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = ()
             fut = rpc.rpc_async(dst_worker_name, no_arg, args)
@@ -287,7 +287,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_torchscript_in_torchscript_without_args_kwargs_passed(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             fut = rpc.rpc_async(dst_worker_name, no_arg)
             ret = fut.wait()
@@ -406,7 +406,7 @@ class JitRpcAsyncOpTest:
         # no matter what exception type and excetpion message are in the statement,
         @torch.jit.script
         def rpc_async_call_remote_raising_torchscript_in_torchscript(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = ()
             kwargs = {}
@@ -433,7 +433,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_nonexisting_torchscript_in_torchscript(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = ()
             kwargs = {}
@@ -483,23 +483,15 @@ class JitRpcTest(JitRpcAsyncOpTest, RpcAgentTestFixture):
 
         # rpc_sync still accepts script class and run it in
         # the same code path as python call.
-        ret = rpc.rpc_sync(
-            dst_worker_name, MyScriptClass, args=()
-        )
+        ret = rpc.rpc_sync(dst_worker_name, MyScriptClass, args=())
 
         # rpc_sync does not accept script module and script module method.
-        with self.assertRaisesRegex(
-            RuntimeError, "ScriptModules cannot be deepcopied"
-        ):
-            ret = rpc.rpc_sync(
-                dst_worker_name, MyScriptModule, args=(self.rank,)
-            )
+        with self.assertRaisesRegex(RuntimeError, "ScriptModules cannot be deepcopied"):
+            ret = rpc.rpc_sync(dst_worker_name, MyScriptModule, args=(self.rank,))
 
         # Python 3.5 and Python 3.6 throw different error message, the only
         # common word can be greped is "pickle".
-        with self.assertRaisesRegex(
-            TypeError, "pickle"
-        ):
+        with self.assertRaisesRegex(TypeError, "pickle"):
             ret = rpc.rpc_async(
                 dst_worker_name, MyScriptModule(self.rank).forward, args=()
             )

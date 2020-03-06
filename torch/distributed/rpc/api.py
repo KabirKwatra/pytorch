@@ -164,9 +164,7 @@ def _wait_all_workers():
             args=(sequence_id, self_worker_name,),
         )
 
-    proceed_signal = _wait_all_workers_sequence_id_to_states[
-        sequence_id
-    ].proceed_signal
+    proceed_signal = _wait_all_workers_sequence_id_to_states[sequence_id].proceed_signal
     proceed_signal.wait()
 
     # Phase 2: Leader asks followers to proceed.
@@ -178,7 +176,9 @@ def _wait_all_workers():
         _set_rpc_timeout(timeout)
         worker_name_to_response_future_dict = dict()
         for follower_worker_name in _ALL_WORKER_NAMES - {leader_worker_name}:
-            fut = rpc_async(follower_worker_name, _set_proceed_shutdown_signal, args=(sequence_id,))
+            fut = rpc_async(
+                follower_worker_name, _set_proceed_shutdown_signal, args=(sequence_id,)
+            )
             worker_name_to_response_future_dict[follower_worker_name] = fut
         for follower_worker_name, fut in worker_name_to_response_future_dict.items():
             try:
@@ -420,16 +420,23 @@ def remote(to, func, args=None, kwargs=None):
     kwargs = kwargs if kwargs else {}
 
     if qualified_name is not None:
-        return _invoke_remote_builtin(dst_worker_info, qualified_name, rf, *args, **kwargs)
+        return _invoke_remote_builtin(
+            dst_worker_info, qualified_name, rf, *args, **kwargs
+        )
     elif isinstance(func, torch.jit.ScriptFunction):
         return _invoke_remote_torchscript(
-            dst_worker_info.name, torch._jit_internal._qualified_name(func), *args, **kwargs
+            dst_worker_info.name,
+            torch._jit_internal._qualified_name(func),
+            *args,
+            **kwargs
         )
     else:
         (pickled_python_udf, tensors) = _default_pickler.serialize(
             PythonUDF(func, args, kwargs)
         )
-        return _invoke_remote_python_udf(dst_worker_info, pickled_python_udf, tensors, rf)
+        return _invoke_remote_python_udf(
+            dst_worker_info, pickled_python_udf, tensors, rf
+        )
 
 
 def _invoke_rpc(to, func, rpc_type, args=None, kwargs=None):
