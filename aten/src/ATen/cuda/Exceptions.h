@@ -9,7 +9,7 @@
 namespace c10 {
 
 class CuDNNError : public c10::Error {
-  using Error::Error;
+    using Error::Error;
 };
 
 }  // namespace c10
@@ -30,9 +30,13 @@ class CuDNNError : public c10::Error {
     }                                                                                         \
   } while (0)
 
-namespace at { namespace cuda { namespace blas {
+namespace at {
+namespace cuda {
+namespace blas {
 const char* _cublasGetErrorEnum(cublasStatus_t error);
-}}} // namespace at::cuda::blas
+}
+}
+} // namespace at::cuda::blas
 
 #define TORCH_CUDABLAS_CHECK(EXPR)                              \
   do {                                                          \
