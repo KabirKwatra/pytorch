@@ -5,7 +5,8 @@
 
 #include <bitset>
 
-namespace at { namespace native {
+namespace at {
+namespace native {
 
 Tensor& rename_(Tensor& self, optional<DimnameList> names) {
   return at::internal_set_names_inplace(self, names);
@@ -18,35 +19,60 @@ Tensor rename(const Tensor& self, optional<DimnameList> names) {
 }
 
 static void report_moving_unnamed_dim_error(
-    DimnameList names, DimnameList other, bool is_aligning_two_tensors) {
+    DimnameList names,
+    DimnameList other,
+    bool is_aligning_two_tensors) {
   if (is_aligning_two_tensors) {
-    TORCH_CHECK(false,
-        "Aligning Tensor", names, " and Tensor", other,
+    TORCH_CHECK(
+        false,
+        "Aligning Tensor",
+        names,
+        " and Tensor",
+        other,
         " would change the absolute position from the right of an unnamed dimension. ",
         "Please name unnamed dimensions to avoid ambiguity.");
   } else {
-    TORCH_CHECK(false,
-        "Aligning Tensor", names, " to `names` ", other,
+    TORCH_CHECK(
+        false,
+        "Aligning Tensor",
+        names,
+        " to `names` ",
+        other,
         " would change the absolute position from the right of an unnamed dimension. ",
         "Please name unnamed dimensions to avoid ambiguity.");
   }
 }
 
 static void report_not_a_subsequence_error(
-    DimnameList names, DimnameList other, bool is_aligning_two_tensors) {
+    DimnameList names,
+    DimnameList other,
+    bool is_aligning_two_tensors) {
   if (is_aligning_two_tensors) {
     auto shorter = names.size() > other.size() ? other : names;
     auto longer = names.size() > other.size() ? names : other;
-    TORCH_CHECK(false,
-        "Could not align Tensor", shorter, " and Tensor", longer,
-        " because ", shorter, " is not a subsequence of ", longer, ". ");
+    TORCH_CHECK(
+        false,
+        "Could not align Tensor",
+        shorter,
+        " and Tensor",
+        longer,
+        " because ",
+        shorter,
+        " is not a subsequence of ",
+        longer,
+        ". ");
   } else {
-    TORCH_CHECK(false,
-        "Could not align Tensor", names, " to `names` ", other,
-        " because ", names, " is not a subsequence of `names`.");
+    TORCH_CHECK(
+        false,
+        "Could not align Tensor",
+        names,
+        " to `names` ",
+        other,
+        " because ",
+        names,
+        " is not a subsequence of `names`.");
   }
 }
-
 
 // Let tensor `t` have size `tensor_sizes` and `tensor_names`.
 // This helper function computes the resulting size of `t` after aligning it
@@ -63,10 +89,10 @@ static std::vector<int64_t> aligned_size(
     if (tensor_names[dim] != aligned_names[idx]) {
       continue;
     }
-    // We've found a None name in `shorter` and `longer`. If their absolute positions
-    // from the right are not equal, then aligning the two names would require
-    // changing the absolute position from right of one of the None names,
-    // violating condition 2 of our [Alignment rules].
+    // We've found a None name in `shorter` and `longer`. If their absolute
+    // positions from the right are not equal, then aligning the two names would
+    // require changing the absolute position from right of one of the None
+    // names, violating condition 2 of our [Alignment rules].
     //
     // For example:
     // *, c, a, b
@@ -91,10 +117,17 @@ static std::vector<int64_t> aligned_size(
 
 Tensor refine_names(const Tensor& self, DimnameList names) {
   const auto self_names = self.names();
-  TORCH_CHECK(self_names.size() == names.size(),
-      "refine_names: cannot coerce Tensor", self_names, " to Tensor", names,
+  TORCH_CHECK(
+      self_names.size() == names.size(),
+      "refine_names: cannot coerce Tensor",
+      self_names,
+      " to Tensor",
+      names,
       " because they have a different number of dims (",
-      self_names.size(), " and ", names.size(), " respectively).");
+      self_names.size(),
+      " and ",
+      names.size(),
+      " respectively).");
   check_names_valid_for(self, names);
 
   for (size_t idx = 0; idx < self_names.size(); idx++) {
@@ -104,14 +137,30 @@ Tensor refine_names(const Tensor& self, DimnameList names) {
       continue;
     }
     if (out_name.isWildcard()) {
-      TORCH_CHECK(false,
-          "refine_names: cannot coerce Tensor", self_names, " to Tensor", names,
-          " because ", self_name, " is more specific than ", out_name, " at index ",
+      TORCH_CHECK(
+          false,
+          "refine_names: cannot coerce Tensor",
+          self_names,
+          " to Tensor",
+          names,
+          " because ",
+          self_name,
+          " is more specific than ",
+          out_name,
+          " at index ",
           idx);
     }
-    TORCH_CHECK(false,
-        "refine_names: cannot coerce Tensor", self_names, " to Tensor", names,
-        " because ", self_name, " is different from ", out_name, " at index ",
+    TORCH_CHECK(
+        false,
+        "refine_names: cannot coerce Tensor",
+        self_names,
+        " to Tensor",
+        names,
+        " because ",
+        self_name,
+        " is different from ",
+        out_name,
+        " at index ",
         idx);
     TORCH_INTERNAL_ASSERT(false); // done handling errors
   }
@@ -123,28 +172,32 @@ Tensor refine_names(const Tensor& self, DimnameList names) {
 
 // [Alignment rules]
 // Aligns `tensor` to names with the following rules:
-// 1) Check that tensor.names is a subsequence (not necessarily contiguous) of `names`.
-// 2) Aligning tensor.names to names must not change the absolute position from the
+// 1) Check that tensor.names is a subsequence (not necessarily contiguous) of
+// `names`. 2) Aligning tensor.names to names must not change the absolute
+// position from the
 //    right of any unnamed dimension.
 //
-// is_aligning_two_tensors tunes the error message to better match the following cases:
-// 1) tensor.align_to(names)  (is_aligning_two_tensors=false)
-// 2) torch.align_tensors([tensor, other])  (is_aligning_two_tensors=true)
-static Tensor align(const Tensor& tensor, DimnameList names, bool is_aligning_two_tensors) {
+// is_aligning_two_tensors tunes the error message to better match the following
+// cases: 1) tensor.align_to(names)  (is_aligning_two_tensors=false) 2)
+// torch.align_tensors([tensor, other])  (is_aligning_two_tensors=true)
+static Tensor align(
+    const Tensor& tensor,
+    DimnameList names,
+    bool is_aligning_two_tensors) {
   std::vector<int64_t> expanded_sizes = aligned_size(
-        tensor.sizes(),
-        tensor.names(),
-        names,
-        is_aligning_two_tensors);
+      tensor.sizes(), tensor.names(), names, is_aligning_two_tensors);
   auto result = tensor.rename(nullopt).view(expanded_sizes);
   at::internal_set_names_inplace(result, names);
   return result;
 }
 
-static int64_t countUnset(std::bitset<kMaxNamedTensorDim> set, int64_t up_to_idx) {
+static int64_t countUnset(
+    std::bitset<kMaxNamedTensorDim> set,
+    int64_t up_to_idx) {
   int64_t result = 0;
   for (auto i = 0; i < up_to_idx; ++i) {
-    if (!set.test(i)) result++;
+    if (!set.test(i))
+      result++;
   }
   return result;
 }
@@ -190,7 +243,8 @@ Tensor align_to(const Tensor& tensor, DimnameList order, int64_t ellipsis_idx) {
 
   for (auto order_idx = 0U; order_idx < order.size(); ++order_idx) {
     const auto name = order[order_idx];
-    TORCH_CHECK(name.isBasic(),
+    TORCH_CHECK(
+        name.isBasic(),
         "align_to: the desired order of dimensions cannot contain a None name, got ",
         order);
     auto it = std::find(tensor_names.begin(), tensor_names.end(), name);
@@ -248,7 +302,8 @@ Tensor align_to(const Tensor& tensor, DimnameList order, int64_t ellipsis_idx) {
     NoNamesGuard guard;
     result = tensor.as_strided(new_sizes, new_strides);
   }
-  internal_set_names_inplace(result, std::move(new_names), /*validate_names=*/false);
+  internal_set_names_inplace(
+      result, std::move(new_names), /*validate_names=*/false);
   return result;
 }
 
@@ -261,13 +316,22 @@ Tensor align_to(const Tensor& tensor, DimnameList names) {
 
   for (auto idx = 0U; idx < tensor_names.size(); ++idx) {
     const auto& dim = tensor_names[idx];
-    TORCH_CHECK(dim.isBasic(),
+    TORCH_CHECK(
+        dim.isBasic(),
         "align_to: All input dims must be named. Found unnamed dim at index ",
-        idx, " of Tensor", tensor_names);
+        idx,
+        " of Tensor",
+        tensor_names);
     auto it = std::find(names.begin(), names.end(), dim);
-    TORCH_CHECK(it != names.end(),
-        "align_to: Cannot find dim ", dim, " from Tensor", names,
-        " in desired alignment ", names, ".");
+    TORCH_CHECK(
+        it != names.end(),
+        "align_to: Cannot find dim ",
+        dim,
+        " from Tensor",
+        names,
+        " in desired alignment ",
+        names,
+        ".");
     int64_t new_idx = std::distance(names.begin(), it);
     new_sizes[new_idx] = tensor_sizes[idx];
     new_strides[new_idx] = tensor_strides[idx];
@@ -285,7 +349,9 @@ Tensor align_as(const Tensor& tensor, const Tensor& other) {
   return native::align_to(tensor, other.names());
 }
 
-static std::vector<Tensor> align_tensors_to(TensorList tensors, DimnameList names) {
+static std::vector<Tensor> align_tensors_to(
+    TensorList tensors,
+    DimnameList names) {
   std::vector<Tensor> result;
   result.reserve(tensors.size());
   for (const auto& tensor : tensors) {
@@ -296,8 +362,7 @@ static std::vector<Tensor> align_tensors_to(TensorList tensors, DimnameList name
 
 std::vector<Tensor> align_tensors(TensorList tensors) {
   auto longest_dim = std::max_element(
-      tensors.begin(), tensors.end(),
-      [](const Tensor& a, const Tensor& b) {
+      tensors.begin(), tensors.end(), [](const Tensor& a, const Tensor& b) {
         return a.dim() < b.dim();
       });
   return align_tensors_to(tensors, longest_dim->names());
@@ -311,16 +376,30 @@ static int64_t cumprod(IntArrayRef sizes) {
   return result;
 }
 
-Tensor unflatten(const Tensor& self, int64_t dim, IntArrayRef sizes, DimnameList names) {
+Tensor unflatten(
+    const Tensor& self,
+    int64_t dim,
+    IntArrayRef sizes,
+    DimnameList names) {
   // unflatten is implemented only as a python method on tensor right now.
   // The following asserts should be checked by the python method.
   TORCH_INTERNAL_ASSERT(names.size() == sizes.size());
   TORCH_INTERNAL_ASSERT(sizes.size() > 0);
   TORCH_CHECK(
       cumprod(sizes) == self.size(dim),
-      "unflatten: Provided names ", names, " and sizes ", sizes, " but sizes don't multiply "
-      "up to the size of dim ", dim, " (", self.names()[dim], ": ", self.size(dim),
-      ") in Tensor", self.names());
+      "unflatten: Provided names ",
+      names,
+      " and sizes ",
+      sizes,
+      " but sizes don't multiply "
+      "up to the size of dim ",
+      dim,
+      " (",
+      self.names()[dim],
+      ": ",
+      self.size(dim),
+      ") in Tensor",
+      self.names());
 
   int64_t dim_wrap = maybe_wrap_dim(dim, self.dim());
   auto outnames = self.names().vec();
@@ -340,67 +419,145 @@ Tensor unflatten(const Tensor& self, int64_t dim, IntArrayRef sizes, DimnameList
   return result;
 }
 
-Tensor unflatten(const Tensor& self, Dimname dim, IntArrayRef sizes, DimnameList names) {
+Tensor unflatten(
+    const Tensor& self,
+    Dimname dim,
+    IntArrayRef sizes,
+    DimnameList names) {
   return native::unflatten(self, dimname_to_position(self, dim), sizes, names);
 }
 
 // Misc. Dimname overloads that don't have homes. Maybe we should move
 // all of them here or autogenerate them because they look so similar.
-Tensor gather(const Tensor& self, Dimname dim, const Tensor& index, bool sparse_grad) {
+Tensor gather(
+    const Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    bool sparse_grad) {
   reportNYIDimnameOverload("gather");
 }
-Tensor& gather_out(Tensor& result, const Tensor& self, Dimname dim, const Tensor& index, bool sparse_grad) {
+Tensor& gather_out(
+    Tensor& result,
+    const Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    bool sparse_grad) {
   reportNYIDimnameOverload("gather");
 }
-Tensor index_add(const Tensor& self, Dimname dim, const Tensor& index, const Tensor& source) {
+Tensor index_add(
+    const Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    const Tensor& source) {
   reportNYIDimnameOverload("index_add");
 }
-Tensor& index_add_(Tensor& self, Dimname dim, const Tensor& index, const Tensor& source) {
+Tensor& index_add_(
+    Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    const Tensor& source) {
   reportNYIDimnameOverload("index_add");
 }
-Tensor index_fill(const Tensor& self, Dimname dim, const Tensor& index, Scalar source) {
+Tensor index_fill(
+    const Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    Scalar source) {
   return at::index_fill(self, dimname_to_position(self, dim), index, source);
 }
-Tensor& index_fill_(Tensor& self, Dimname dim, const Tensor& index, Scalar source) {
+Tensor& index_fill_(
+    Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    Scalar source) {
   return self.index_fill_(dimname_to_position(self, dim), index, source);
 }
-Tensor index_fill(const Tensor& self, Dimname dim, const Tensor& index, const Tensor& source) {
+Tensor index_fill(
+    const Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    const Tensor& source) {
   return at::index_fill(self, dimname_to_position(self, dim), index, source);
 }
-Tensor& index_fill_(Tensor& self, Dimname dim, const Tensor& index, const Tensor& source) {
+Tensor& index_fill_(
+    Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    const Tensor& source) {
   return self.index_fill_(dimname_to_position(self, dim), index, source);
 }
-Tensor index_copy(const Tensor& self, Dimname dim, const Tensor& index, const Tensor& source) {
+Tensor index_copy(
+    const Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    const Tensor& source) {
   reportNYIDimnameOverload("index_copy");
 }
-Tensor& index_copy_(Tensor& self, Dimname dim, const Tensor& index, const Tensor& source) {
+Tensor& index_copy_(
+    Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    const Tensor& source) {
   reportNYIDimnameOverload("index_copy");
 }
-Tensor& index_select_out(Tensor& out, const Tensor& self, Dimname dim, const Tensor& index) {
+Tensor& index_select_out(
+    Tensor& out,
+    const Tensor& self,
+    Dimname dim,
+    const Tensor& index) {
   reportNYIDimnameOverload("index_select");
 }
 Tensor index_select(const Tensor& self, Dimname dim, const Tensor& index) {
   reportNYIDimnameOverload("index_select");
 }
-Tensor scatter(const Tensor& self, Dimname dim, const Tensor& index, const Tensor& source) {
+Tensor scatter(
+    const Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    const Tensor& source) {
   reportNYIDimnameOverload("scatter");
 }
-Tensor& scatter_(Tensor& self, Dimname dim, const Tensor& index, const Tensor& source) {
+Tensor& scatter_(
+    Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    const Tensor& source) {
   reportNYIDimnameOverload("scatter");
 }
-Tensor scatter(const Tensor& self, Dimname dim, const Tensor& index, Scalar source) {
+Tensor scatter(
+    const Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    Scalar source) {
   reportNYIDimnameOverload("scatter");
 }
-Tensor& scatter_(Tensor& self, Dimname dim, const Tensor& index, Scalar source) {
+Tensor& scatter_(
+    Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    Scalar source) {
   reportNYIDimnameOverload("scatter");
 }
-Tensor scatter_add(const Tensor& self, Dimname dim, const Tensor& index, const Tensor& source) {
+Tensor scatter_add(
+    const Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    const Tensor& source) {
   reportNYIDimnameOverload("scatter_add");
 }
-Tensor& scatter_add_(Tensor& self, Dimname dim, const Tensor& index, const Tensor& source) {
+Tensor& scatter_add_(
+    Tensor& self,
+    Dimname dim,
+    const Tensor& index,
+    const Tensor& source) {
   reportNYIDimnameOverload("scatter_add");
 }
-std::tuple<Tensor&, Tensor&> sort_out(Tensor& values, Tensor& indices, const Tensor& self, Dimname dim, bool keepdim) {
+std::tuple<Tensor&, Tensor&> sort_out(
+    Tensor& values,
+    Tensor& indices,
+    const Tensor& self,
+    Dimname dim,
+    bool keepdim) {
   reportNYIDimnameOverload("sort");
 }
 std::tuple<Tensor, Tensor> sort(const Tensor& self, Dimname dim, bool keepdim) {
@@ -413,5 +570,5 @@ Tensor squeeze(const Tensor& self, Dimname dim) {
   return at::squeeze(self, dimname_to_position(self, dim));
 }
 
-
-}}  // namespace at::native
+} // namespace native
+} // namespace at
