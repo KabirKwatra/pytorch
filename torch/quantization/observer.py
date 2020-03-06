@@ -1,13 +1,18 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import math
 import warnings
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
+from abc import abstractmethod
 from functools import partial
 
 import torch
 import torch.nn as nn
-from torch._jit_internal import List, Optional
+from torch._jit_internal import List
+from torch._jit_internal import Optional
 
 
 def _with_args(cls_or_self, **kwargs):
