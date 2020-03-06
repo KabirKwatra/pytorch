@@ -1,19 +1,22 @@
-#include "ATen/ATen.h"
-#include <torch/csrc/jit/api/module.h>
 #include <torch/csrc/autograd/generated/variable_factories.h>
+#include <torch/csrc/jit/api/module.h>
 #include <torch/csrc/jit/mobile/import.h>
 #include <torch/csrc/jit/mobile/module.h>
 #include <torch/csrc/jit/serialization/import.h>
+#include "ATen/ATen.h"
 #include "torch/script.h"
 
-C10_DEFINE_string(model, "", "The given bytecode model to check if it is supported by lite_interpreter.");
+C10_DEFINE_string(
+    model,
+    "",
+    "The given bytecode model to check if it is supported by lite_interpreter.");
 
 int main(int argc, char** argv) {
   c10::SetUsageMessage(
-    "Check if exported bytecode model is runnable by lite_interpreter.\n"
-    "Example usage:\n"
-    "./lite_interpreter_model_load"
-    " --model=<model_file>");
+      "Check if exported bytecode model is runnable by lite_interpreter.\n"
+      "Example usage:\n"
+      "./lite_interpreter_model_load"
+      " --model=<model_file>");
 
   if (!c10::ParseCommandLineFlags(&argc, &argv)) {
     std::cerr << "Failed to parse command line flags!" << std::endl;
@@ -21,7 +24,7 @@ int main(int argc, char** argv) {
   }
 
   if (FLAGS_model.empty()) {
-    std::cerr << FLAGS_model <<  ":Model file is not provided\n";
+    std::cerr << FLAGS_model << ":Model file is not provided\n";
     return -1;
   }
 
