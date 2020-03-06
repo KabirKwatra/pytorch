@@ -1,4 +1,4 @@
-## @package _import_c_extension
+# @package _import_c_extension
 # Module caffe2.python._import_c_extension
 import atexit
 import logging
@@ -62,6 +62,7 @@ def _TensorCPU_shape(self):
 
 def _TensorCPU_reshape(self, shape):
     return self._reshape(list(shape))
+
 
 TensorCPU.shape = property(_TensorCPU_shape)  # noqa
 TensorCPU.reshape = _TensorCPU_reshape  # noqa
