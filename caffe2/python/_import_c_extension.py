@@ -3,8 +3,9 @@
 import atexit
 import logging
 import sys
-from caffe2.python import extension_loader
 
+import caffe2.proto
+from caffe2.python import extension_loader
 # NOTE: we have to import python protobuf here **before** we load cpp extension.
 # Otherwise it breaks under certain build conditions if cpp implementation of
 # protobuf is used. Presumably there's some registry in protobuf library and
@@ -13,7 +14,6 @@ from caffe2.python import extension_loader
 # descriptors will be created and it can lead to obscure errors like
 #   "Parameter to MergeFrom() must be instance of same class:
 #    expected caffe2.NetDef got caffe2.NetDef."
-import caffe2.proto
 
 # We will first try to load the gpu-enabled caffe2. If it fails, we will then
 # attempt to load the cpu version. The cpu backend is the minimum required, so
