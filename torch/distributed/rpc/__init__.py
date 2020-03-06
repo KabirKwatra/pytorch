@@ -17,18 +17,17 @@ def is_available():
 if is_available() and not torch._C._rpc_init():
     raise RuntimeError("Failed to initialize torch.distributed.rpc")
 
-
 if is_available():
     from . import api, backend_registry
     from .api import *  # noqa: F401
     import torch.distributed.autograd as dist_autograd
 
     def init_rpc(
-        name,
-        backend=backend_registry.BackendType.PROCESS_GROUP,
-        rank=-1,
-        world_size=None,
-        rpc_backend_options=None,
+            name,
+            backend=backend_registry.BackendType.PROCESS_GROUP,
+            rank=-1,
+            world_size=None,
+            rpc_backend_options=None,
     ):
         r"""
         Initializes RPC primitives such as the local RPC agent
@@ -66,8 +65,7 @@ if is_available():
         if not rpc_backend_options:
             # default construct a set of RPC backend options.
             rpc_backend_options = backend_registry.construct_rpc_backend_options(
-                backend
-            )
+                backend)
 
         # Rendezvous.
         # This rendezvous state sometimes is destroyed before all processes
@@ -75,8 +73,7 @@ if is_available():
         # keep it alive.
         global rendezvous_iterator
         rendezvous_iterator = torch.distributed.rendezvous(
-            rpc_backend_options.init_method, rank=rank, world_size=world_size
-        )
+            rpc_backend_options.init_method, rank=rank, world_size=world_size)
         store, _, _ = next(rendezvous_iterator)
 
         # Initialize autograd before RPC since _init_rpc_backend guarantees all
@@ -88,9 +85,8 @@ if is_available():
         dist_autograd._init(rank)
 
         # Initialize RPC.
-        api._init_rpc_backend(
-            backend, store, name, rank, world_size, rpc_backend_options
-        )
+        api._init_rpc_backend(backend, store, name, rank, world_size,
+                              rpc_backend_options)
 
     @api._require_initialized
     def _get_debug_info():
