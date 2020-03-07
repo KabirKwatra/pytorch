@@ -1,12 +1,18 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import numbers
 
 import torch
 import torch.nn as nn
-from torch import Tensor  # noqa: F401
 from torch import _VF
-from torch._jit_internal import Tuple, Optional, List  # noqa: F401
+from torch import Tensor  # noqa: F401
+from torch._jit_internal import List
+from torch._jit_internal import Optional
+from torch._jit_internal import Tuple
 from torch.nn.utils.rnn import PackedSequence
-import numbers
 
 
 def apply_permutation(tensor, permutation, dim=1):
