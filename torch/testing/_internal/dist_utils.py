@@ -11,7 +11,6 @@ import torch.distributed as dist
 import torch.distributed.rpc as rpc
 from torch.distributed.rpc import _rref_context_get_debug_info
 
-
 if not dist.is_available():
     print("c10d not available, skipping tests")
     sys.exit(0)
@@ -45,7 +44,11 @@ def dist_init(old_test_method=None, setup_rpc=True, clean_shutdown=True):
     # decorator that is used and as a result we recursively call dist_init with
     # old_test_method and the rest of the arguments appropriately set.
     if old_test_method is None:
-        return partial(dist_init, setup_rpc=setup_rpc, clean_shutdown=clean_shutdown,)
+        return partial(
+            dist_init,
+            setup_rpc=setup_rpc,
+            clean_shutdown=clean_shutdown,
+        )
 
     @wraps(old_test_method)
     def new_test_method(self, *arg, **kwargs):
@@ -114,7 +117,8 @@ def get_shutdown_error_regex():
         "worker.: Error in response from worker.: Failed to write to remote endpoint",
         "worker.: Error in response from worker.: AsyncSocketException: recv() failed",
     ]
-    error_regex = "".join(["({})|".format(error_str) for error_str in error_regexes])
+    error_regex = "".join(
+        ["({})|".format(error_str) for error_str in error_regexes])
     return error_regex
 
 
@@ -129,10 +133,12 @@ def wait_until_pending_users_flushed():
     as processed. Call this function before asserting the map returned by
     _get_debug_info is empty.
     """
-    num_pending_users = int(_rref_context_get_debug_info()["num_pending_users"])
+    num_pending_users = int(
+        _rref_context_get_debug_info()["num_pending_users"])
     while num_pending_users != 0:
         time.sleep(0.1)
-        num_pending_users = int(_rref_context_get_debug_info()["num_pending_users"])
+        num_pending_users = int(
+            _rref_context_get_debug_info()["num_pending_users"])
     return
 
 
@@ -142,7 +148,10 @@ def initialize_pg(init_method, rank, world_size):
     # no `_default_pg` is initialized.
     if not dist.is_initialized():
         dist.init_process_group(
-            backend="gloo", init_method=init_method, rank=rank, world_size=world_size,
+            backend="gloo",
+            init_method=init_method,
+            rank=rank,
+            world_size=world_size,
         )
 
 
