@@ -72,7 +72,7 @@ call_torchbind_method_from_stack(
     Stack& stack,
     std::index_sequence<ivalue_arg_indices...>) {
   (void)(stack); // when sizeof...(ivalue_arg_indices) == 0, this argument would
-                 // be unused and we have to silence the compiler warning.
+  // be unused and we have to silence the compiler warning.
 
   constexpr size_t num_ivalue_args = sizeof...(ivalue_arg_indices);
 

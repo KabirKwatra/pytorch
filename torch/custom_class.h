@@ -45,8 +45,9 @@ detail::types<void, Types...> init() {
 
 template <class CurClass>
 class class_ {
-  static_assert(std::is_base_of<CustomClassHolder, CurClass>::value,
-    "torch::jit::class_<T> requires T to inherit from CustomClassHolder");
+  static_assert(
+      std::is_base_of<CustomClassHolder, CurClass>::value,
+      "torch::jit::class_<T> requires T to inherit from CustomClassHolder");
 
   std::string className;
   std::string qualClassName;
@@ -76,10 +77,12 @@ class class_ {
 
   template <typename... Types>
   class_& def(detail::types<void, Types...>) { // Used in combination with
-                                               // torch::jit::init<...>()
+    // torch::jit::init<...>()
     auto func = [](c10::tagged_capsule<CurClass> self, Types... args) {
       auto classObj = c10::make_intrusive<CurClass>(args...);
-      auto genericPtr = c10::static_intrusive_pointer_cast<torch::jit::CustomClassHolder>(std::move(classObj));
+      auto genericPtr =
+          c10::static_intrusive_pointer_cast<torch::jit::CustomClassHolder>(
+              std::move(classObj));
       auto capsule = IValue(std::move(genericPtr));
       auto object = std::move(self.ivalue).toObject();
       object->setSlot(0, std::move(capsule));
@@ -168,7 +171,8 @@ class class_ {
   template <typename Func>
   void defineMethod(std::string name, Func func) {
     auto qualMethodName = qualClassName + "." + name;
-    auto schema = c10::inferFunctionSchemaSingleReturn<Func>(std::move(name), "");
+    auto schema =
+        c10::inferFunctionSchemaSingleReturn<Func>(std::move(name), "");
 
     auto wrapped_func = [func = std::move(func)](Stack& stack) mutable -> void {
       // TODO: we need to figure out how to profile calls to custom functions

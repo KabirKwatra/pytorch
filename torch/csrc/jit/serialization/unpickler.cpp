@@ -80,7 +80,8 @@ void restoreAccurateTypeTags(const IValue& root, const TypePtr& type_tag) {
         // Any type and if we do allow it in functions limit it to non-heap
         // locations.
         TORCH_INTERNAL_ASSERT(
-            false, "AnyType, AnyTupleType, and AnyListType should not show up in the static type of objects");
+            false,
+            "AnyType, AnyTupleType, and AnyListType should not show up in the static type of objects");
       case TupleType::Kind: {
         auto t = w.value.toTuple();
         auto ttype = w.static_type->expect<TupleType>();
@@ -136,7 +137,7 @@ void restoreAccurateTypeTags(const IValue& root, const TypePtr& type_tag) {
       case ClassType::Kind: {
         auto obj = w.value.toObject();
         auto typ = obj->type(); // note: intentionally using the dynamic type,
-                                // the static type is potentially less accurate
+        // the static type is potentially less accurate
         for (size_t i = 0; i < typ->numAttributes(); ++i) {
           Work elem = {typ->getAttribute(i), obj->getSlot(i)};
           to_process.emplace_back(std::move(elem));
@@ -398,7 +399,7 @@ PickleOpCode Unpickler::readInstruction() {
           std::move(storage_ptr),
           /*allocator=*/nullptr,
           /*resizable=*/false); // NB: we didn't set any allocator for the
-                                // tensor
+      // tensor
       auto options = at::CPU(type).options();
       at::Tensor tensor;
       if (options.backend() == c10::Backend::QuantizedCPU) {
@@ -589,11 +590,7 @@ void Unpickler::rebuildTensor(bool quantized) {
           const auto& zero_points = qparams.at(2).toTensor();
           int64_t axis = qparams.at(3).toInt();
           result = at::_empty_per_channel_affine_quantized(
-              {0},
-              scales,
-              zero_points,
-              axis,
-              storage_tensor.options());
+              {0}, scales, zero_points, axis, storage_tensor.options());
         } break;
         default:
           TORCH_CHECK(

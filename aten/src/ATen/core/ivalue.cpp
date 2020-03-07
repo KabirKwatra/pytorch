@@ -1,9 +1,9 @@
+#include <ATen/core/Dict.h>
+#include <ATen/core/Formatting.h>
 #include <ATen/core/ivalue.h>
 #include <ATen/core/jit_type.h>
-#include <ATen/core/Formatting.h>
 #include <c10/util/StringUtil.h>
 #include <cmath>
-#include <ATen/core/Dict.h>
 
 namespace c10 {
 namespace ivalue {
@@ -100,7 +100,7 @@ void IValue::getSubValues(HashAliasedIValues& subValues) const {
     case Tag::Capsule:
       TORCH_INTERNAL_ASSERT(
           false, "sub ivalue is nat enabled for: ", this->tagKind());
-      // Fall through
+    // Fall through
     default:
       // don't record scalars.
       break;
@@ -176,13 +176,13 @@ std::ostream& printDict(
   out << "}";
   return out;
 }
-}
+} // namespace
 
 std::ostream& IValue::repr(
     std::ostream& out,
-    std::function<bool(std::ostream&, const IValue& v)>
-        customFormatter) const {
-  // First check if the caller has provided a custom formatter. Use that if possible.
+    std::function<bool(std::ostream&, const IValue& v)> customFormatter) const {
+  // First check if the caller has provided a custom formatter. Use that if
+  // possible.
   if (customFormatter(out, *this)) {
     return out;
   }
@@ -237,11 +237,9 @@ std::ostream& IValue::repr(
   }
 }
 
-std::ostream& operator<<(std::ostream & out, const IValue & v) {
-  auto formatter = [&](std::ostream& out, const IValue& v) {
-    out << v;
-  };
-  switch(v.tag) {
+std::ostream& operator<<(std::ostream& out, const IValue& v) {
+  auto formatter = [&](std::ostream& out, const IValue& v) { out << v; };
+  switch (v.tag) {
     case IValue::Tag::None:
       return out << v.toNone();
     case IValue::Tag::Tensor:
@@ -256,11 +254,10 @@ std::ostream& operator<<(std::ostream & out, const IValue & v) {
         }
       }
       auto orig_prec = out.precision();
-      return out
-        << std::setprecision(std::numeric_limits<double>::max_digits10)
-        << v.toDouble()
-        << std::setprecision(orig_prec);
-    } case IValue::Tag::Int:
+      return out << std::setprecision(std::numeric_limits<double>::max_digits10)
+                 << v.toDouble() << std::setprecision(orig_prec);
+    }
+    case IValue::Tag::Int:
       return out << v.toInt();
     case IValue::Tag::Bool:
       return out << (v.toBool() ? "True" : "False");
@@ -335,9 +332,9 @@ void ivalue::Object::resizeObject(size_t slot) {
   slots_.resize(type()->numAttributes());
 }
 
-
-static bool CompareKeys(const std::pair<IValue, IValue>& aWrap,
-                        const std::pair<IValue, IValue>& bWrap) {
+static bool CompareKeys(
+    const std::pair<IValue, IValue>& aWrap,
+    const std::pair<IValue, IValue>& bWrap) {
   const auto a = aWrap.first;
   const auto b = bWrap.first;
   if (a.isString() && b.isString()) {
@@ -347,12 +344,14 @@ static bool CompareKeys(const std::pair<IValue, IValue>& aWrap,
   } else if (a.isDouble() && b.isDouble()) {
     return a.toDouble() < b.toDouble();
   } else if (a.isTensor() && b.isTensor()) {
-    return a.toTensor().unsafeGetTensorImpl() < b.toTensor().unsafeGetTensorImpl();
+    return a.toTensor().unsafeGetTensorImpl() <
+        b.toTensor().unsafeGetTensorImpl();
   }
   AT_ERROR("Illegal dict key");
 }
 
-std::vector<std::pair<IValue, IValue>> iterationOrder(const c10::Dict<IValue, IValue>& dict) {
+std::vector<std::pair<IValue, IValue>> iterationOrder(
+    const c10::Dict<IValue, IValue>& dict) {
   std::vector<std::pair<IValue, IValue>> ordered;
   for (auto& element : dict) {
     ordered.emplace_back(element.key(), element.value());
@@ -370,8 +369,8 @@ StrongTypePtr::StrongTypePtr(
 }
 
 std::unordered_map<std::string, c10::ClassTypePtr>& getCustomClassTypeMap() {
-    static std::unordered_map<std::string, c10::ClassTypePtr> tmap;
-    return tmap;
+  static std::unordered_map<std::string, c10::ClassTypePtr> tmap;
+  return tmap;
 }
 
 std::unordered_map<std::string, std::function<PyObject*(void*)>>&

@@ -1,6 +1,6 @@
 #pragma once
-#include <c10/util/Exception.h>
 #include <ATen/core/function.h>
+#include <c10/util/Exception.h>
 #include <torch/csrc/jit/api/function_impl.h>
 #include <torch/csrc/jit/frontend/source_range.h>
 #include <torch/csrc/jit/ir/ir.h>
@@ -76,7 +76,7 @@ struct TORCH_API CompilationUnit {
         "Please use setGraphExecutorOptimize()");
   }
 
-   bool is_optimized() const {
+  bool is_optimized() const {
     AT_WARN(
         "CompilationUnit::is_optimized() is deprecated and always returns true. "
         "Please use getGraphExecutorOptimize()");
@@ -90,7 +90,7 @@ struct TORCH_API CompilationUnit {
       const std::vector<Def>& definitions,
       const std::vector<ResolverPtr>&
           resolvers, /* determines how we handle free
-                     variables in each definition*/
+                       variables in each definition*/
       // if non-null, the first argument to each def, is bound to this value
       const Self* self,
       // see [name mangling]

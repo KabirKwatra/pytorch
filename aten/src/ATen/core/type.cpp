@@ -1,17 +1,17 @@
 #include <ATen/core/Dict.h>
 #include <ATen/core/Tensor.h>
+#include <ATen/core/function.h>
 #include <ATen/core/function_schema.h>
+#include <ATen/core/grad_mode.h>
 #include <ATen/core/jit_type.h>
 #include <c10/macros/Macros.h>
-#include <ATen/core/grad_mode.h>
-#include <ATen/core/function.h>
 #include <iostream>
 
 namespace c10 {
 
-std::ostream& operator<<(std::ostream & out, const Type & t) {
+std::ostream& operator<<(std::ostream& out, const Type& t) {
   if (auto value = t.cast<TensorType>()) {
-    if  (value->scalarType().has_value()) {
+    if (value->scalarType().has_value()) {
       out << toString(*value->scalarType());
       if (!value->sizes().size().has_value()) {
         out << "Tensor";
@@ -36,25 +36,25 @@ std::ostream& operator<<(std::ostream & out, const Type & t) {
     if (value->undefined() && *value->undefined()) {
       out << "[Undefined]";
     }
-  } else if(t.kind() == TypeKind::ListType) {
+  } else if (t.kind() == TypeKind::ListType) {
     auto prim = t.cast<ListType>()->getElementType();
     out << *prim << "[]";
   } else if (t.kind() == TypeKind::OptionalType) {
     auto prim = t.cast<OptionalType>()->getElementType();
     out << *prim << "?";
-  } else if(t.kind() == TypeKind::FutureType) {
+  } else if (t.kind() == TypeKind::FutureType) {
     auto elem = t.cast<FutureType>()->getElementType();
     out << "Future[" << *elem << "]";
-  } else if(t.kind() == TypeKind::RRefType) {
+  } else if (t.kind() == TypeKind::RRefType) {
     auto elem = t.cast<RRefType>()->getElementType();
     out << "RRef[" << *elem << "]";
-  } else if(auto tup = t.cast<TupleType>()) {
+  } else if (auto tup = t.cast<TupleType>()) {
     if (tup->schema()) {
       out << "NamedTuple";
     }
     out << "(";
-    for(size_t i = 0; i < tup->elements().size(); ++i) {
-      if(i > 0)
+    for (size_t i = 0; i < tup->elements().size(); ++i) {
+      if (i > 0)
         out << ", ";
       if (tup->schema()) {
         out << tup->schema()->arguments()[i].name() << " : ";
@@ -65,7 +65,7 @@ std::ostream& operator<<(std::ostream & out, const Type & t) {
   } else if (t.kind() == TypeKind::FunctionType) {
     out << "Function";
   } else {
-     out << t.str();
+    out << t.str();
   }
   return out;
 }
@@ -164,12 +164,12 @@ DeviceObjTypePtr DeviceObjType::get() {
   return value;
 }
 ScalarTypeTypePtr ScalarTypeType::get() {
-static auto value = ScalarTypeType::create();
-return value;
+  static auto value = ScalarTypeType::create();
+  return value;
 }
 LayoutTypePtr LayoutType::get() {
-static auto value = LayoutType::create();
-return value;
+  static auto value = LayoutType::create();
+  return value;
 }
 OptionalTypePtr OptionalType::ofTensor() {
   static auto value = OptionalType::create(TensorType::get());
@@ -214,7 +214,6 @@ AnyTupleTypePtr AnyTupleType::get() {
   return value;
 }
 
-
 c10::optional<TypePtr> unifyTypes(const TypePtr& t1, const TypePtr& t2) {
   // check direct subtyping relation
   if (t1->isSubtypeOf(t2)) {
@@ -230,7 +229,8 @@ c10::optional<TypePtr> unifyTypes(const TypePtr& t1, const TypePtr& t2) {
 
   if (t1->isSubtypeOf(NoneType::get()) && !t2->isSubtypeOf(NoneType::get())) {
     return OptionalType::create(t2);
-  } else if (t2->isSubtypeOf(NoneType::get()) && !t1->isSubtypeOf(NoneType::get())) {
+  } else if (
+      t2->isSubtypeOf(NoneType::get()) && !t1->isSubtypeOf(NoneType::get())) {
     return OptionalType::create(t1);
   }
 
@@ -258,7 +258,8 @@ c10::optional<TypePtr> unifyTypes(const TypePtr& t1, const TypePtr& t2) {
     }
     std::vector<TypePtr> elements;
     for (size_t i = 0; i < tuple1->elements().size(); i++) {
-      if (auto elem = unifyTypes(tuple1->elements().at(i), tuple2->elements().at(i))) {
+      if (auto elem =
+              unifyTypes(tuple1->elements().at(i), tuple2->elements().at(i))) {
         elements.push_back(*elem);
       } else {
         return c10::nullopt;
@@ -276,8 +277,8 @@ c10::optional<TypePtr> unifyTypes(const TypePtr& t1, const TypePtr& t2) {
   }
 
   // Check direct subtyping relations again with Unshaped Types,
-  // to handle unification of mutable container types which might contain two different
-  // specialized tensors (ListType / DictType)
+  // to handle unification of mutable container types which might contain two
+  // different specialized tensors (ListType / DictType)
   auto t1_unshaped = unshapedType(t1);
   auto t2_unshaped = unshapedType(t2);
 
@@ -447,7 +448,9 @@ MatchTypeReturn matchTypeVariables(
 }
 
 // change return types like List[List[t]] into List[List[int]]
-CAFFE2_API TypePtr tryEvalTypeVariables(TypePtr type, std::unordered_map<std::string, TypePtr>& type_env) {
+CAFFE2_API TypePtr tryEvalTypeVariables(
+    TypePtr type,
+    std::unordered_map<std::string, TypePtr>& type_env) {
   if (!type->hasFreeVariables()) {
     return type;
   }
@@ -472,11 +475,11 @@ CAFFE2_API TypePtr tryEvalTypeVariables(TypePtr type, std::unordered_map<std::st
   }
 }
 
-const char * typeKindToString(TypeKind kind) {
-#define CASE_TYPE(T) case TypeKind::T: return #T;
-  switch(kind) {
-    C10_FORALL_TYPES(CASE_TYPE)
-  }
+const char* typeKindToString(TypeKind kind) {
+#define CASE_TYPE(T) \
+  case TypeKind::T:  \
+    return #T;
+  switch (kind) { C10_FORALL_TYPES(CASE_TYPE) }
 #undef CASE_TYPE
   return "";
 }
@@ -485,7 +488,7 @@ bool Type::isSubtypeOfExt(const TypePtr rhs, std::ostream* why_not) const {
   if (rhs->kind() == TypeKind::AnyType || *this == *rhs) {
     return true;
   }
-  if(auto rhs_ = rhs->cast<OptionalType>()) {
+  if (auto rhs_ = rhs->cast<OptionalType>()) {
     return this->isSubtypeOfExt(rhs_->getElementType(), why_not);
   }
   return false;
@@ -520,30 +523,25 @@ TensorTypePtr TensorType::merge(TensorTypePtr other) const {
   return TensorType::create(scalar_type, dev, sz, srs, gr, undef);
 }
 
-std::ostream& operator<<(std::ostream & out, const VaryingShape & vs) {
-
-    out << "(";
-    if (!vs.size()) {
-      out << "*)";
-      return out;
-    }
-
-    for (size_t i = 0; i < vs.size(); i++)
-    {
-      if (i > 0) {
-        out << ", ";
-      }
-      if (vs[i].has_value())
-      {
-        out << vs[i].value();
-      }
-      else
-      {
-        out << "*";
-      }
-    }
-    out << ")";
+std::ostream& operator<<(std::ostream& out, const VaryingShape& vs) {
+  out << "(";
+  if (!vs.size()) {
+    out << "*)";
     return out;
+  }
+
+  for (size_t i = 0; i < vs.size(); i++) {
+    if (i > 0) {
+      out << ", ";
+    }
+    if (vs[i].has_value()) {
+      out << vs[i].value();
+    } else {
+      out << "*";
+    }
+  }
+  out << ")";
+  return out;
 }
 
 TupleTypePtr TupleType::createNamed(
@@ -586,7 +584,8 @@ TupleType::TupleType(
   }
 }
 
-bool TupleType::isSubtypeOfExt(const TypePtr rhs_, std::ostream* why_not) const {
+bool TupleType::isSubtypeOfExt(const TypePtr rhs_, std::ostream* why_not)
+    const {
   if (Type::isSubtypeOfExt(rhs_, why_not)) {
     return true;
   }
@@ -600,7 +599,8 @@ bool TupleType::isSubtypeOfExt(const TypePtr rhs_, std::ostream* why_not) const 
   if (!schema() && rhs->schema())
     return false;
   // namedtuple may be a subtype of unnamed tuple
-  auto test_names_match = [&](const std::shared_ptr<FunctionSchema>& lhs, const std::shared_ptr<FunctionSchema>& rhs) {
+  auto test_names_match = [&](const std::shared_ptr<FunctionSchema>& lhs,
+                              const std::shared_ptr<FunctionSchema>& rhs) {
     const auto& args_lhs = lhs->arguments();
     const auto& args_rhs = rhs->arguments();
     if (args_lhs.size() != args_rhs.size()) {
@@ -614,11 +614,12 @@ bool TupleType::isSubtypeOfExt(const TypePtr rhs_, std::ostream* why_not) const 
     }
     return true;
   };
-  bool names_match = !rhs->schema() || test_names_match(schema(), rhs->schema());
+  bool names_match =
+      !rhs->schema() || test_names_match(schema(), rhs->schema());
   // co-variant rules for tuples
   return names_match && compare(*rhs, [&](const TypePtr a, const TypePtr b) {
-    return a->isSubtypeOfExt(b, why_not);
-  });
+           return a->isSubtypeOfExt(b, why_not);
+         });
 }
 
 bool ListType::isSubtypeOfExt(const TypePtr rhs_, std::ostream* why_not) const {
@@ -632,9 +633,9 @@ bool ListType::isSubtypeOfExt(const TypePtr rhs_, std::ostream* why_not) const {
 }
 
 bool TupleType::operator==(const Type& rhs) const {
-  return compare(rhs, [](const TypePtr a, const TypePtr b) {
-    return *a == *b;
-  }) && schema_ == rhs.expect<TupleType>()->schema_;
+  return compare(
+             rhs, [](const TypePtr a, const TypePtr b) { return *a == *b; }) &&
+      schema_ == rhs.expect<TupleType>()->schema_;
   // `compare` guarantees that rhs is always a TupleType, so the
   // dynamic_cast above always success.
 }
@@ -645,8 +646,8 @@ std::string TupleType::str() const {
     ss << name()->qualifiedName();
   } else {
     ss << "(";
-    for(size_t i = 0; i < elements().size(); ++i) {
-      if(i > 0)
+    for (size_t i = 0; i < elements().size(); ++i) {
+      if (i > 0)
         ss << ", ";
       ss << elements()[i]->str();
     }
@@ -660,8 +661,8 @@ std::string TupleType::python_str() const {
     ss << name()->qualifiedName();
   } else {
     ss << "Tuple[";
-    for(size_t i = 0; i < elements().size(); ++i) {
-      if(i > 0)
+    for (size_t i = 0; i < elements().size(); ++i) {
+      if (i > 0)
         ss << ", ";
       ss << elements()[i]->python_str();
     }
@@ -670,7 +671,8 @@ std::string TupleType::python_str() const {
   return ss.str();
 }
 
-bool TensorType::isSubtypeOfExt(const TypePtr rhs, std::ostream* why_not) const {
+bool TensorType::isSubtypeOfExt(const TypePtr rhs, std::ostream* why_not)
+    const {
   if (auto rhs_p = rhs->cast<TensorType>()) {
     // if we have the same pointer, avoid computing the merge
     if (this == rhs_p.get()) {
@@ -681,7 +683,9 @@ bool TensorType::isSubtypeOfExt(const TypePtr rhs, std::ostream* why_not) const 
   return Type::isSubtypeOfExt(rhs, why_not);
 }
 
-InterfaceTypePtr InterfaceType::create(QualifiedName qualifiedName, bool is_module) {
+InterfaceTypePtr InterfaceType::create(
+    QualifiedName qualifiedName,
+    bool is_module) {
   return InterfaceTypePtr(
       new InterfaceType(std::move(qualifiedName), is_module));
 }
@@ -778,16 +782,17 @@ bool ClassType::isSubtypeOfExt(const TypePtr rhs, std::ostream* why_not) const {
 }
 
 FunctionType::FunctionType(torch::jit::Function* function)
-  : NamedType(TypeKind::FunctionType, function->qualname()),
-    function_(function) {}
+    : NamedType(TypeKind::FunctionType, function->qualname()),
+      function_(function) {}
 
-bool InterfaceType::isSubtypeOfExt(const TypePtr rhs, std::ostream* why_not) const {
+bool InterfaceType::isSubtypeOfExt(const TypePtr rhs, std::ostream* why_not)
+    const {
   // to improve performance this check can be cached
   if (auto iface = rhs->cast<InterfaceType>()) {
     if (!is_module() && iface->is_module()) {
       if (why_not) {
         *why_not << "Interface '" << python_str() << "' is not a subtype of "
-                  << "the module interface '" << rhs->python_str() << "'.\n";
+                 << "the module interface '" << rhs->python_str() << "'.\n";
       }
       return false;
     }
@@ -796,8 +801,8 @@ bool InterfaceType::isSubtypeOfExt(const TypePtr rhs, std::ostream* why_not) con
       if (!self_schema) {
         if (why_not) {
           *why_not << "Interface '" << python_str()
-                   << "' does not have method '" << schema.name() << "' but interface '"
-                   << rhs->python_str() << "' does.\n";
+                   << "' does not have method '" << schema.name()
+                   << "' but interface '" << rhs->python_str() << "' does.\n";
         }
         return false;
       }
@@ -859,7 +864,8 @@ const std::vector<torch::jit::Function*>& ClassType::methods() const {
   return methods_;
 }
 
-void ClassType::checkNotExist(const std::string& name, const std::string& what) const {
+void ClassType::checkNotExist(const std::string& name, const std::string& what)
+    const {
   // Check no overlap with existing constants
   for (size_t i = 0; i < constantNames_.size(); ++i) {
     TORCH_CHECK(
@@ -905,8 +911,8 @@ size_t ClassType::addAttribute(
     TORCH_CHECK(
         (type->kind() == TensorType::Kind) ||
             (type->kind() == OptionalType::Kind &&
-            type->expect<OptionalType>()->getElementType()->kind() ==
-                TensorType::Kind) ||
+             type->expect<OptionalType>()->getElementType()->kind() ==
+                 TensorType::Kind) ||
             (type->kind() == NoneType::Kind),
         "Expecting parameter to have either None, Tensor or Optional[Tensor] type, but got: ",
         toString(type));
@@ -988,7 +994,7 @@ std::shared_ptr<const CompilationUnit> ClassType::compilation_unit() const {
 }
 
 static bool containsAny(const TypePtr& type) {
-  std::vector<TypePtr> to_scan = { type };
+  std::vector<TypePtr> to_scan = {type};
   while (!to_scan.empty()) {
     TypePtr typ = to_scan.back();
     to_scan.pop_back();
@@ -1002,7 +1008,11 @@ static bool containsAny(const TypePtr& type) {
   return false;
 }
 
-void checkNoAny(const Type& base, const char* what, const std::string& attrname, const TypePtr& attrtype) {
+void checkNoAny(
+    const Type& base,
+    const char* what,
+    const std::string& attrname,
+    const TypePtr& attrtype) {
   TORCH_CHECK(
       !containsAny(attrtype),
       "attempting to add ",

@@ -49,9 +49,7 @@ struct TORCH_API Object {
           "'");
       _ivalue()->setSlot(*slot, std::move(v));
     } else {
-      TORCH_CHECK(
-          false,
-          "Module has no attribute '", name, "'");
+      TORCH_CHECK(false, "Module has no attribute '", name, "'");
     }
   }
 
@@ -81,8 +79,8 @@ struct TORCH_API Object {
   }
 
   bool hasattr(const std::string& name) const {
-    return _ivalue()->type()->hasAttribute(name)
-      || _ivalue()->type()->hasConstant(name);
+    return _ivalue()->type()->hasAttribute(name) ||
+        _ivalue()->type()->hasConstant(name);
   }
 
   // each object owns its methods. The reference returned here

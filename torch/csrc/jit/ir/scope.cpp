@@ -1,14 +1,14 @@
-#include <torch/csrc/jit/ir/scope.h>
 #include <ATen/core/function.h>
+#include <torch/csrc/jit/ir/scope.h>
 
 namespace torch {
 namespace jit {
 
 ScopePtr Scope::intrusive_from_this() {
   c10::raw::intrusive_ptr::incref(this); // we are creating a new pointer
-                                         // from a raw `this` pointer
-                                         // so we need to bump the refcount
-                                         // to account for this ownership
+  // from a raw `this` pointer
+  // so we need to bump the refcount
+  // to account for this ownership
   return c10::intrusive_ptr<Scope>::reclaim(this);
 }
 
@@ -80,9 +80,9 @@ std::string Scope::namesFromRoot(const std::string& separator) const {
 
 InlinedCallStackPtr InlinedCallStack::intrusive_from_this() {
   c10::raw::intrusive_ptr::incref(this); // we are creating a new pointer
-                                         // from a raw `this` pointer
-                                         // so we need to bump the refcount
-                                         // to account for this ownership
+  // from a raw `this` pointer
+  // so we need to bump the refcount
+  // to account for this ownership
   return c10::intrusive_ptr<InlinedCallStack>::reclaim(this);
 }
 

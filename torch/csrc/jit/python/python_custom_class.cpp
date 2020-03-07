@@ -1,5 +1,5 @@
-#include <torch/csrc/jit/python/python_custom_class.h>
 #include <torch/csrc/jit/frontend/sugared_value.h>
+#include <torch/csrc/jit/python/python_custom_class.h>
 
 namespace torch {
 namespace jit {
