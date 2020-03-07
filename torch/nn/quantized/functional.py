@@ -11,6 +11,7 @@ from torch.nn.modules.utils import _pair, _triple
 # Although some of the functions and docstrings are mirrored from the torch.nn,
 # we want to have them here for future changes.
 
+
 def avg_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=False,
                count_include_pad=True, divisor_override=None):
     r"""
@@ -43,6 +44,7 @@ def avg_pool2d(input, kernel_size, stride=None, padding=0, ceil_mode=False,
                                           ceil_mode, count_include_pad,
                                           divisor_override)
 
+
 def avg_pool3d(input, kernel_size, stride=None, padding=0, ceil_mode=False,
                count_include_pad=True, divisor_override=None):
     r"""
@@ -73,6 +75,7 @@ def avg_pool3d(input, kernel_size, stride=None, padding=0, ceil_mode=False,
                                           ceil_mode, count_include_pad,
                                           divisor_override)
 
+
 def adaptive_avg_pool2d(input, output_size):
     # type: (Tensor, BroadcastingList2[int]) -> Tensor
     r"""
@@ -90,6 +93,7 @@ def adaptive_avg_pool2d(input, output_size):
     if not input.is_quantized:
         raise ValueError("Input to 'quantized.adaptive_avg_pool2d' must be quantized!")
     return torch.nn.functional.adaptive_avg_pool2d(input, output_size)
+
 
 def conv2d(input, weight, bias,
            stride=1, padding=0, dilation=1, groups=1,
@@ -153,6 +157,7 @@ def conv2d(input, weight, bias,
                                       stride, padding, dilation,
                                       groups, scale, zero_point)
 
+
 def conv3d(input, weight, bias, stride=1, padding=0, dilation=1, groups=1,
            padding_mode='zeros', scale=1.0, zero_point=0, dtype=torch.quint8):
     r"""
@@ -215,6 +220,7 @@ def conv3d(input, weight, bias, stride=1, padding=0, dilation=1, groups=1,
         input, prepacked_weight, stride, padding, dilation, groups, scale,
         zero_point)
 
+
 def interpolate(input, size=None, scale_factor=None, mode='nearest', align_corners=None):
     r"""Down/up samples the input to either the given :attr:`size` or the given
     :attr:`scale_factor`
@@ -256,6 +262,7 @@ def interpolate(input, size=None, scale_factor=None, mode='nearest', align_corne
     return torch.nn.functional.interpolate(input, size, scale_factor, mode,
                                            align_corners)
 
+
 def linear(input, weight, bias=None, scale=None, zero_point=None):
     # type: (Tensor, Tensor, Optional[Tensor], Optional[float], Optional[int]) -> Tensor
     r"""
@@ -289,6 +296,7 @@ def linear(input, weight, bias=None, scale=None, zero_point=None):
     _packed_params = torch.ops.quantized.linear_prepack(weight, bias)
     return torch.ops.quantized.linear(input, _packed_params, scale, zero_point)
 
+
 def max_pool2d(input, kernel_size, stride=None, padding=0, dilation=1,
                ceil_mode=False, return_indices=False):
     r"""Applies a 2D max pooling over a quantized input signal composed of
@@ -304,6 +312,7 @@ def max_pool2d(input, kernel_size, stride=None, padding=0, dilation=1,
         stride = torch.jit.annotate(_List[int], [])
     return torch.nn.functional.max_pool2d(input, kernel_size, stride, padding,
                                           dilation, ceil_mode, return_indices)
+
 
 def relu(input, inplace=False):
     # type: (Tensor, bool) -> Tensor
@@ -322,6 +331,7 @@ def relu(input, inplace=False):
         return torch.relu_(input)
     else:
         return torch.relu(input)
+
 
 def leaky_relu(input, negative_slope=0.01, inplace=False,
                scale=None, zero_point=None):
@@ -353,6 +363,7 @@ def leaky_relu(input, negative_slope=0.01, inplace=False,
         result = torch._C._nn.leaky_relu(input, negative_slope)
     return result
 
+
 def clamp(input, min_, max_):
     # type: (Tensor, float, float) -> Tensor
     r"""float(input, min_, max_) -> Tensor
@@ -368,6 +379,7 @@ def clamp(input, min_, max_):
     if not input.is_quantized:
         raise ValueError("Input to 'quantized.clamp' must be quantized!")
     return torch.clamp(input, min_, max_)
+
 
 def upsample(input, size=None, scale_factor=None, mode='nearest', align_corners=None):
     r"""Upsamples the input to either the given :attr:`size` or the given
@@ -422,6 +434,7 @@ def upsample(input, size=None, scale_factor=None, mode='nearest', align_corners=
     warnings.warn("nn.quantized.functional.upsample is deprecated. Use nn.quantized.functional.interpolate instead.")
     return interpolate(input, size, scale_factor, mode, align_corners)
 
+
 def upsample_bilinear(input, size=None, scale_factor=None):
     r"""Upsamples the input, using bilinear upsampling.
 
@@ -443,6 +456,7 @@ def upsample_bilinear(input, size=None, scale_factor=None):
     # DeprecationWarning is ignored by default
     warnings.warn("nn.quantized.functional.upsample_bilinear is deprecated. Use nn.quantized.functional.interpolate instead.")
     return interpolate(input, size, scale_factor, mode='bilinear', align_corners=True)
+
 
 def upsample_nearest(input, size=None, scale_factor=None):
     r"""Upsamples the input, using nearest neighbours' pixel values.
