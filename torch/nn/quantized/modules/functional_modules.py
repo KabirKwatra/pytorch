@@ -34,10 +34,8 @@ class FloatFunctional(torch.nn.Module):
         self.activation_post_process = torch.nn.Identity()
 
     def forward(self, x):
-        raise RuntimeError(
-            "FloatFunctional is not intended to use the "
-            + "'forward'. Please use the underlying operation"
-        )
+        raise RuntimeError("FloatFunctional is not intended to use the " +
+                           "'forward'. Please use the underlying operation")
 
     r"""Operation equivalent to ``torch.add(Tensor, Tensor)``"""
 
@@ -122,19 +120,20 @@ class QFunctional(torch.nn.Module):
         self.zero_point = 0
 
     def _save_to_state_dict(self, destination, prefix, keep_vars):
-        super(QFunctional, self)._save_to_state_dict(destination, prefix, keep_vars)
+        super(QFunctional, self)._save_to_state_dict(destination, prefix,
+                                                     keep_vars)
         destination[prefix + "scale"] = torch.tensor(self.scale)
         destination[prefix + "zero_point"] = torch.tensor(self.zero_point)
 
     def _load_from_state_dict(
-        self,
-        state_dict,
-        prefix,
-        local_metadata,
-        strict,
-        missing_keys,
-        unexpected_keys,
-        error_msgs,
+            self,
+            state_dict,
+            prefix,
+            local_metadata,
+            strict,
+            missing_keys,
+            unexpected_keys,
+            error_msgs,
     ):
 
         self.scale = float(state_dict.pop(prefix + "scale"))
@@ -156,16 +155,17 @@ class QFunctional(torch.nn.Module):
         return "scale={}, zero_point={}".format(self.scale, self.zero_point)
 
     def forward(self, x):
-        raise RuntimeError(
-            "Functional is not intended to use the "
-            + "'forward'. Please use the underlying operation"
-        )
+        raise RuntimeError("Functional is not intended to use the " +
+                           "'forward'. Please use the underlying operation")
 
     r"""Operation equivalent to ``torch.ops.quantized.add``"""
 
     def add(self, x, y):
         # type: (Tensor, Tensor) -> Tensor
-        return ops.quantized.add(x, y, scale=self.scale, zero_point=self.zero_point)
+        return ops.quantized.add(x,
+                                 y,
+                                 scale=self.scale,
+                                 zero_point=self.zero_point)
 
     r"""Operation equivalent to ``torch.ops.quantized.add(Tensor, float)``"""
 
@@ -177,7 +177,10 @@ class QFunctional(torch.nn.Module):
 
     def mul(self, x, y):
         # type: (Tensor, Tensor) -> Tensor
-        return ops.quantized.mul(x, y, scale=self.scale, zero_point=self.zero_point)
+        return ops.quantized.mul(x,
+                                 y,
+                                 scale=self.scale,
+                                 zero_point=self.zero_point)
 
     r"""Operation equivalent to ``torch.ops.quantized.mul(Tensor, float)``"""
 
@@ -189,17 +192,19 @@ class QFunctional(torch.nn.Module):
 
     def cat(self, x, dim=0):
         # type: (List[Tensor], int) -> Tensor
-        return ops.quantized.cat(
-            x, scale=self.scale, zero_point=self.zero_point, dim=dim
-        )
+        return ops.quantized.cat(x,
+                                 scale=self.scale,
+                                 zero_point=self.zero_point,
+                                 dim=dim)
 
     r"""Operation equivalent to ``torch.ops.quantized.add_relu``"""
 
     def add_relu(self, x, y):
         # type: (Tensor, Tensor) -> Tensor
-        return ops.quantized.add_relu(
-            x, y, scale=self.scale, zero_point=self.zero_point
-        )
+        return ops.quantized.add_relu(x,
+                                      y,
+                                      scale=self.scale,
+                                      zero_point=self.zero_point)
 
     @classmethod
     def from_float(cls, mod):
