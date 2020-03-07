@@ -47,16 +47,16 @@ class RNNBase(torch.nn.Module):
     _FLOAT_MODULE = nn.RNNBase
 
     def __init__(
-        self,
-        mode,
-        input_size,
-        hidden_size,
-        num_layers=1,
-        bias=True,
-        batch_first=False,
-        dropout=0.0,
-        bidirectional=False,
-        dtype=torch.qint8,
+            self,
+            mode,
+            input_size,
+            hidden_size,
+            num_layers=1,
+            bias=True,
+            batch_first=False,
+            dropout=0.0,
+            bidirectional=False,
+            dtype=torch.qint8,
     ):
         super(RNNBase, self).__init__()
 
@@ -71,23 +71,17 @@ class RNNBase(torch.nn.Module):
         self.dtype = dtype
         num_directions = 2 if bidirectional else 1
 
-        if (
-            not isinstance(dropout, numbers.Number)
-            or not 0 <= dropout <= 1
-            or isinstance(dropout, bool)
-        ):
+        if (not isinstance(dropout, numbers.Number) or not 0 <= dropout <= 1
+                or isinstance(dropout, bool)):
             raise ValueError(
                 "dropout should be a number in range [0, 1] "
                 "representing the probability of an element being "
-                "zeroed"
-            )
+                "zeroed")
         if dropout > 0 and num_layers == 1:
-            warnings.warn(
-                "dropout option adds dropout after all but last "
-                "recurrent layer, so non-zero dropout expects "
-                "num_layers greater than 1, but got dropout={} and "
-                "num_layers={}".format(dropout, num_layers)
-            )
+            warnings.warn("dropout option adds dropout after all but last "
+                          "recurrent layer, so non-zero dropout expects "
+                          "num_layers greater than 1, but got dropout={} and "
+                          "num_layers={}".format(dropout, num_layers))
 
         if mode == "LSTM":
             gate_size = 4 * hidden_size
@@ -98,9 +92,8 @@ class RNNBase(torch.nn.Module):
         _all_weight_values = []
         for layer in range(num_layers):
             for direction in range(num_directions):
-                layer_input_size = (
-                    input_size if layer == 0 else hidden_size * num_directions
-                )
+                layer_input_size = (input_size if layer == 0 else hidden_size *
+                                    num_directions)
 
                 def process_weights(ihhh, layer, suffix, qweight, bias, dtype):
                     if dtype == torch.qint8:
@@ -109,8 +102,7 @@ class RNNBase(torch.nn.Module):
                         #
                         #   w_ih, w_hh
                         packed_weight = torch.ops.quantized.linear_prepack(
-                            qweight, bias
-                        )
+                            qweight, bias)
 
                         params = [packed_weight]
                         pos_names = ["w"]
@@ -124,7 +116,8 @@ class RNNBase(torch.nn.Module):
                         # weights and pack parameters in this order:
                         #
                         #   packed_ih, packed_hh, b_ih, b_hh
-                        packed_weight = torch.ops.quantized.linear_prepack_fp16(qweight)
+                        packed_weight = torch.ops.quantized.linear_prepack_fp16(
+                            qweight)
 
                         params = [packed_weight, bias]
                         pos_names = ["packed", "b"]
@@ -162,17 +155,16 @@ class RNNBase(torch.nn.Module):
 
                 suffix = "_reverse" if direction == 1 else ""
                 ih_params, ih_param_names = process_weights(
-                    "ih", layer, suffix, w_ih, b_ih, dtype
-                )
+                    "ih", layer, suffix, w_ih, b_ih, dtype)
                 hh_params, hh_param_names = process_weights(
-                    "hh", layer, suffix, w_hh, b_hh, dtype
-                )
+                    "hh", layer, suffix, w_hh, b_hh, dtype)
 
                 for (ih, ih_name), (hh, hh_name) in zip(
-                    zip(ih_params, ih_param_names), zip(hh_params, hh_param_names)
-                ):
+                        zip(ih_params, ih_param_names),
+                        zip(hh_params, hh_param_names)):
                     self._all_weight_names.extend([ih_name, hh_name])
-                    _all_weight_values.extend([PackedParameter(p) for p in [ih, hh]])
+                    _all_weight_values.extend(
+                        [PackedParameter(p) for p in [ih, hh]])
 
             self._all_weight_values = torch.nn.ModuleList(_all_weight_values)
 
@@ -197,17 +189,12 @@ class RNNBase(torch.nn.Module):
         # type: (Tensor, Optional[Tensor]) -> None
         expected_input_dim = 2 if batch_sizes is not None else 3
         if input.dim() != expected_input_dim:
-            raise RuntimeError(
-                "input must have {} dimensions, got {}".format(
-                    expected_input_dim, input.dim()
-                )
-            )
+            raise RuntimeError("input must have {} dimensions, got {}".format(
+                expected_input_dim, input.dim()))
         if self.input_size != input.size(-1):
             raise RuntimeError(
-                "input.size(-1) must be equal to input_size. Expected {}, got {}".format(
-                    self.input_size, input.size(-1)
-                )
-            )
+                "input.size(-1) must be equal to input_size. Expected {}, got {}"
+                .format(self.input_size, input.size(-1)))
 
     def get_expected_hidden_size(self, input, batch_sizes):
         # type: (Tensor, Optional[Tensor]) -> Tuple[int, int, int]
@@ -224,20 +211,23 @@ class RNNBase(torch.nn.Module):
         )
         return expected_hidden_size
 
-    def check_hidden_size(
-        self, hx, expected_hidden_size, msg="Expected hidden size {}, got {}"
-    ):
+    def check_hidden_size(self,
+                          hx,
+                          expected_hidden_size,
+                          msg="Expected hidden size {}, got {}"):
         # type: (Tensor, Tuple[int, int, int], str) -> None
         if hx.size() != expected_hidden_size:
-            raise RuntimeError(msg.format(expected_hidden_size, tuple(hx.size())))
+            raise RuntimeError(
+                msg.format(expected_hidden_size, tuple(hx.size())))
 
     def check_forward_args(self, input, hidden, batch_sizes):
         # type: (Tensor, Tensor, Optional[Tensor]) -> None
         self.check_input(input, batch_sizes)
-        expected_hidden_size = self.get_expected_hidden_size(input, batch_sizes)
-        self.check_hidden_size(
-            hidden, expected_hidden_size, msg="Expected hidden size {}, got {}"
-        )
+        expected_hidden_size = self.get_expected_hidden_size(
+            input, batch_sizes)
+        self.check_hidden_size(hidden,
+                               expected_hidden_size,
+                               msg="Expected hidden size {}, got {}")
 
     def permute_hidden(self, hx, permutation):
         # type: (Tensor, Optional[Tensor]) -> Tensor
@@ -250,7 +240,8 @@ class RNNBase(torch.nn.Module):
         assert (
             type(mod) == torch.nn.LSTM
         ), "nn.quantized.dynamic.RNNBase.from_float only works for nn.LSTM"
-        assert hasattr(mod, "qconfig"), "Input float module must have qconfig defined"
+        assert hasattr(
+            mod, "qconfig"), "Input float module must have qconfig defined"
 
         if mod.qconfig is not None and mod.qconfig.weight is not None:
             weight_observer = mod.qconfig.weight()
@@ -266,8 +257,8 @@ class RNNBase(torch.nn.Module):
         supported_scalar_types = [torch.qint8, torch.float16]
         if dtype not in supported_scalar_types:
             raise RuntimeError(
-                "Unsupported dtype for dynamic RNN quantization: {}".format(dtype)
-            )
+                "Unsupported dtype for dynamic RNN quantization: {}".format(
+                    dtype))
 
         if mod.mode == "LSTM":
             qRNNBase = LSTM(
@@ -281,7 +272,8 @@ class RNNBase(torch.nn.Module):
                 dtype,
             )
         else:
-            raise NotImplementedError("Only LSTM is supported for QuantizedRNN for now")
+            raise NotImplementedError(
+                "Only LSTM is supported for QuantizedRNN for now")
 
         num_directions = 2 if mod.bidirectional else 1
 
@@ -291,11 +283,8 @@ class RNNBase(torch.nn.Module):
         _all_weight_values = []
         for layer in range(qRNNBase.num_layers):
             for direction in range(num_directions):
-                layer_input_size = (
-                    qRNNBase.input_size
-                    if layer == 0
-                    else qRNNBase.hidden_size * num_directions
-                )
+                layer_input_size = (qRNNBase.input_size if layer == 0 else
+                                    qRNNBase.hidden_size * num_directions)
 
                 def process_weights(ihhh, layer, suffix, dtype):
                     weight_name = "weight_{}_l{}{}".format(ihhh, layer, suffix)
@@ -312,11 +301,10 @@ class RNNBase(torch.nn.Module):
                         weight_observer(weight)
                         wt_scale, wt_zp = weight_observer.calculate_qparams()
                         qweight = torch.quantize_per_tensor(
-                            weight.float(), float(wt_scale), int(wt_zp), torch.qint8
-                        )
+                            weight.float(), float(wt_scale), int(wt_zp),
+                            torch.qint8)
                         packed_weight = torch.ops.quantized.linear_prepack(
-                            qweight, bias
-                        )
+                            qweight, bias)
 
                         params = [packed_weight]
                         pos_names = ["w"]
@@ -331,8 +319,7 @@ class RNNBase(torch.nn.Module):
                         #
                         #   packed_ih, packed_hh, b_ih, b_hh
                         packed_weight = torch.fbgemm_pack_gemm_matrix_fp16(
-                            weight.float()
-                        )
+                            weight.float())
 
                         params = [packed_weight, bias]
                         pos_names = ["packed", "b"]
@@ -343,14 +330,17 @@ class RNNBase(torch.nn.Module):
                         return params, ret_name
 
                 suffix = "_reverse" if direction == 1 else ""
-                ih_params, ih_param_names = process_weights("ih", layer, suffix, dtype)
-                hh_params, hh_param_names = process_weights("hh", layer, suffix, dtype)
+                ih_params, ih_param_names = process_weights(
+                    "ih", layer, suffix, dtype)
+                hh_params, hh_param_names = process_weights(
+                    "hh", layer, suffix, dtype)
 
                 for (ih, ih_name), (hh, hh_name) in zip(
-                    zip(ih_params, ih_param_names), zip(hh_params, hh_param_names)
-                ):
+                        zip(ih_params, ih_param_names),
+                        zip(hh_params, hh_param_names)):
                     qRNNBase._all_weight_names.extend([ih_name, hh_name])
-                    _all_weight_values.extend([PackedParameter(p) for p in [ih, hh]])
+                    _all_weight_values.extend(
+                        [PackedParameter(p) for p in [ih, hh]])
         qRNNBase._all_weight_values = torch.nn.ModuleList(_all_weight_values)
 
         return qRNNBase
@@ -368,7 +358,8 @@ class LSTM(RNNBase):
     def _get_name(self):
         return "DynamicQuantizedLSTM"
 
-    def forward_impl(self, input, hx, batch_sizes, max_batch_size, sorted_indices):
+    def forward_impl(self, input, hx, batch_sizes, max_batch_size,
+                     sorted_indices):
         # type: (Tensor, Optional[Tuple[Tensor, Tensor]], Optional[Tensor], int, Optional[Tensor]) -> Tuple[Tensor, Tuple[Tensor, Tensor]]  # noqa
         if hx is None:
             num_directions = 2 if self.bidirectional else 1
@@ -432,9 +423,8 @@ class LSTM(RNNBase):
         sorted_indices = None
         unsorted_indices = None
 
-        output, hidden = self.forward_impl(
-            input, hx, batch_sizes, max_batch_size, sorted_indices
-        )
+        output, hidden = self.forward_impl(input, hx, batch_sizes,
+                                           max_batch_size, sorted_indices)
 
         return output, self.permute_hidden(hidden, unsorted_indices)
 
@@ -445,11 +435,11 @@ class LSTM(RNNBase):
         max_batch_size = batch_sizes[0]
         max_batch_size = int(max_batch_size)
 
-        output, hidden = self.forward_impl(
-            input, hx, batch_sizes, max_batch_size, sorted_indices
-        )
+        output, hidden = self.forward_impl(input, hx, batch_sizes,
+                                           max_batch_size, sorted_indices)
 
-        output = PackedSequence(output, batch_sizes, sorted_indices, unsorted_indices)
+        output = PackedSequence(output, batch_sizes, sorted_indices,
+                                unsorted_indices)
         return output, self.permute_hidden(hidden, unsorted_indices)
 
     def permute_hidden(self, hx, permutation):
@@ -464,14 +454,13 @@ class LSTM(RNNBase):
     def check_forward_args(self, input, hidden, batch_sizes):
         # type: (Tensor, Tuple[Tensor, Tensor], Optional[Tensor])->None
         self.check_input(input, batch_sizes)
-        expected_hidden_size = self.get_expected_hidden_size(input, batch_sizes)
+        expected_hidden_size = self.get_expected_hidden_size(
+            input, batch_sizes)
 
-        self.check_hidden_size(
-            hidden[0], expected_hidden_size, "Expected hidden[0] size {}, got {}"
-        )
-        self.check_hidden_size(
-            hidden[1], expected_hidden_size, "Expected hidden[1] size {}, got {}"
-        )
+        self.check_hidden_size(hidden[0], expected_hidden_size,
+                               "Expected hidden[0] size {}, got {}")
+        self.check_hidden_size(hidden[1], expected_hidden_size,
+                               "Expected hidden[1] size {}, got {}")
 
     @torch.jit.ignore
     def forward(self, input, hx=None):
