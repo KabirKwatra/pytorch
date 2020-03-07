@@ -1,78 +1,75 @@
-from torch.testing._internal.common_utils import dtype2prec_DONTUSE
-from torch.testing._internal.common_utils import _assertGradAndGradgradChecks
-import torch.testing._internal.hypothesis_utils as hu
-from hypothesis import given
-from torch.nn import MultiheadAttention
-from torch.testing._internal.common_device_type import (
-    instantiate_device_type_tests,
-    dtypes,
-    dtypesIfCUDA,
-    skipCUDAIfNoCudnn,
-    skipCUDAIfCudnnVersionLessThan,
-    onlyCUDA,
-    skipCUDAIfRocm,
-    skipCUDAIf,
-    skipCUDAIfNotRocm,
-    largeCUDATensorTest,
-)
-from torch.testing._internal.common_nn import (
-    NNTestCase,
-    ModuleTest,
-    CriterionTest,
-    TestBase,
-    module_tests,
-    criterion_tests,
-    new_criterion_tests,
-    loss_reference_fns,
-    ctcloss_reference,
-    new_module_tests,
-)
-from torch.testing._internal.common_cuda import (
-    TEST_CUDA,
-    TEST_MULTIGPU,
-    TEST_CUDNN,
-    TEST_CUDNN_VERSION,
-)
-from torch.testing._internal.common_utils import (
-    freeze_rng_state,
-    run_tests,
-    TestCase,
-    skipIfNoLapack,
-    skipIfRocm,
-    TEST_NUMPY,
-    TEST_SCIPY,
-    TEST_WITH_ROCM,
-    download_file,
-    PY3,
-    to_gpu,
-    get_function_arglist,
-    load_tests,
-    repeat_test_for_types,
-    ALL_TENSORTYPES,
-    ALL_TENSORTYPES2,
-    TemporaryFileName,
-    TEST_WITH_UBSAN,
-    IS_PPC,
-)
-from torch.nn.parallel._functions import Broadcast
-from torch.nn import Parameter
-from torch.autograd.gradcheck import gradgradcheck
-from torch.autograd import gradcheck
-from torch.nn.utils import parameters_to_vector, vector_to_parameters
-import torch.nn.utils.prune as prune
-from torch.nn.utils import clip_grad_norm_, clip_grad_value_
-import torch.nn.utils.rnn as rnn_utils
-import torch.nn.init as init
-import torch.nn.functional as F
-import torch.nn as nn
-import torch.backends.cudnn as cudnn
-from torch._six import inf, nan
+import io
 import math
-import sys
 import random
 import string
+import sys
 import unittest
-import io
+
+from hypothesis import given
+
+import torch.backends.cudnn as cudnn
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.nn.init as init
+import torch.nn.utils.prune as prune
+import torch.nn.utils.rnn as rnn_utils
+import torch.testing._internal.hypothesis_utils as hu
+from torch._six import inf
+from torch._six import nan
+from torch.autograd import gradcheck
+from torch.autograd.gradcheck import gradgradcheck
+from torch.nn import MultiheadAttention
+from torch.nn import Parameter
+from torch.nn.parallel._functions import Broadcast
+from torch.nn.utils import clip_grad_norm_
+from torch.nn.utils import clip_grad_value_
+from torch.nn.utils import parameters_to_vector
+from torch.nn.utils import vector_to_parameters
+from torch.testing._internal.common_cuda import TEST_CUDA
+from torch.testing._internal.common_cuda import TEST_CUDNN
+from torch.testing._internal.common_cuda import TEST_CUDNN_VERSION
+from torch.testing._internal.common_cuda import TEST_MULTIGPU
+from torch.testing._internal.common_device_type import dtypes
+from torch.testing._internal.common_device_type import dtypesIfCUDA
+from torch.testing._internal.common_device_type import instantiate_device_type_tests
+from torch.testing._internal.common_device_type import largeCUDATensorTest
+from torch.testing._internal.common_device_type import onlyCUDA
+from torch.testing._internal.common_device_type import skipCUDAIf
+from torch.testing._internal.common_device_type import skipCUDAIfCudnnVersionLessThan
+from torch.testing._internal.common_device_type import skipCUDAIfNoCudnn
+from torch.testing._internal.common_device_type import skipCUDAIfNotRocm
+from torch.testing._internal.common_device_type import skipCUDAIfRocm
+from torch.testing._internal.common_nn import criterion_tests
+from torch.testing._internal.common_nn import CriterionTest
+from torch.testing._internal.common_nn import ctcloss_reference
+from torch.testing._internal.common_nn import loss_reference_fns
+from torch.testing._internal.common_nn import module_tests
+from torch.testing._internal.common_nn import ModuleTest
+from torch.testing._internal.common_nn import new_criterion_tests
+from torch.testing._internal.common_nn import new_module_tests
+from torch.testing._internal.common_nn import NNTestCase
+from torch.testing._internal.common_nn import TestBase
+from torch.testing._internal.common_utils import _assertGradAndGradgradChecks
+from torch.testing._internal.common_utils import ALL_TENSORTYPES
+from torch.testing._internal.common_utils import ALL_TENSORTYPES2
+from torch.testing._internal.common_utils import download_file
+from torch.testing._internal.common_utils import dtype2prec_DONTUSE
+from torch.testing._internal.common_utils import freeze_rng_state
+from torch.testing._internal.common_utils import get_function_arglist
+from torch.testing._internal.common_utils import IS_PPC
+from torch.testing._internal.common_utils import load_tests
+from torch.testing._internal.common_utils import PY3
+from torch.testing._internal.common_utils import repeat_test_for_types
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import skipIfNoLapack
+from torch.testing._internal.common_utils import skipIfRocm
+from torch.testing._internal.common_utils import TemporaryFileName
+from torch.testing._internal.common_utils import TEST_NUMPY
+from torch.testing._internal.common_utils import TEST_SCIPY
+from torch.testing._internal.common_utils import TEST_WITH_ROCM
+from torch.testing._internal.common_utils import TEST_WITH_UBSAN
+from torch.testing._internal.common_utils import TestCase
+from torch.testing._internal.common_utils import to_gpu
 
 try:
     import unittest.mock as mock

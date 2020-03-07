@@ -1,21 +1,20 @@
-from torch.autograd.gradcheck import gradcheck
-from numbers import Number
-from torch.testing._internal.common_cuda import TEST_CUDA
-from torch.testing._internal.common_utils import (
-    TestCase,
-    run_tests,
-    skipIfRocm,
-    do_test_dtypes,
-    do_test_empty_full,
-    load_tests,
-    TEST_NUMPY,
-)
-import unittest
-import sys
-import random
 import functools
 import itertools
+import random
+import sys
+import unittest
+from numbers import Number
+
 import torch
+from torch.autograd.gradcheck import gradcheck
+from torch.testing._internal.common_cuda import TEST_CUDA
+from torch.testing._internal.common_utils import do_test_dtypes
+from torch.testing._internal.common_utils import do_test_empty_full
+from torch.testing._internal.common_utils import load_tests
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import skipIfRocm
+from torch.testing._internal.common_utils import TEST_NUMPY
+from torch.testing._internal.common_utils import TestCase
 
 # TODO: remove this global setting
 # Sparse tests use double as the default dtype
