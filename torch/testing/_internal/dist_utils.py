@@ -1,7 +1,11 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import time
-from functools import partial, wraps
+from functools import partial
+from functools import wraps
 
 import torch.distributed as dist
 import torch.distributed.rpc as rpc
