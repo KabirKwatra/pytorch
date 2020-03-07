@@ -6,7 +6,8 @@ from __future__ import unicode_literals
 
 import torch
 from torch._jit_internal import List as _List
-from torch.nn.modules.utils import _pair, _triple
+from torch.nn.modules.utils import _pair
+from torch.nn.modules.utils import _triple
 
 # Although some of the functions and docstrings are mirrored from the torch.nn,
 # we want to have them here for future changes.
