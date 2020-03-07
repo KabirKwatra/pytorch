@@ -1,12 +1,15 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import time
-from functools import partial, wraps
+from functools import partial
+from functools import wraps
 
 import torch.distributed as dist
 import torch.distributed.rpc as rpc
 from torch.distributed.rpc import _rref_context_get_debug_info
-
 
 if not dist.is_available():
     print("c10d not available, skipping tests")
@@ -52,6 +55,7 @@ def dist_init(old_test_method=None, setup_rpc=True, clean_shutdown=True):
         # Setting _ignore_rref_leak to make sure OwnerRRefs are properly deleted
         # in tests.
         import torch.distributed.rpc.api as api
+
         api._ignore_rref_leak = False
 
         self.worker_id = self.rank
@@ -84,14 +88,16 @@ TEST_CONFIG.build_rpc_backend_options = lambda test_object: rpc.backend_registry
     num_send_recv_threads=8,
 )
 
+
 def noop():
     pass
 
+
 def wait_until_node_failure(rank):
-    '''
+    """
     Loops until an RPC to the given rank fails. This is used to
     indicate that the node has failed in unit tests.
-    '''
+    """
     while True:
         try:
             rpc.rpc_sync("worker{}".format(rank), noop, args=())
@@ -99,8 +105,11 @@ def wait_until_node_failure(rank):
         except Exception:
             break
 
+
 # Shutdown sequence is not well defined, so we may see any of the following errors
 # When running tests that simulate errors via a shutdown on the remote end.
+
+
 def get_shutdown_error_regex():
     error_regexes = [
         "Request aborted during client shutdown",
@@ -108,11 +117,13 @@ def get_shutdown_error_regex():
         "worker.: Error in response from worker.: Failed to write to remote endpoint",
         "worker.: Error in response from worker.: AsyncSocketException: recv() failed",
     ]
-    error_regex = "".join(["({})|".format(error_str) for error_str in error_regexes])
+    error_regex = "".join(
+        ["({})|".format(error_str) for error_str in error_regexes])
     return error_regex
 
+
 def wait_until_pending_users_flushed():
-    '''
+    """
     The RRef protocol holds forkIds of rrefs in a map until those forks are
     confirmed by the owner. The message confirming the fork may arrive after
     our tests check whether this map is empty, which leads to failures and
@@ -121,12 +132,15 @@ def wait_until_pending_users_flushed():
     loops until the map is empty, which means the messages have been received
     as processed. Call this function before asserting the map returned by
     _get_debug_info is empty.
-    '''
-    num_pending_users = int(_rref_context_get_debug_info()["num_pending_users"])
+    """
+    num_pending_users = int(
+        _rref_context_get_debug_info()["num_pending_users"])
     while num_pending_users != 0:
         time.sleep(0.1)
-        num_pending_users = int(_rref_context_get_debug_info()["num_pending_users"])
+        num_pending_users = int(
+            _rref_context_get_debug_info()["num_pending_users"])
     return
+
 
 def initialize_pg(init_method, rank, world_size):
     # This is for tests using `dist.barrier`.
@@ -139,6 +153,7 @@ def initialize_pg(init_method, rank, world_size):
             rank=rank,
             world_size=world_size,
         )
+
 
 def worker_name(rank):
     return "worker{}".format(rank)
