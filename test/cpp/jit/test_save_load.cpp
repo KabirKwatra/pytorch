@@ -13,48 +13,48 @@ namespace jit {
 using namespace script;
 
 void testSaveExtraFilesHook() {
-    // no secrets
+  // no secrets
+  {
+    std::stringstream ss;
     {
-        std::stringstream ss;
-        {
-            Module m("__torch__.m");
-            ExtraFilesMap extra;
-            extra["metadata.json"] = "abc";
-            m.save(ss, extra);
-        }
-        ss.seekg(0);
-        {
-            ExtraFilesMap extra;
-            extra["metadata.json"] = "";
-            extra["secret.json"] = "";
-            jit::load(ss, c10::nullopt, extra);
-            ASSERT_EQ(extra["metadata.json"], "abc");
-            ASSERT_EQ(extra["secret.json"], "");
-        }
+      Module m("__torch__.m");
+      ExtraFilesMap extra;
+      extra["metadata.json"] = "abc";
+      m.save(ss, extra);
     }
-    // some secret
+    ss.seekg(0);
     {
-        std::stringstream ss;
-        {
-            SetExportModuleExtraFilesHook([](const Module&) -> ExtraFilesMap {
-                return {{"secret.json", "topsecret"}};
-            });
-            Module m("__torch__.m");
-            ExtraFilesMap extra;
-            extra["metadata.json"] = "abc";
-            m.save(ss, extra);
-            SetExportModuleExtraFilesHook(nullptr);
-        }
-        ss.seekg(0);
-        {
-            ExtraFilesMap extra;
-            extra["metadata.json"] = "";
-            extra["secret.json"] = "";
-            jit::load(ss, c10::nullopt, extra);
-            ASSERT_EQ(extra["metadata.json"], "abc");
-            ASSERT_EQ(extra["secret.json"], "topsecret");
-        }
+      ExtraFilesMap extra;
+      extra["metadata.json"] = "";
+      extra["secret.json"] = "";
+      jit::load(ss, c10::nullopt, extra);
+      ASSERT_EQ(extra["metadata.json"], "abc");
+      ASSERT_EQ(extra["secret.json"], "");
     }
+  }
+  // some secret
+  {
+    std::stringstream ss;
+    {
+      SetExportModuleExtraFilesHook([](const Module&) -> ExtraFilesMap {
+        return {{"secret.json", "topsecret"}};
+      });
+      Module m("__torch__.m");
+      ExtraFilesMap extra;
+      extra["metadata.json"] = "abc";
+      m.save(ss, extra);
+      SetExportModuleExtraFilesHook(nullptr);
+    }
+    ss.seekg(0);
+    {
+      ExtraFilesMap extra;
+      extra["metadata.json"] = "";
+      extra["secret.json"] = "";
+      jit::load(ss, c10::nullopt, extra);
+      ASSERT_EQ(extra["metadata.json"], "abc");
+      ASSERT_EQ(extra["secret.json"], "topsecret");
+    }
+  }
 }
 
 } // namespace jit
