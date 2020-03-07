@@ -293,10 +293,10 @@ def generate_type_hints(fname, decls, is_tensor=False):
         type_hint = "def {}({}) -> {}: ...".format(fname, python_args_s, python_returns_s)
         numargs = len(decl['arguments'])
         vararg_pos = int(is_tensor)
-        have_vararg_version = (numargs > vararg_pos and
-                               decl['arguments'][vararg_pos]['dynamic_type'] in {'IntArrayRef', 'TensorList'} and
-                               (numargs == vararg_pos + 1 or python_args[vararg_pos + 1] == '*') and
-                               (not is_tensor or decl['arguments'][0]['name'] == 'self'))
+        have_vararg_version = (numargs > vararg_pos
+                               and decl['arguments'][vararg_pos]['dynamic_type'] in {'IntArrayRef', 'TensorList'}
+                               and (numargs == vararg_pos + 1 or python_args[vararg_pos + 1] == '*')
+                               and (not is_tensor or decl['arguments'][0]['name'] == 'self'))
 
         type_hints.append(type_hint)
 
@@ -311,13 +311,14 @@ def generate_type_hints(fname, decls, is_tensor=False):
             else:
                 vararg_type = 'Tensor'
             # replace first argument and eliminate '*' if present
-            python_args = ((['self'] if is_tensor else []) + ['*' + decl['arguments'][vararg_pos]['name'] +
-                                                              ': ' + vararg_type] + python_args[vararg_pos + 2:])
+            python_args = ((['self'] if is_tensor else []) + ['*' + decl['arguments'][vararg_pos]['name']
+                                                              + ': ' + vararg_type] + python_args[vararg_pos + 2:])
             python_args_s = ', '.join(python_args)
             type_hint = "def {}({}) -> {}: ...".format(fname, python_args_s, python_returns_s)
             type_hints.append(type_hint)
 
     return type_hints
+
 
 def gen_nn_modules(out):
     def replace_forward(m):
@@ -338,6 +339,7 @@ def gen_nn_modules(out):
         fname_out = fname[:-3]
         with open(os.path.join(out, fname_out), 'w') as f:
             f.write(res)
+
 
 def gen_nn_functional(out):
     # Functions imported into `torch.nn.functional` from `torch`, perhaps being filtered
@@ -392,9 +394,11 @@ def gen_nn_functional(out):
     }
     write(out, 'torch/nn/functional.pyi', stubs, env)
 
+
 def gen_nn_pyi(out):
     gen_nn_functional(out)
     gen_nn_modules(out)
+
 
 def gen_pyi(declarations_path, out):
     """gen_pyi()
@@ -456,7 +460,7 @@ def gen_pyi(declarations_path, out):
             'def {}(input: Union[Tensor, Number],'
             ' other: Union[Tensor, Number],'
             ' *, out: Optional[Tensor]=None) -> Tensor: ...'.format(binop))
-    for binop in ['add', 'sub']: 
+    for binop in ['add', 'sub']:
         unsorted_function_hints[binop].append(
             'def {}(input: Union[Tensor, Number],'
             ' other: Union[Tensor, Number],'
@@ -543,8 +547,8 @@ def gen_pyi(declarations_path, out):
             unsorted_tensor_method_hints[binop].append(
                 'def {}(self, other: Union[Tensor, Number]{})'
                 ' -> Tensor: ...'.format(binop, out_suffix))
-    for binop in ['add', 'sub']: 
-        for inplace in [False, True]: 
+    for binop in ['add', 'sub']:
+        for inplace in [False, True]:
             out_suffix = ', out: Optional[Tensor]=None'
             if inplace:
                 binop += '_'
