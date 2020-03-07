@@ -1,6 +1,7 @@
 # These functions are referenced from the pickle archives produced by
 # ScriptModule.save()
 
+
 def build_intlist(data):
     return data
 
