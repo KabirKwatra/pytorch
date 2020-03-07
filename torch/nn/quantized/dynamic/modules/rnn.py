@@ -13,6 +13,7 @@ def apply_permutation(tensor, permutation, dim=1):
     # type: (Tensor, Tensor, int) -> Tensor
     return tensor.index_select(dim, permutation)
 
+
 class PackedParameter(torch.nn.Module):
     def __init__(self, param):
         super(PackedParameter, self).__init__()
@@ -33,6 +34,7 @@ class PackedParameter(torch.nn.Module):
     # drop python 2 support
     def forward(self):
         raise RuntimeError('PackedParameter cannot be called')
+
 
 class RNNBase(torch.nn.Module):
 
