@@ -1,7 +1,7 @@
 
+#include <ATen/core/function.h>
 #include <ATen/core/ivalue.h>
 #include <ATen/core/stack.h>
-#include <ATen/core/function.h>
 #include <torch/csrc/jit/api/function_impl.h>
 
 namespace torch {
@@ -19,46 +19,46 @@ using ObjectPtr = c10::intrusive_ptr<c10::ivalue::Object>;
 // Note: because Method/Module are exposed to python these
 // classes use python method naming conventions
 struct TORCH_API Method {
-    Method(ObjectPtr owner, Function* function);
+  Method(ObjectPtr owner, Function* function);
 
-    // the module that contains this method.
-    Module owner() const;
-    void run(Stack& stack);
-    void run(Stack&& stack) {
-        run(stack);
-    }
+  // the module that contains this method.
+  Module owner() const;
+  void run(Stack& stack);
+  void run(Stack&& stack) {
+    run(stack);
+  }
 
-    c10::IValue operator()(
-        std::vector<c10::IValue> stack,
-        const Kwargs& kwargs = Kwargs());
+  c10::IValue operator()(
+      std::vector<c10::IValue> stack,
+      const Kwargs& kwargs = Kwargs());
 
-    std::shared_ptr<Graph> graph() const {
-        return function_->graph();
-    }
+  std::shared_ptr<Graph> graph() const {
+    return function_->graph();
+  }
 
-    const std::string& name() const {
-        return function_->name();
-    }
+  const std::string& name() const {
+    return function_->name();
+  }
 
-    size_t num_inputs() const {
-        return function_->num_inputs();
-    }
+  size_t num_inputs() const {
+    return function_->num_inputs();
+  }
 
-    GraphExecutor& get_executor() {
-        return function_->get_executor();
-    }
+  GraphExecutor& get_executor() {
+    return function_->get_executor();
+  }
 
-    Function& function() const {
-        return *function_;
-    }
+  Function& function() const {
+    return *function_;
+  }
 
-private:
-    // Methods are uniqued onwed by a single module. This raw pointer allows
-    // looking up the module.
-    ObjectPtr owner_;
+ private:
+  // Methods are uniqued onwed by a single module. This raw pointer allows
+  // looking up the module.
+  ObjectPtr owner_;
 
-    // Underlying unbound function
-    Function* function_;
+  // Underlying unbound function
+  Function* function_;
 };
 
 } // namespace script
