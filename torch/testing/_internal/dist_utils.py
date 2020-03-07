@@ -84,8 +84,10 @@ TEST_CONFIG.build_rpc_backend_options = lambda test_object: rpc.backend_registry
     num_send_recv_threads=8,
 )
 
+
 def noop():
     pass
+
 
 def wait_until_node_failure(rank):
     '''
@@ -101,6 +103,8 @@ def wait_until_node_failure(rank):
 
 # Shutdown sequence is not well defined, so we may see any of the following errors
 # When running tests that simulate errors via a shutdown on the remote end.
+
+
 def get_shutdown_error_regex():
     error_regexes = [
         "Request aborted during client shutdown",
@@ -110,6 +114,7 @@ def get_shutdown_error_regex():
     ]
     error_regex = "".join(["({})|".format(error_str) for error_str in error_regexes])
     return error_regex
+
 
 def wait_until_pending_users_flushed():
     '''
@@ -128,6 +133,7 @@ def wait_until_pending_users_flushed():
         num_pending_users = int(_rref_context_get_debug_info()["num_pending_users"])
     return
 
+
 def initialize_pg(init_method, rank, world_size):
     # This is for tests using `dist.barrier`.
     # For `RpcAgent` other than `ProcessGroupAgent`,
@@ -139,6 +145,7 @@ def initialize_pg(init_method, rank, world_size):
             rank=rank,
             world_size=world_size,
         )
+
 
 def worker_name(rank):
     return "worker{}".format(rank)

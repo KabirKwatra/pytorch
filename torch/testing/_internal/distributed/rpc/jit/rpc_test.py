@@ -97,7 +97,7 @@ class LocalRRefTest(RpcAgentTestFixture):
             return
 
         # Create a local RRef<MyModuleInterface>.
-        rref_script_module = rpc.RRef(MyScriptModule(self.rank), MyModuleInterface) 
+        rref_script_module = rpc.RRef(MyScriptModule(self.rank), MyModuleInterface)
         ret = rref_script_module.to_here().forward()
         self.assertEqual(ret, torch.ones(self.rank))
 
