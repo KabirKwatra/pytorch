@@ -5,8 +5,8 @@
 #include <ATen/native/quantized/cpu/init_qnnpack.h>
 #include <ATen/native/quantized/cpu/qnnpack_utils.h>
 #include <ATen/native/quantized/cpu/quantized_ops.h>
-#include <caffe2/utils/threadpool/ThreadPoolMobile.h>
 #include <c10/util/math_compat.h>
+#include <caffe2/utils/threadpool/ThreadPoolMobile.h>
 
 #include <algorithm>
 #include <cmath>
@@ -69,7 +69,8 @@ static void avg_pool3d_out_frame(
             int64_t dend = std::min(dstart + kD, inputDepth + padD);
             int64_t hend = std::min(hstart + kH, inputHeight + padH);
             int64_t wend = std::min(wstart + kW, inputWidth + padW);
-            int64_t pool_size = (dend - dstart) * (hend - hstart) * (wend - wstart);
+            int64_t pool_size =
+                (dend - dstart) * (hend - hstart) * (wend - wstart);
             dstart = std::max(dstart, static_cast<int64_t>(0));
             hstart = std::max(hstart, static_cast<int64_t>(0));
             wstart = std::max(wstart, static_cast<int64_t>(0));
@@ -88,7 +89,8 @@ static void avg_pool3d_out_frame(
               if (count_include_pad) {
                 divide_factor = pool_size;
               } else {
-                divide_factor = (dend - dstart) * (hend - hstart) * (wend - wstart);
+                divide_factor =
+                    (dend - dstart) * (hend - hstart) * (wend - wstart);
               }
             }
 
@@ -96,10 +98,13 @@ static void avg_pool3d_out_frame(
             for (kz = dstart; kz < dend; kz++) {
               for (ky = hstart; ky < hend; ky++) {
                 for (kx = wstart; kx < wend; kx++)
-                  sum_int += (ptr_input + kz * inputHeight * inputWidth + ky * inputWidth + kx)->val_;
+                  sum_int += (ptr_input + kz * inputHeight * inputWidth +
+                              ky * inputWidth + kx)
+                                 ->val_;
               }
             }
-            float multiplier = input.q_scale() / output.q_scale() / divide_factor;
+            float multiplier =
+                input.q_scale() / output.q_scale() / divide_factor;
 
             sum_int -= size * input.q_zero_point();
             float sum = sum_int * 1.0;
@@ -107,7 +112,8 @@ static void avg_pool3d_out_frame(
             ptr_output->val_ =
                 static_cast<typename scalar_t::underlying>(std::min<int32_t>(
                     std::max<int32_t>(
-                        std::nearbyint(sum * multiplier + output.q_zero_point()),
+                        std::nearbyint(
+                            sum * multiplier + output.q_zero_point()),
                         minimum),
                     maximum));
             ptr_output++;
@@ -132,7 +138,11 @@ inline std::tuple<int, int, int> get_kernel(IntArrayRef kernel_size) {
   return std::make_tuple(kW, kH, kD);
 }
 
-inline std::tuple<int, int, int> get_stride(IntArrayRef stride, int kW, int kH, int kD) {
+inline std::tuple<int, int, int> get_stride(
+    IntArrayRef stride,
+    int kW,
+    int kH,
+    int kD) {
   TORCH_CHECK(
       stride.empty() || stride.size() == 1 || stride.size() == 3,
       "avg_pool3d: stride must either be omitted, a single int, or a tuple of three ints");
@@ -211,8 +221,8 @@ Tensor q_avg_pool3d(
       !divisor_override.has_value() || divisor_override.value() != 0,
       "divisor must be not zero");
 
-  auto output_shape =
-      get_output_shape(input, kW, kH, kD, dW, dH, dD, padW, padH, padD, ceil_mode);
+  auto output_shape = get_output_shape(
+      input, kW, kH, kD, dW, dH, dD, padW, padH, padD, ceil_mode);
   const int64_t outputDepth = output_shape[output_shape.size() - 3];
   const int64_t outputHeight = output_shape[output_shape.size() - 2];
   const int64_t outputWidth = output_shape[output_shape.size() - 1];
