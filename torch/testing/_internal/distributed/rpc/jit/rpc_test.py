@@ -87,7 +87,7 @@ class LocalRRefTest(RpcAgentTestFixture):
             return
 
         # Create a local RRef<MyScriptClass>.
-        rref_script_class = rpc.RRef(MyScriptClass(self.rank, ))
+        rref_script_class = rpc.RRef(MyScriptClass(self.rank,))
         ret = rref_script_class.to_here().get_value()
         self.assertEqual(ret, self.rank)
 
@@ -103,10 +103,11 @@ class LocalRRefTest(RpcAgentTestFixture):
 
         # Create a local RRef<MyModuleInterface> without type hint.
         with self.assertRaisesRegex(
-            RuntimeError, (
+            RuntimeError,
+            (
                 "The RRef being created contains a ScriptModule, "
                 "must provide its ModuleInterface type hint."
-            )
+            ),
         ):
             rref_script_module = rpc.RRef(MyScriptModule(self.rank))
 
@@ -118,7 +119,9 @@ class LocalRRefTest(RpcAgentTestFixture):
         dst_worker_name = "worker{}".format((self.rank + 1) % self.world_size)
 
         # Create a local RRef<MyScripClass> remotely in Python.
-        rref = rpc.rpc_sync(dst_worker_name, owner_create_rref_my_script_class, args=(self.rank,))
+        rref = rpc.rpc_sync(
+            dst_worker_name, owner_create_rref_my_script_class, args=(self.rank,)
+        )
         # Use RRef<MyScripClass> remotely in Script.
         ret = rpc.rpc_sync(
             rref.owner(), script_run_get_value_rref_my_script_class, args=(rref,)
@@ -133,7 +136,9 @@ class LocalRRefTest(RpcAgentTestFixture):
         dst_worker_name = "worker{}".format((self.rank + 1) % self.world_size)
 
         # Create a local RRef<MyModuleInterface> remotely in Python.
-        rref = rpc.rpc_sync(dst_worker_name, owner_create_rref_my_script_module, args=(self.rank,))
+        rref = rpc.rpc_sync(
+            dst_worker_name, owner_create_rref_my_script_module, args=(self.rank,)
+        )
         # Use RRef<MyModuleInterface> remotely in Script.
         ret = rpc.rpc_sync(
             rref.owner(), script_run_forward_rref_my_script_module, args=(rref,)
@@ -270,7 +275,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_torchscript_in_torchscript_with_assorted_types(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = (torch.tensor([1, 1]), "str_arg", 1)
             # Must annotate the value type as `Any`, because JIT type inference
@@ -303,7 +308,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_torchscript_in_torchscript_without_kwargs_passed(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = ()
             fut = rpc.rpc_async(dst_worker_name, no_arg, args)
@@ -324,7 +329,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_torchscript_in_torchscript_without_args_kwargs_passed(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             fut = rpc.rpc_async(dst_worker_name, no_arg)
             ret = fut.wait()
@@ -443,7 +448,7 @@ class JitRpcAsyncOpTest:
         # no matter what exception type and excetpion message are in the statement,
         @torch.jit.script
         def rpc_async_call_remote_raising_torchscript_in_torchscript(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = ()
             kwargs = {}
@@ -470,7 +475,7 @@ class JitRpcAsyncOpTest:
 
         @torch.jit.script
         def rpc_async_call_remote_nonexisting_torchscript_in_torchscript(
-            dst_worker_name: str
+            dst_worker_name: str,
         ):
             args = ()
             kwargs = {}
@@ -568,23 +573,15 @@ class JitRpcTest(LocalRRefTest, JitRpcAsyncOpTest, RpcAgentTestFixture):
 
         # rpc_sync still accepts script class and run it in
         # the same code path as python call.
-        ret = rpc.rpc_sync(
-            dst_worker_name, MyScriptClass, args=(self.rank,)
-        )
+        ret = rpc.rpc_sync(dst_worker_name, MyScriptClass, args=(self.rank,))
 
         # rpc_sync does not accept script module and script module method.
-        with self.assertRaisesRegex(
-            RuntimeError, "ScriptModules cannot be deepcopied"
-        ):
-            ret = rpc.rpc_sync(
-                dst_worker_name, MyScriptModule, args=(self.rank,)
-            )
+        with self.assertRaisesRegex(RuntimeError, "ScriptModules cannot be deepcopied"):
+            ret = rpc.rpc_sync(dst_worker_name, MyScriptModule, args=(self.rank,))
 
         # Python 3.5 and Python 3.6 throw different error message, the only
         # common word can be greped is "pickle".
-        with self.assertRaisesRegex(
-            TypeError, "pickle"
-        ):
+        with self.assertRaisesRegex(TypeError, "pickle"):
             ret = rpc.rpc_async(
                 dst_worker_name, MyScriptModule(self.rank).forward, args=()
             )
@@ -596,9 +593,7 @@ class JitRpcTest(LocalRRefTest, JitRpcAsyncOpTest, RpcAgentTestFixture):
         local_ret = one_arg(torch.ones(2, 2))
 
         # create rref on current rank
-        rref = rpc.remote(
-            worker_name(self.rank), one_arg, args=(torch.ones(2, 2),)
-        )
+        rref = rpc.remote(worker_name(self.rank), one_arg, args=(torch.ones(2, 2),))
 
         # pass rref to another user in rpc call
         ret = rpc.rpc_sync(worker_name(dst_rank), rref_to_here, args=(rref,))

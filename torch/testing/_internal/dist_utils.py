@@ -41,17 +41,14 @@ def dist_init(old_test_method=None, setup_rpc=True, clean_shutdown=True):
     # decorator that is used and as a result we recursively call dist_init with
     # old_test_method and the rest of the arguments appropriately set.
     if old_test_method is None:
-        return partial(
-            dist_init,
-            setup_rpc=setup_rpc,
-            clean_shutdown=clean_shutdown,
-        )
+        return partial(dist_init, setup_rpc=setup_rpc, clean_shutdown=clean_shutdown,)
 
     @wraps(old_test_method)
     def new_test_method(self, *arg, **kwargs):
         # Setting _ignore_rref_leak to make sure OwnerRRefs are properly deleted
         # in tests.
         import torch.distributed.rpc.api as api
+
         api._ignore_rref_leak = False
 
         self.worker_id = self.rank
@@ -90,16 +87,17 @@ def noop():
 
 
 def wait_until_node_failure(rank):
-    '''
+    """
     Loops until an RPC to the given rank fails. This is used to
     indicate that the node has failed in unit tests.
-    '''
+    """
     while True:
         try:
             rpc.rpc_sync("worker{}".format(rank), noop, args=())
             time.sleep(0.5)
         except Exception:
             break
+
 
 # Shutdown sequence is not well defined, so we may see any of the following errors
 # When running tests that simulate errors via a shutdown on the remote end.
@@ -117,7 +115,7 @@ def get_shutdown_error_regex():
 
 
 def wait_until_pending_users_flushed():
-    '''
+    """
     The RRef protocol holds forkIds of rrefs in a map until those forks are
     confirmed by the owner. The message confirming the fork may arrive after
     our tests check whether this map is empty, which leads to failures and
@@ -126,7 +124,7 @@ def wait_until_pending_users_flushed():
     loops until the map is empty, which means the messages have been received
     as processed. Call this function before asserting the map returned by
     _get_debug_info is empty.
-    '''
+    """
     num_pending_users = int(_rref_context_get_debug_info()["num_pending_users"])
     while num_pending_users != 0:
         time.sleep(0.1)
@@ -140,10 +138,7 @@ def initialize_pg(init_method, rank, world_size):
     # no `_default_pg` is initialized.
     if not dist.is_initialized():
         dist.init_process_group(
-            backend="gloo",
-            init_method=init_method,
-            rank=rank,
-            world_size=world_size,
+            backend="gloo", init_method=init_method, rank=rank, world_size=world_size,
         )
 
 

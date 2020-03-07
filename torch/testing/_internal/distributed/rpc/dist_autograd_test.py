@@ -59,6 +59,7 @@ def _check_rpc_done(rank_distance):
 def _torch_ones(sizes, requires_grad=False):
     return torch.ones(sizes, requires_grad=requires_grad)
 
+
 # This method must be called on the rref owner, and verifies that the grad of
 # rref tensor equals to the given grad.
 
@@ -154,6 +155,7 @@ def _run_trainer(rref_t1, t2, ps, rank_diff):
         rpc.rpc_sync(ps, _set_rpc_done, args=(context_id, rank_diff))
         rpc.rpc_sync(ps, _check_rpc_done, args=(0,))
 
+
 # This function is the same as _run_trainer, except rpc calls torchscript
 # function "my_script_ref_add" instead of python funciton "my_rref_add"
 
@@ -195,17 +197,13 @@ class DistAutogradTest(RpcAgentTestFixture):
                 return method(*args[0])
             return method(*args)
         elif ExecMode.RPC_SYNC == exec_mode:
-            return rpc.rpc_sync(
-                worker_name(self._next_rank()), method, args=(args)
-            )
+            return rpc.rpc_sync(worker_name(self._next_rank()), method, args=(args))
         elif ExecMode.REMOTE == exec_mode:
             return rpc.remote(
                 worker_name(self._next_rank()), method, args=(args)
             ).to_here()
         elif ExecMode.RPC_ASYNC == exec_mode:
-            fut = rpc.rpc_async(
-                worker_name(self._next_rank()), method, args=(args)
-            )
+            fut = rpc.rpc_async(worker_name(self._next_rank()), method, args=(args))
             return fut.wait()
         else:
             raise ValueError("Unrecognized ExecMode {}".format(exec_mode))
@@ -367,15 +365,11 @@ class DistAutogradTest(RpcAgentTestFixture):
             if ExecMode.RPC_SYNC == exec_mode:
                 ret = rpc.rpc_sync(worker_name(dst_rank), fn, args=(t1, t2))
             elif ExecMode.REMOTE == exec_mode:
-                ret = rpc.remote(
-                    worker_name(dst_rank), fn, args=(t1, t2)
-                ).to_here()
+                ret = rpc.remote(worker_name(dst_rank), fn, args=(t1, t2)).to_here()
             else:
                 raise ValueError("Unrecognized ExecMode {}".format(exec_mode))
 
-            rpc.rpc_sync(
-                worker_name(dst_rank), _set_rpc_done, args=(context_id, 1)
-            )
+            rpc.rpc_sync(worker_name(dst_rank), _set_rpc_done, args=(context_id, 1))
 
             # Verify graph for current context id.
             ctx = dist_autograd._current_context()
@@ -600,9 +594,7 @@ class DistAutogradTest(RpcAgentTestFixture):
             t1 = torch.ones(3, 3, requires_grad=False)
             t2 = torch.zeros(3, 3, requires_grad=False)
             if ExecMode.RPC_SYNC == exec_mode:
-                ret = rpc.rpc_sync(
-                    worker_name(dst_rank), torch.add, args=(t1, t2)
-                )
+                ret = rpc.rpc_sync(worker_name(dst_rank), torch.add, args=(t1, t2))
             elif ExecMode.REMOTE == exec_mode:
                 ret = rpc.remote(
                     worker_name(dst_rank), torch.add, args=(t1, t2)
@@ -610,9 +602,7 @@ class DistAutogradTest(RpcAgentTestFixture):
             else:
                 raise ValueError("Unrecognized ExecMode {}".format(exec_mode))
 
-            rpc.rpc_sync(
-                worker_name(dst_rank), _set_rpc_done, args=(context_id, 1)
-            )
+            rpc.rpc_sync(worker_name(dst_rank), _set_rpc_done, args=(context_id, 1))
 
             ctx = dist_autograd._current_context()
             send_functions = ctx._send_functions()
@@ -646,17 +636,13 @@ class DistAutogradTest(RpcAgentTestFixture):
             if ExecMode.RPC_SYNC == exec_mode:
                 ret = rpc.rpc_sync(worker_name(dst_rank), ret_requires_grad)
             elif ExecMode.REMOTE == exec_mode:
-                ret = rpc.remote(
-                    worker_name(dst_rank), ret_requires_grad
-                ).to_here()
+                ret = rpc.remote(worker_name(dst_rank), ret_requires_grad).to_here()
             else:
                 raise ValueError("Unrecognized ExecMode {}".format(exec_mode))
 
             dist_autograd.backward(context_id, [ret.sum()])
 
-            rpc.rpc_sync(
-                worker_name(dst_rank), _set_rpc_done, args=(context_id, 1)
-            )
+            rpc.rpc_sync(worker_name(dst_rank), _set_rpc_done, args=(context_id, 1))
 
             # Wait for the prev rank to be done with rpc.
             self._check_rpc_done(1)
@@ -685,9 +671,7 @@ class DistAutogradTest(RpcAgentTestFixture):
 
             dst_rank = self._next_rank()
             if ExecMode.RPC_SYNC == exec_mode:
-                ret = rpc.rpc_sync(
-                    worker_name(dst_rank), torch.stack, args=(tensors,)
-                )
+                ret = rpc.rpc_sync(worker_name(dst_rank), torch.stack, args=(tensors,))
             elif ExecMode.REMOTE == exec_mode:
                 ret = rpc.remote(
                     worker_name(dst_rank), torch.stack, args=(tensors,)
@@ -740,9 +724,7 @@ class DistAutogradTest(RpcAgentTestFixture):
         with dist_autograd.context() as context_id:
             for dst_rank in dst_ranks:
                 rpc.rpc_sync(worker_name(dst_rank), func, args=rpc_args)
-                rpc.rpc_sync(
-                    worker_name(dst_rank), _set_rpc_done, args=(context_id, 1)
-                )
+                rpc.rpc_sync(worker_name(dst_rank), _set_rpc_done, args=(context_id, 1))
                 if nested:
                     rpc.rpc_sync(
                         worker_name(nested_dst_rank),
@@ -794,9 +776,7 @@ class DistAutogradTest(RpcAgentTestFixture):
             t2 = torch.zeros(3, 3, requires_grad=False)
             for dst_rank in dst_ranks:
                 rpc.rpc_sync(worker_name(dst_rank), torch.add, args=(t1, t2))
-                rpc.rpc_sync(
-                    worker_name(dst_rank), _set_rpc_done, args=(context_id, 1)
-                )
+                rpc.rpc_sync(worker_name(dst_rank), _set_rpc_done, args=(context_id, 1))
             # all worker_ids in dst_ranks should be recorded.
             ctx = dist_autograd._current_context()
             worker_ids = ctx._known_worker_ids()
@@ -806,12 +786,8 @@ class DistAutogradTest(RpcAgentTestFixture):
             t1.requires_grad = True
             t2.requires_grad = True
             for dst_rank in dst_ranks:
-                ret = rpc.rpc_sync(
-                    worker_name(dst_rank), torch.add, args=(t1, t2)
-                )
-                rpc.rpc_sync(
-                    worker_name(dst_rank), _set_rpc_done, args=(context_id, 1)
-                )
+                ret = rpc.rpc_sync(worker_name(dst_rank), torch.add, args=(t1, t2))
+                rpc.rpc_sync(worker_name(dst_rank), _set_rpc_done, args=(context_id, 1))
             # all worker_ids in dst_ranks should be recorded.
             worker_ids = ctx._known_worker_ids()
             self.assertEqual(worker_ids, dst_ranks)
@@ -858,9 +834,8 @@ class DistAutogradTest(RpcAgentTestFixture):
         t2 = torch.rand((3, 3), requires_grad=True)
         with dist_autograd.context() as context_id:
             loss = rpc.rpc_sync(
-                worker_name(self._next_rank()),
-                torch.add,
-                args=(t1, t2)).sum()
+                worker_name(self._next_rank()), torch.add, args=(t1, t2)
+            ).sum()
 
             dist_autograd.backward(context_id, [loss], retain_graph=True)
             self.assertIsNone(t1.grad)
@@ -972,10 +947,7 @@ class DistAutogradTest(RpcAgentTestFixture):
         local_ret.sum().backward()
 
         # create rref on self
-        rref_t1 = rpc.remote(
-            worker_name(self.rank),
-            create_ref_fn,
-            args=())
+        rref_t1 = rpc.remote(worker_name(self.rank), create_ref_fn, args=())
 
         # kick off forward and backward pass on three other workers (trainers)
         rank_diffs = [1, 2, 3]
@@ -1022,6 +994,7 @@ class DistAutogradTest(RpcAgentTestFixture):
         # ref as arg is passed to pybind boundary, and the ref is not garbage
         # collected by python when calling shutdown()
         import torch.distributed.rpc.api as api
+
         api._ignore_rref_leak = True
 
         self._test_trainer_ps(create_torchscript_tensor, _run_trainer_torchscript)
@@ -1118,9 +1091,7 @@ class DistAutogradTest(RpcAgentTestFixture):
 
             # We don't use the result of an RPC function, as a result the
             # backward pass would hang in the "FAST" mode.
-            res = rpc.rpc_sync(
-                worker_name(self._next_rank()), torch.add, args=(t1, t2)
-            )
+            res = rpc.rpc_sync(worker_name(self._next_rank()), torch.add, args=(t1, t2))
 
             val = torch.mul(t1, t2)
 
@@ -1151,9 +1122,7 @@ class DistAutogradTest(RpcAgentTestFixture):
 
             # Run multiple round trips across different nodes and verify the
             # original node receives an error thrown on a node deep in the chain.
-            val = rpc.rpc_sync(
-                worker_name(self._next_rank()), torch.add, args=(t2, t3)
-            )
+            val = rpc.rpc_sync(worker_name(self._next_rank()), torch.add, args=(t2, t3))
             val = rpc.rpc_sync(
                 worker_name(self._next_rank()), torch.mul, args=(val, t2)
             )
@@ -1183,9 +1152,7 @@ class DistAutogradTest(RpcAgentTestFixture):
             t1 = torch.rand((3, 3), requires_grad=True)
             t2 = torch.rand((3, 3), requires_grad=True)
 
-            res = rpc.rpc_sync(
-                worker_name(self._next_rank()), torch.add, args=(t1, t2)
-            )
+            res = rpc.rpc_sync(worker_name(self._next_rank()), torch.add, args=(t1, t2))
 
             # Wait for all RPCs to be done.
             dist.barrier()
@@ -1217,9 +1184,7 @@ class DistAutogradTest(RpcAgentTestFixture):
             RuntimeError,
             "Could not find autograd context with id: {}".format(context_id),
         ):
-            res = rpc.rpc_sync(
-                worker_name(self._next_rank()), torch.add, args=(t1, t2)
-            )
+            res = rpc.rpc_sync(worker_name(self._next_rank()), torch.add, args=(t1, t2))
             dist_autograd.backward(context_id, [res.sum()])
 
     @dist_init
@@ -1529,9 +1494,7 @@ class DistAutogradTest(RpcAgentTestFixture):
             if i != self.rank:
                 rank_distance = (i - self.rank + self.world_size) % self.world_size
                 rpc.rpc_sync(
-                    worker_name(i),
-                    _set_rpc_done,
-                    args=(context_id, rank_distance),
+                    worker_name(i), _set_rpc_done, args=(context_id, rank_distance),
                 )
 
         dist.barrier()

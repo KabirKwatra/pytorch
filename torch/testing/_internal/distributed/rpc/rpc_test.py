@@ -287,9 +287,7 @@ class RpcTest(RpcAgentTestFixture):
         worker_infos = rpc.api._get_current_rpc_agent().get_worker_infos()
 
         worker_names = {worker_info.name for worker_info in worker_infos}
-        expected_worker_names = {
-            worker_name(rank) for rank in range(self.world_size)
-        }
+        expected_worker_names = {worker_name(rank) for rank in range(self.world_size)}
         self.assertEqual(worker_names, expected_worker_names)
 
         worker_ids = {worker_info.id for worker_info in worker_infos}
@@ -442,9 +440,7 @@ class RpcTest(RpcAgentTestFixture):
         n = self.rank + 1
         dst_rank = n % self.world_size
         ret = rpc.rpc_sync(
-            worker_name(dst_rank),
-            torch.add,
-            args=(torch.ones(n, n), torch.ones(n, n)),
+            worker_name(dst_rank), torch.add, args=(torch.ones(n, n), torch.ones(n, n)),
         )
         self.assertEqual(ret, torch.ones(n, n) * 2)
 
@@ -463,9 +459,7 @@ class RpcTest(RpcAgentTestFixture):
     def test_scalar_add(self):
         n = self.rank + 1
         dst_rank = n % self.world_size
-        ret = rpc.rpc_sync(
-            worker_name(dst_rank), torch.add, args=(torch.ones(n, n), n)
-        )
+        ret = rpc.rpc_sync(worker_name(dst_rank), torch.add, args=(torch.ones(n, n), n))
         self.assertEqual(ret, (torch.ones(n, n) + n))
 
     @dist_init
@@ -473,9 +467,7 @@ class RpcTest(RpcAgentTestFixture):
         n = self.rank + 1
         dst_rank = n % self.world_size
         fut = rpc.rpc_async(
-            worker_name(dst_rank),
-            torch.add,
-            args=(torch.ones(n, n), torch.ones(n, n)),
+            worker_name(dst_rank), torch.add, args=(torch.ones(n, n), torch.ones(n, n)),
         )
         self.assertEqual(fut.wait(), torch.ones(n, n) * 2)
 
@@ -584,9 +576,7 @@ class RpcTest(RpcAgentTestFixture):
         n = self.rank + 1
         dst_rank = n % self.world_size
         ret = rpc.rpc_sync(
-            worker_name(dst_rank),
-            torch.add,
-            args=(torch.ones(n, n), torch.ones(n, n)),
+            worker_name(dst_rank), torch.add, args=(torch.ones(n, n), torch.ones(n, n)),
         )
         self.assertEqual(ret, torch.ones(n, n) * 2)
         rpc.shutdown()
@@ -618,9 +608,7 @@ class RpcTest(RpcAgentTestFixture):
         n = self.rank + 1
         dst_rank = n % self.world_size
         ret = rpc.rpc_sync(
-            worker_name(dst_rank),
-            my_function,
-            kwargs={"a": n, "b": n + 1, "c": n + 2},
+            worker_name(dst_rank), my_function, kwargs={"a": n, "b": n + 1, "c": n + 2},
         )
         self.assertEqual(ret, my_function(n, n + 1, n + 2))
 
@@ -820,9 +808,7 @@ class RpcTest(RpcAgentTestFixture):
         n = self.rank + 1
         dst_rank = n % self.world_size
         ret = rpc.rpc_sync(
-            worker_name(dst_rank),
-            nested_rpc,
-            args=(worker_name(self.rank),),
+            worker_name(dst_rank), nested_rpc, args=(worker_name(self.rank),),
         )
         self.assertEqual(ret, torch.ones(2, 2) + 1)
 
@@ -854,16 +840,16 @@ class RpcTest(RpcAgentTestFixture):
 
     @dist_init
     def test_stress_heavy_rpc_torchscript(self):
-        self._stress_test_rpc(heavy_rpc_torchscript, repeat=20, args=(torch.ones(100, 100),))
+        self._stress_test_rpc(
+            heavy_rpc_torchscript, repeat=20, args=(torch.ones(100, 100),)
+        )
 
     @dist_init
     def test_builtin_remote_ret(self):
         n = self.rank + 1
         dst_rank = n % self.world_size
         rref = rpc.remote(
-            worker_name(dst_rank),
-            torch.add,
-            args=(torch.ones(n, n), torch.ones(n, n)),
+            worker_name(dst_rank), torch.add, args=(torch.ones(n, n), torch.ones(n, n)),
         )
         self.assertEqual(rref.to_here(), torch.ones(n, n) * 2)
 
@@ -877,10 +863,7 @@ class RpcTest(RpcAgentTestFixture):
             n = n + i
             rrefs.append(
                 rpc.remote(
-                    worker_name(dst_rank),
-                    fn,
-                    args=args_fn(n),
-                    kwargs=kwargs_fn(n),
+                    worker_name(dst_rank), fn, args=args_fn(n), kwargs=kwargs_fn(n),
                 )
             )
             expected.append(fn(*args_fn(n), **kwargs_fn(n)))
@@ -900,9 +883,7 @@ class RpcTest(RpcAgentTestFixture):
         n = self.rank + 1
         dst_rank = n % self.world_size
         rref = rpc.remote(
-            worker_name(dst_rank),
-            my_function,
-            kwargs={"a": n, "b": n + 1, "c": n + 2},
+            worker_name(dst_rank), my_function, kwargs={"a": n, "b": n + 1, "c": n + 2},
         )
         self.assertEqual(rref.to_here(), my_function(n, n + 1, n + 2))
 
@@ -955,9 +936,7 @@ class RpcTest(RpcAgentTestFixture):
             worker_name(dst_rank), my_function, args=(torch.ones(n, n), 1, 0)
         )
 
-        c = rpc.rpc_sync(
-            worker_name(dst_rank), my_rref_function, args=(rref_a, rref_b)
-        )
+        c = rpc.rpc_sync(worker_name(dst_rank), my_rref_function, args=(rref_a, rref_b))
 
         self.assertEqual(c, torch.ones(n, n) + 4)
 
@@ -968,9 +947,7 @@ class RpcTest(RpcAgentTestFixture):
         dst_rank2 = (n + 1) % self.world_size
 
         rref = rpc.remote(
-            worker_name(dst_rank1),
-            nested_remote,
-            args=(worker_name(dst_rank2),),
+            worker_name(dst_rank1), nested_remote, args=(worker_name(dst_rank2),),
         )
         self.assertEqual(rref.to_here(), torch.ones(2, 2) + 3)
 
@@ -980,9 +957,7 @@ class RpcTest(RpcAgentTestFixture):
         dst_rank1 = n % self.world_size
         dst_rank2 = (n + 1) % self.world_size
         rref_of_rrefs = rpc.remote(
-            worker_name(dst_rank1),
-            nested_rref,
-            args=(worker_name(dst_rank2),),
+            worker_name(dst_rank1), nested_rref, args=(worker_name(dst_rank2),),
         )
         rrefs = rref_of_rrefs.to_here()
         self.assertEqual(len(rrefs), 2)
@@ -998,9 +973,7 @@ class RpcTest(RpcAgentTestFixture):
         for _ in range(20):
             all_rrefs.append(
                 rpc.remote(
-                    worker_name(dst_rank1),
-                    nested_rref,
-                    args=(worker_name(dst_rank2),),
+                    worker_name(dst_rank1), nested_rref, args=(worker_name(dst_rank2),),
                 )
             )
 
@@ -1042,9 +1015,7 @@ class RpcTest(RpcAgentTestFixture):
         dst_rank1 = n % self.world_size
         dst_rank2 = (n + 1) % self.world_size
         rref = rpc.rpc_sync(
-            worker_name(dst_rank1),
-            rpc_return_rref,
-            args=(worker_name(dst_rank2),),
+            worker_name(dst_rank1), rpc_return_rref, args=(worker_name(dst_rank2),),
         )
         self.assertEqual(rref.to_here(), torch.ones(2, 2) + 1)
 
@@ -1054,9 +1025,7 @@ class RpcTest(RpcAgentTestFixture):
         n = self.rank + 1
         dst_rank = n % self.world_size
 
-        rref = rpc.remote(
-            worker_name(dst_rank), torch.add, args=(torch.ones(n, n), 1)
-        )
+        rref = rpc.remote(worker_name(dst_rank), torch.add, args=(torch.ones(n, n), 1))
 
         ret_rref = rref_forward_chain(dst_rank, self.world_size, rref, ttl)
 
@@ -1257,9 +1226,7 @@ class RpcTest(RpcAgentTestFixture):
         )
 
         dst_rank = (self.rank + 1) % self.world_size
-        rref2 = rpc.remote(
-            worker_name(dst_rank), torch.add, args=(torch.ones(2, 2), 1)
-        )
+        rref2 = rpc.remote(worker_name(dst_rank), torch.add, args=(torch.ones(2, 2), 1))
         self.assertEqual(
             rref2.__str__(),
             "UserRRef(RRefId = {0}({1}, 1), ForkId = {0}({1}, 2))".format(
@@ -1314,12 +1281,8 @@ class RpcTest(RpcAgentTestFixture):
 
         # Check 3: rpc.remote call should update owners_ map
         ####################################################
-        rref2 = rpc.remote(
-            worker_name(dst_rank), torch.add, args=(torch.ones(2, 2), 1)
-        )
-        rref3 = rpc.remote(
-            worker_name(dst_rank), torch.add, args=(torch.ones(2, 2), 1)
-        )
+        rref2 = rpc.remote(worker_name(dst_rank), torch.add, args=(torch.ones(2, 2), 1))
+        rref3 = rpc.remote(worker_name(dst_rank), torch.add, args=(torch.ones(2, 2), 1))
         rref2.to_here()
         rref3.to_here()
 
@@ -1375,9 +1338,7 @@ class RpcTest(RpcAgentTestFixture):
         # use up an idle thread if we start processing that request.
         dist.barrier()
         dst_rank = (self.rank + 1) % self.world_size
-        fut = rpc.rpc_async(
-            worker_name(dst_rank), set_and_check_done, args=(dst_rank,)
-        )
+        fut = rpc.rpc_async(worker_name(dst_rank), set_and_check_done, args=(dst_rank,))
         # blocks until the request arrives
         self.assertEqual(self.rank, VALUE_FUTURE.result())
 
@@ -1512,9 +1473,7 @@ class RpcTest(RpcAgentTestFixture):
         n = self.rank + 1
         dst_rank = n % self.world_size
         rpc.rpc_sync(
-            worker_name(dst_rank),
-            torch.add,
-            args=(torch.ones(n, n), torch.ones(n, n)),
+            worker_name(dst_rank), torch.add, args=(torch.ones(n, n), torch.ones(n, n)),
         )
         # A barrier is needed to ensure that all RPCs are processed.
         # Otherwise, some RPCs can timeout since the receiving end
@@ -1550,7 +1509,7 @@ class RpcTest(RpcAgentTestFixture):
         NUM_THREADS = 27
         rpc_backend_options = rpc.ProcessGroupRpcBackendOptions(
             init_method=self.rpc_backend_options.init_method,
-            num_send_recv_threads=NUM_THREADS
+            num_send_recv_threads=NUM_THREADS,
         )
         rpc.init_rpc(
             name="worker{}".format(self.rank),
