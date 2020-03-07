@@ -9,33 +9,33 @@ namespace torch {
 namespace jit {
 
 std::unordered_map<std::string, at::ClassTypePtr>& customClasses() {
-  static std::unordered_map<std::string, at::ClassTypePtr> customClasses;
-  return customClasses;
+    static std::unordered_map<std::string, at::ClassTypePtr> customClasses;
+    return customClasses;
 }
 
 void registerCustomClass(at::ClassTypePtr class_type) {
-  TORCH_INTERNAL_ASSERT(class_type->name());
-  auto name = class_type->name()->qualifiedName();
-  TORCH_CHECK(!customClasses().count(name))
-  customClasses()[name] = std::move(class_type);
+    TORCH_INTERNAL_ASSERT(class_type->name());
+    auto name = class_type->name()->qualifiedName();
+    TORCH_CHECK(!customClasses().count(name))
+    customClasses()[name] = std::move(class_type);
 }
 
 at::ClassTypePtr getCustomClass(const std::string& name) {
-  return customClasses().count(name) ? customClasses()[name] : nullptr;
+    return customClasses().count(name) ? customClasses()[name] : nullptr;
 }
 
 bool isCustomClass(const c10::IValue& v) {
-  return v.isObject() && v.toObject()->type()->name() &&
-      getCustomClass(v.toObject()->type()->name()->qualifiedName());
+    return v.isObject() && v.toObject()->type()->name() &&
+           getCustomClass(v.toObject()->type()->name()->qualifiedName());
 }
 
 std::vector<std::shared_ptr<Function>>& customClassMethods() {
-  static std::vector<std::shared_ptr<Function>> customClassMethods;
-  return customClassMethods;
+    static std::vector<std::shared_ptr<Function>> customClassMethods;
+    return customClassMethods;
 }
 
 void registerCustomClassMethod(std::shared_ptr<Function> fn) {
-  customClassMethods().emplace_back(std::move(fn));
+    customClassMethods().emplace_back(std::move(fn));
 }
 
 } // namespace jit
