@@ -28,8 +28,9 @@ class ASGD(Optimizer):
         if not 0.0 <= weight_decay:
             raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
 
-        defaults = dict(lr=lr, lambd=lambd, alpha=alpha, t0=t0,
-                        weight_decay=weight_decay)
+        defaults = dict(
+            lr=lr, lambd=lambd, alpha=alpha, t0=t0, weight_decay=weight_decay
+        )
         super(ASGD, self).__init__(params, defaults)
 
     @torch.no_grad()
@@ -46,41 +47,44 @@ class ASGD(Optimizer):
                 loss = closure()
 
         for group in self.param_groups:
-            for p in group['params']:
+            for p in group["params"]:
                 if p.grad is None:
                     continue
                 grad = p.grad
                 if grad.is_sparse:
-                    raise RuntimeError('ASGD does not support sparse gradients')
+                    raise RuntimeError("ASGD does not support sparse gradients")
                 state = self.state[p]
 
                 # State initialization
                 if len(state) == 0:
-                    state['step'] = 0
-                    state['eta'] = group['lr']
-                    state['mu'] = 1
-                    state['ax'] = torch.zeros_like(p, memory_format=torch.preserve_format)
+                    state["step"] = 0
+                    state["eta"] = group["lr"]
+                    state["mu"] = 1
+                    state["ax"] = torch.zeros_like(
+                        p, memory_format=torch.preserve_format
+                    )
 
-                state['step'] += 1
+                state["step"] += 1
 
-                if group['weight_decay'] != 0:
-                    grad = grad.add(p, alpha=group['weight_decay'])
+                if group["weight_decay"] != 0:
+                    grad = grad.add(p, alpha=group["weight_decay"])
 
                 # decay term
-                p.mul_(1 - group['lambd'] * state['eta'])
+                p.mul_(1 - group["lambd"] * state["eta"])
 
                 # update parameter
-                p.add_(grad, alpha=-state['eta'])
+                p.add_(grad, alpha=-state["eta"])
 
                 # averaging
-                if state['mu'] != 1:
-                    state['ax'].add_(p.sub(state['ax']).mul(state['mu']))
+                if state["mu"] != 1:
+                    state["ax"].add_(p.sub(state["ax"]).mul(state["mu"]))
                 else:
-                    state['ax'].copy_(p)
+                    state["ax"].copy_(p)
 
                 # update eta and mu
-                state['eta'] = (group['lr'] /
-                                math.pow((1 + group['lambd'] * group['lr'] * state['step']), group['alpha']))
-                state['mu'] = 1 / max(1, state['step'] - group['t0'])
+                state["eta"] = group["lr"] / math.pow(
+                    (1 + group["lambd"] * group["lr"] * state["step"]), group["alpha"]
+                )
+                state["mu"] = 1 / max(1, state["step"] - group["t0"])
 
         return loss
