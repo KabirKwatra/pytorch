@@ -289,13 +289,12 @@ TEST_F(ModuleListTest, PrettyPrintModuleList) {
 
 TEST_F(ModuleListTest, RangeBasedForLoop) {
   torch::nn::ModuleList mlist(
-    torch::nn::Linear(3, 4),
-    torch::nn::BatchNorm(4),
-    torch::nn::Dropout(0.5)
-  );
+      torch::nn::Linear(3, 4),
+      torch::nn::BatchNorm(4),
+      torch::nn::Dropout(0.5));
 
   std::stringstream buffer;
-  for (const auto &module : *mlist) {
+  for (const auto& module : *mlist) {
     module->pretty_print(buffer);
   }
 }
