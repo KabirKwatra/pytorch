@@ -32,14 +32,14 @@ class RMSprop(Optimizer):
     """
 
     def __init__(
-        self,
-        params,
-        lr=1e-2,
-        alpha=0.99,
-        eps=1e-8,
-        weight_decay=0,
-        momentum=0,
-        centered=False,
+            self,
+            params,
+            lr=1e-2,
+            alpha=0.99,
+            eps=1e-8,
+            weight_decay=0,
+            momentum=0,
+            centered=False,
     ):
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
@@ -48,7 +48,8 @@ class RMSprop(Optimizer):
         if not 0.0 <= momentum:
             raise ValueError("Invalid momentum value: {}".format(momentum))
         if not 0.0 <= weight_decay:
-            raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
+            raise ValueError(
+                "Invalid weight_decay value: {}".format(weight_decay))
         if not 0.0 <= alpha:
             raise ValueError("Invalid alpha value: {}".format(alpha))
 
@@ -87,23 +88,21 @@ class RMSprop(Optimizer):
                     continue
                 grad = p.grad
                 if grad.is_sparse:
-                    raise RuntimeError("RMSprop does not support sparse gradients")
+                    raise RuntimeError(
+                        "RMSprop does not support sparse gradients")
                 state = self.state[p]
 
                 # State initialization
                 if len(state) == 0:
                     state["step"] = 0
                     state["square_avg"] = torch.zeros_like(
-                        p, memory_format=torch.preserve_format
-                    )
+                        p, memory_format=torch.preserve_format)
                     if group["momentum"] > 0:
                         state["momentum_buffer"] = torch.zeros_like(
-                            p, memory_format=torch.preserve_format
-                        )
+                            p, memory_format=torch.preserve_format)
                     if group["centered"]:
                         state["grad_avg"] = torch.zeros_like(
-                            p, memory_format=torch.preserve_format
-                        )
+                            p, memory_format=torch.preserve_format)
 
                 square_avg = state["square_avg"]
                 alpha = group["alpha"]
@@ -118,11 +117,9 @@ class RMSprop(Optimizer):
                 if group["centered"]:
                     grad_avg = state["grad_avg"]
                     grad_avg.mul_(alpha).add_(grad, alpha=1 - alpha)
-                    avg = (
-                        square_avg.addcmul(grad_avg, grad_avg, value=-1)
-                        .sqrt_()
-                        .add_(group["eps"])
-                    )
+                    avg = (square_avg.addcmul(grad_avg, grad_avg,
+                                              value=-1).sqrt_().add_(
+                                                  group["eps"]))
                 else:
                     avg = square_avg.sqrt().add_(group["eps"])
 

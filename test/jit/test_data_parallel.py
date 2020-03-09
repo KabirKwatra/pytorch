@@ -16,17 +16,15 @@ if __name__ == "__main__":
     raise RuntimeError(
         "This test file is not meant to be run directly, use:\n\n"
         "\tpython test/test_jit.py TESTNAME\n\n"
-        "instead."
-    )
+        "instead.")
 
 
 class TestDataParallel(JitTestCase):
     class Mpy(torch.nn.Module):
         def __init__(self):
             super(TestDataParallel.Mpy, self).__init__()
-            self.m = nn.Sequential(
-                nn.Linear(2, 2), nn.BatchNorm1d(2), nn.ReLU(), nn.Linear(2, 2)
-            )
+            self.m = nn.Sequential(nn.Linear(2, 2), nn.BatchNorm1d(2),
+                                   nn.ReLU(), nn.Linear(2, 2))
 
         @torch.jit.ignore
         def forward(self, input):
@@ -58,9 +56,8 @@ class TestDataParallel(JitTestCase):
 
         def __init__(self):
             super(TestDataParallel.Msm, self).__init__()
-            self.m = nn.Sequential(
-                nn.Linear(2, 2), nn.BatchNorm1d(2), nn.ReLU(), nn.Linear(2, 2)
-            )
+            self.m = nn.Sequential(nn.Linear(2, 2), nn.BatchNorm1d(2),
+                                   nn.ReLU(), nn.Linear(2, 2))
 
         @torch.jit.script_method
         def forward(self, input):
@@ -103,7 +100,8 @@ class TestDataParallel(JitTestCase):
 
     @unittest.skipIf(not RUN_CUDA_MULTI_GPU, "multi-GPU not supported")
     def test_traced_module(self):
-        module = torch.jit.trace(self.Mpy1(self.Mpy()), torch.ones(2, 2)).cuda()
+        module = torch.jit.trace(self.Mpy1(self.Mpy()), torch.ones(2,
+                                                                   2)).cuda()
         replicas = dp.replicate(module, {0, 1})
         self.check_replicas(module, replicas)
 

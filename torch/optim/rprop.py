@@ -16,11 +16,13 @@ class Rprop(Optimizer):
             maximal allowed step sizes (default: (1e-6, 50))
     """
 
-    def __init__(self, params, lr=1e-2, etas=(0.5, 1.2), step_sizes=(1e-6, 50)):
+    def __init__(self, params, lr=1e-2, etas=(0.5, 1.2),
+                 step_sizes=(1e-6, 50)):
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0.0 < etas[0] < 1.0 < etas[1]:
-            raise ValueError("Invalid eta values: {}, {}".format(etas[0], etas[1]))
+            raise ValueError("Invalid eta values: {}, {}".format(
+                etas[0], etas[1]))
 
         defaults = dict(lr=lr, etas=etas, step_sizes=step_sizes)
         super(Rprop, self).__init__(params, defaults)
@@ -44,16 +46,17 @@ class Rprop(Optimizer):
                     continue
                 grad = p.grad
                 if grad.is_sparse:
-                    raise RuntimeError("Rprop does not support sparse gradients")
+                    raise RuntimeError(
+                        "Rprop does not support sparse gradients")
                 state = self.state[p]
 
                 # State initialization
                 if len(state) == 0:
                     state["step"] = 0
                     state["prev"] = torch.zeros_like(
-                        p, memory_format=torch.preserve_format
-                    )
-                    state["step_size"] = grad.new().resize_as_(grad).fill_(group["lr"])
+                        p, memory_format=torch.preserve_format)
+                    state["step_size"] = grad.new().resize_as_(grad).fill_(
+                        group["lr"])
 
                 etaminus, etaplus = group["etas"]
                 step_size_min, step_size_max = group["step_sizes"]

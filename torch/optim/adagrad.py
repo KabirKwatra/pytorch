@@ -22,26 +22,25 @@ class Adagrad(Optimizer):
     """
 
     def __init__(
-        self,
-        params,
-        lr=1e-2,
-        lr_decay=0,
-        weight_decay=0,
-        initial_accumulator_value=0,
-        eps=1e-10,
+            self,
+            params,
+            lr=1e-2,
+            lr_decay=0,
+            weight_decay=0,
+            initial_accumulator_value=0,
+            eps=1e-10,
     ):
         if not 0.0 <= lr:
             raise ValueError("Invalid learning rate: {}".format(lr))
         if not 0.0 <= lr_decay:
             raise ValueError("Invalid lr_decay value: {}".format(lr_decay))
         if not 0.0 <= weight_decay:
-            raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
+            raise ValueError(
+                "Invalid weight_decay value: {}".format(weight_decay))
         if not 0.0 <= initial_accumulator_value:
             raise ValueError(
                 "Invalid initial_accumulator_value value: {}".format(
-                    initial_accumulator_value
-                )
-            )
+                    initial_accumulator_value))
         if not 0.0 <= eps:
             raise ValueError("Invalid epsilon value: {}".format(eps))
 
@@ -59,8 +58,9 @@ class Adagrad(Optimizer):
                 state = self.state[p]
                 state["step"] = 0
                 state["sum"] = torch.full_like(
-                    p, initial_accumulator_value, memory_format=torch.preserve_format
-                )
+                    p,
+                    initial_accumulator_value,
+                    memory_format=torch.preserve_format)
 
     def share_memory(self):
         for group in self.param_groups:
@@ -98,7 +98,8 @@ class Adagrad(Optimizer):
                         )
                     grad = grad.add(p, alpha=group["weight_decay"])
 
-                clr = group["lr"] / (1 + (state["step"] - 1) * group["lr_decay"])
+                clr = group["lr"] / (1 +
+                                     (state["step"] - 1) * group["lr_decay"])
 
                 if grad.is_sparse:
                     grad = (

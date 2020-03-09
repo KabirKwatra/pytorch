@@ -29,7 +29,8 @@ class Adadelta(Optimizer):
         if not 0.0 <= eps:
             raise ValueError("Invalid epsilon value: {}".format(eps))
         if not 0.0 <= weight_decay:
-            raise ValueError("Invalid weight_decay value: {}".format(weight_decay))
+            raise ValueError(
+                "Invalid weight_decay value: {}".format(weight_decay))
 
         defaults = dict(lr=lr, rho=rho, eps=eps, weight_decay=weight_decay)
         super(Adadelta, self).__init__(params, defaults)
@@ -53,18 +54,17 @@ class Adadelta(Optimizer):
                     continue
                 grad = p.grad
                 if grad.is_sparse:
-                    raise RuntimeError("Adadelta does not support sparse gradients")
+                    raise RuntimeError(
+                        "Adadelta does not support sparse gradients")
                 state = self.state[p]
 
                 # State initialization
                 if len(state) == 0:
                     state["step"] = 0
                     state["square_avg"] = torch.zeros_like(
-                        p, memory_format=torch.preserve_format
-                    )
+                        p, memory_format=torch.preserve_format)
                     state["acc_delta"] = torch.zeros_like(
-                        p, memory_format=torch.preserve_format
-                    )
+                        p, memory_format=torch.preserve_format)
 
                 square_avg, acc_delta = state["square_avg"], state["acc_delta"]
                 rho, eps = group["rho"], group["eps"]
