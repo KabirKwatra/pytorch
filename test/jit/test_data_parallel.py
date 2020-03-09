@@ -1,4 +1,3 @@
-from torch.testing._internal.jit_utils import JitTestCase, RUN_CUDA_MULTI_GPU
 import os
 import sys
 import unittest
@@ -6,6 +5,8 @@ import unittest
 import torch
 import torch.nn as nn
 import torch.nn.parallel as dp
+from torch.testing._internal.jit_utils import JitTestCase
+from torch.testing._internal.jit_utils import RUN_CUDA_MULTI_GPU
 
 # Make the helper files in test/ importable
 pytorch_test_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))

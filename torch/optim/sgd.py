@@ -1,5 +1,6 @@
 import torch
-from .optimizer import Optimizer, required
+from .optimizer import Optimizer
+from .optimizer import required
 
 
 class SGD(Optimizer):
