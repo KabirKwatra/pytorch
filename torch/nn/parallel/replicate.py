@@ -5,21 +5,25 @@ from torch.cuda._utils import _get_device_index
 
 def _is_script_module(module):
     import torch.jit
+
     return isinstance(module, torch.jit.ScriptModule)
 
 
 def _is_script_method(module):
     import torch.jit
+
     return isinstance(module, torch._C.ScriptMethod)
 
 
 def _init_script_module():
     import torch.jit
+
     return torch.jit.ScriptModule()
 
 
 def _is_jit_enabled():
     import torch.jit
+
     return torch.jit._enabled
 
 
@@ -47,8 +51,9 @@ def _replicatable_module(module, memo=None):
     memo.add(module)
     if _is_script_module(module):
         memo.update(descendant_modules(module))
-        return all(_is_script_module(descendant) for
-                   descendant in descendant_modules(module))
+        return all(
+            _is_script_module(descendant) for descendant in descendant_modules(module)
+        )
 
     for child in module.children():
         # since any unreplicatable module will cause the check to return
@@ -63,22 +68,27 @@ def _replicatable_module(module, memo=None):
 
 def _broadcast_coalesced_reshape(tensors, devices, detach=False):
     from ._functions import Broadcast
+
     if detach:
         return comm.broadcast_coalesced(tensors, devices)
     else:
         # Use the autograd function to broadcast if not detach
         if len(tensors) > 0:
             tensor_copies = Broadcast.apply(devices, *tensors)
-            return [tensor_copies[i:i + len(tensors)]
-                    for i in range(0, len(tensor_copies), len(tensors))]
+            return [
+                tensor_copies[i : i + len(tensors)]
+                for i in range(0, len(tensor_copies), len(tensors))
+            ]
         else:
             return []
 
 
 def replicate(network, devices, detach=False):
     if not _replicatable_module(network):
-        raise RuntimeError("Cannot replicate network where python modules are "
-                           "childrens of ScriptModule")
+        raise RuntimeError(
+            "Cannot replicate network where python modules are "
+            "childrens of ScriptModule"
+        )
 
     devices = list(map(lambda x: _get_device_index(x, True), devices))
     num_replicas = len(devices)
@@ -100,7 +110,9 @@ def replicate(network, devices, detach=False):
     buffer_indices_not_rg = {buf: idx for idx, buf in enumerate(buffers_not_rg)}
 
     buffer_copies_rg = _broadcast_coalesced_reshape(buffers_rg, devices, detach=detach)
-    buffer_copies_not_rg = _broadcast_coalesced_reshape(buffers_not_rg, devices, detach=True)
+    buffer_copies_not_rg = _broadcast_coalesced_reshape(
+        buffers_not_rg, devices, detach=True
+    )
 
     modules = list(network.modules())
     module_copies = [[] for device in devices]
@@ -116,7 +128,10 @@ def replicate(network, devices, detach=False):
                 def init_fn(script_module):
                     # Don't do anything here, we'll initialize the ScriptModule below
                     return
-                replica = torch.jit.RecursiveScriptModule._construct(module._c._replicate_for_data_parallel(), init_fn)
+
+                replica = torch.jit.RecursiveScriptModule._construct(
+                    module._c._replicate_for_data_parallel(), init_fn
+                )
             else:
                 replica = module._replicate_for_data_parallel()
 
@@ -147,7 +162,7 @@ def replicate(network, devices, detach=False):
                     # and setattr them as non-parameter attributes
                     # scripted modules don't allow deleting parameters, but also don't complain
                     # on assigning non-Parameter type
-                    if (not _is_script_module(replica)):
+                    if not _is_script_module(replica):
                         del replica._parameters[key]
                     setattr(replica, key, param)
         for key, buf in module._buffers.items():
