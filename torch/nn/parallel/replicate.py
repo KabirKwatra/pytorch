@@ -52,8 +52,8 @@ def _replicatable_module(module, memo=None):
     if _is_script_module(module):
         memo.update(descendant_modules(module))
         return all(
-            _is_script_module(descendant) for descendant in descendant_modules(module)
-        )
+            _is_script_module(descendant)
+            for descendant in descendant_modules(module))
 
     for child in module.children():
         # since any unreplicatable module will cause the check to return
@@ -76,7 +76,7 @@ def _broadcast_coalesced_reshape(tensors, devices, detach=False):
         if len(tensors) > 0:
             tensor_copies = Broadcast.apply(devices, *tensors)
             return [
-                tensor_copies[i : i + len(tensors)]
+                tensor_copies[i:i + len(tensors)]
                 for i in range(0, len(tensor_copies), len(tensors))
             ]
         else:
@@ -85,10 +85,8 @@ def _broadcast_coalesced_reshape(tensors, devices, detach=False):
 
 def replicate(network, devices, detach=False):
     if not _replicatable_module(network):
-        raise RuntimeError(
-            "Cannot replicate network where python modules are "
-            "childrens of ScriptModule"
-        )
+        raise RuntimeError("Cannot replicate network where python modules are "
+                           "childrens of ScriptModule")
 
     devices = list(map(lambda x: _get_device_index(x, True), devices))
     num_replicas = len(devices)
@@ -107,17 +105,24 @@ def replicate(network, devices, detach=False):
             buffers_not_rg.append(buf)
 
     buffer_indices_rg = {buf: idx for idx, buf in enumerate(buffers_rg)}
-    buffer_indices_not_rg = {buf: idx for idx, buf in enumerate(buffers_not_rg)}
+    buffer_indices_not_rg = {
+        buf: idx
+        for idx, buf in enumerate(buffers_not_rg)
+    }
 
-    buffer_copies_rg = _broadcast_coalesced_reshape(buffers_rg, devices, detach=detach)
-    buffer_copies_not_rg = _broadcast_coalesced_reshape(
-        buffers_not_rg, devices, detach=True
-    )
+    buffer_copies_rg = _broadcast_coalesced_reshape(buffers_rg,
+                                                    devices,
+                                                    detach=detach)
+    buffer_copies_not_rg = _broadcast_coalesced_reshape(buffers_not_rg,
+                                                        devices,
+                                                        detach=True)
 
     modules = list(network.modules())
     module_copies = [[] for device in devices]
     module_indices = {}
-    scriptmodule_skip_attr = {"_parameters", "_buffers", "_modules", "forward", "_c"}
+    scriptmodule_skip_attr = {
+        "_parameters", "_buffers", "_modules", "forward", "_c"
+    }
 
     for i, module in enumerate(modules):
         module_indices[module] = i
@@ -130,8 +135,7 @@ def replicate(network, devices, detach=False):
                     return
 
                 replica = torch.jit.RecursiveScriptModule._construct(
-                    module._c._replicate_for_data_parallel(), init_fn
-                )
+                    module._c._replicate_for_data_parallel(), init_fn)
             else:
                 replica = module._replicate_for_data_parallel()
 

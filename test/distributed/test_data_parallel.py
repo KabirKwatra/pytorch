@@ -42,16 +42,18 @@ class TestDataParallel(TestCase):
         def fn(t):
             return dpm(inp)
 
-        torch.autograd.gradcheck(fn, (m.t_rg,))
+        torch.autograd.gradcheck(fn, (m.t_rg, ))
 
     @unittest.skipIf(not TEST_MULTIGPU, "multi-GPU not supported")
     def test_data_parallel_rnn(self):
         class TestModule(torch.nn.Module):
             def __init__(self):
                 super(TestModule, self).__init__()
-                self.rnn = torch.nn.LSTM(
-                    300, 1024, 1, batch_first=True, bidirectional=True
-                )
+                self.rnn = torch.nn.LSTM(300,
+                                         1024,
+                                         1,
+                                         batch_first=True,
+                                         bidirectional=True)
 
             def forward(self, x):
                 self.rnn.flatten_parameters()
@@ -92,7 +94,7 @@ class TestDataParallel(TestCase):
 
         # each input can be either a collection of positional arguments
         #                       or an object representing the single argument
-        for inputs in [((i1,), (i2,)), (i1, i2)]:
+        for inputs in [((i1, ), (i2, )), (i1, i2)]:
             outputs = dp.parallel_apply(modules, inputs, None)
             for out, expected in zip(outputs, expected_outputs):
                 self.assertEqual(out, expected)
@@ -108,10 +110,10 @@ class TestDataParallel(TestCase):
         # and check that parallel_apply passes on the exception
         # (we can use a single device twice for this test)
         with self.assertRaisesRegex(
-            KeyError,
-            "Caught KeyError in replica \\d "
-            "on device 0.\nOriginal Traceback"
-            "[\\s\\S]+wonderful",
+                KeyError,
+                "Caught KeyError in replica \\d "
+                "on device 0.\nOriginal Traceback"
+                "[\\s\\S]+wonderful",
         ):
             dp.parallel_apply(modules=(l1, l1), inputs=(None, None))
 
@@ -153,7 +155,7 @@ class TestDataParallel(TestCase):
         out = dp.data_parallel(m, (var1, var2, float1), (1, 0))
         local_test(out)
 
-        out = dp.data_parallel(m, (var1, var2, float1), (0,))
+        out = dp.data_parallel(m, (var1, var2, float1), (0, ))
         local_test(out)
 
         with torch.no_grad():
@@ -174,12 +176,12 @@ class TestDataParallel(TestCase):
         local_test(out)
 
         kwarg_wrap = {"var3": var3}
-        out = dp.data_parallel(
-            m, (var1, var2, float1), (0, 1), module_kwargs=kwarg_wrap
-        )
+        out = dp.data_parallel(m, (var1, var2, float1), (0, 1),
+                               module_kwargs=kwarg_wrap)
         local_test(out)
 
-        out = dp.data_parallel(m, (var1, var2, float1), (0,), module_kwargs=kwarg_wrap)
+        out = dp.data_parallel(m, (var1, var2, float1), (0, ),
+                               module_kwargs=kwarg_wrap)
         local_test(out)
 
     @unittest.skipIf(not TEST_MULTIGPU, "multi-GPU not supported")
@@ -217,8 +219,7 @@ class TestDataParallel(TestCase):
 
                 def assert_correct():
                     return self.assertRaisesRegex(
-                        RuntimeError, error_msg.format(expect_device)
-                    )
+                        RuntimeError, error_msg.format(expect_device))
 
             else:
                 assert_correct = dummy_ctx_manager
@@ -233,7 +234,8 @@ class TestDataParallel(TestCase):
 
             # test functional
             with assert_correct():
-                nn.parallel.data_parallel(inner_m.to(dp_device), inp, device_ids)
+                nn.parallel.data_parallel(inner_m.to(dp_device), inp,
+                                          device_ids)
 
         test(l.to("cpu"), None, inp, None, should_fail=True)
         test(l.cuda(1), None, inp_cuda0, None, should_fail=True)
@@ -303,7 +305,8 @@ class TestDataParallel(TestCase):
         i = torch.randn(20, 10, dtype=torch.float, device="cuda")
         with torch.no_grad():
             dp.data_parallel(l, i, (0, 1))
-        self.assertRaises(AssertionError, lambda: dp.data_parallel(l, i, (0, 1)))
+        self.assertRaises(
+            AssertionError, lambda: dp.data_parallel(l, i, (0, 1)))
 
     @unittest.skipIf(not TEST_MULTIGPU, "multi-GPU not supported")
     def test_data_parallel(self):
@@ -440,7 +443,8 @@ class TestDataParallel(TestCase):
 
     @unittest.skipIf(not TEST_CUDA, "CUDA unavailable")
     @repeat_test_for_types(ALL_TENSORTYPES)
-    def test_data_parallel_module_kwargs_only_empty_list(self, dtype=torch.float):
+    def test_data_parallel_module_kwargs_only_empty_list(
+            self, dtype=torch.float):
         class Net(nn.Module):
             def __init__(self):
                 super(Net, self).__init__()
@@ -459,7 +463,8 @@ class TestDataParallel(TestCase):
 
     @unittest.skipIf(not TEST_CUDA, "CUDA unavailable")
     @repeat_test_for_types(ALL_TENSORTYPES)
-    def test_data_parallel_module_kwargs_only_empty_dict(self, dtype=torch.float):
+    def test_data_parallel_module_kwargs_only_empty_dict(
+            self, dtype=torch.float):
         class Net(nn.Module):
             def __init__(self):
                 super(Net, self).__init__()
@@ -478,7 +483,8 @@ class TestDataParallel(TestCase):
 
     @unittest.skipIf(not TEST_CUDA, "CUDA unavailable")
     @repeat_test_for_types(ALL_TENSORTYPES)
-    def test_data_parallel_module_kwargs_only_empty_tuple(self, dtype=torch.float):
+    def test_data_parallel_module_kwargs_only_empty_tuple(
+            self, dtype=torch.float):
         class Net(nn.Module):
             def __init__(self):
                 super(Net, self).__init__()
@@ -502,14 +508,25 @@ class TestDataParallel(TestCase):
 
         # test output_device
         l = nn.Linear(10, 5).to(cuda0, torch.float)
-        i = torch.randn(20, 10, dtype=torch.float, device=cuda0, requires_grad=True)
+        i = torch.randn(20,
+                        10,
+                        dtype=torch.float,
+                        device=cuda0,
+                        requires_grad=True)
         out = dp.data_parallel(l, i, device_ids=(0, 1), output_device=cuda0)
         self.assertEqual(out, l(i))
 
         # test device_ids
         l = nn.Linear(10, 5).to(cuda0, torch.float)
-        i = torch.randn(20, 10, dtype=torch.float, device=cuda0, requires_grad=True)
-        out = dp.data_parallel(l, i, device_ids=(cuda0, cuda1), output_device=cuda0)
+        i = torch.randn(20,
+                        10,
+                        dtype=torch.float,
+                        device=cuda0,
+                        requires_grad=True)
+        out = dp.data_parallel(l,
+                               i,
+                               device_ids=(cuda0, cuda1),
+                               output_device=cuda0)
         self.assertEqual(out, l(i))
 
     @unittest.skipIf(not TEST_MULTIGPU, "multi-GPU not supported")
@@ -536,8 +553,8 @@ class TestDataParallel(TestCase):
         grads = [p.grad for p in net.parameters()]
         self.assertEqual(2, len(grads))
         self.assertEqual(
-            torch.tensor([[0.25, 0.25, 0.25, 0.25]], device="cuda:0"), grads[0]
-        )
+            torch.tensor([[0.25, 0.25, 0.25, 0.25]], device="cuda:0"),
+            grads[0])
         self.assertEqual(torch.tensor([0.0], device="cuda:0"), grads[1])
 
     def _test_scatter(self, tensor):
@@ -552,7 +569,8 @@ class TestDataParallel(TestCase):
         result[0].backward(grad)
         self.assertEqual(x.grad[:2], grad)
         self.assertEqual(x.grad[2:], grad.clone().zero_())
-        _assertGradAndGradgradChecks(self, lambda y: dp.scatter(y, (0, 1)), (x,))
+        _assertGradAndGradgradChecks(self, lambda y: dp.scatter(y, (0, 1)),
+                                     (x, ))
 
     @unittest.skipIf(not TEST_MULTIGPU, "multi-GPU not supported")
     def test_scatter_cpu(self):
@@ -582,8 +600,7 @@ class TestDataParallel(TestCase):
         self.assertEqual(inputs[0].grad, grad[:2])
         self.assertEqual(inputs[1].grad, grad[2:])
         _assertGradAndGradgradChecks(
-            self, lambda x, y: dp.gather((x, y), output_device), inputs
-        )
+            self, lambda x, y: dp.gather((x, y), output_device), inputs)
 
         # test scalar inputs, should stack into a vector in this case
         inputs = (
@@ -605,8 +622,7 @@ class TestDataParallel(TestCase):
         self.assertEqual(inputs[0].grad, grad[0])
         self.assertEqual(inputs[1].grad, grad[1])
         _assertGradAndGradgradChecks(
-            self, lambda x, y: dp.gather((x, y), output_device), inputs
-        )
+            self, lambda x, y: dp.gather((x, y), output_device), inputs)
 
     @unittest.skipIf(not TEST_MULTIGPU, "multi-GPU not supported")
     def test_gather_cpu(self):
@@ -619,7 +635,9 @@ class TestDataParallel(TestCase):
     @unittest.skipIf(not TEST_MULTIGPU, "multi-GPU not supported")
     def test_gather_different_len_dicts(self):
         inputs = (
-            {"a": torch.randn(1, 2, requires_grad=True, device="cuda:0")},
+            {
+                "a": torch.randn(1, 2, requires_grad=True, device="cuda:0")
+            },
             {
                 "b": torch.randn(1, 2, requires_grad=True, device="cuda:1"),
                 "a": torch.randn(1, 2, requires_grad=True, device="cuda:1"),
@@ -649,12 +667,10 @@ class TestDataParallel(TestCase):
         for devices in [(0, 1), [0, 1]]:
             replicas = dp.replicate(net, devices)
             for i, replica in enumerate(replicas):
-                self.assertEqual(
-                    replica.bn.running_mean.get_device(), i, "buffer on wrong device"
-                )
-                self.assertEqual(
-                    replica.bn.running_var.get_device(), i, "buffer on wrong device"
-                )
+                self.assertEqual(replica.bn.running_mean.get_device(), i,
+                                 "buffer on wrong device")
+                self.assertEqual(replica.bn.running_var.get_device(), i,
+                                 "buffer on wrong device")
                 self.assertEqual(
                     replica.bn.num_batches_tracked.get_device(),
                     i,
