@@ -53,7 +53,7 @@ if [[ "$BUILD_ENVIRONMENT" != *ppc64le* ]]; then
   pip_install --user "hypothesis==4.53.2"
 
   # TODO: move this to Docker
-  PYTHON_VERSION=$(python -c 'import platform; print(platform.python_version())'|cut -c1)
+  PYTHON_VERSION=$(python -c 'import platform; print(platform.python_version())' | cut -c1)
   echo "$PYTHON_VERSION"
   # if [[ $PYTHON_VERSION == "2" ]]; then
   #   pip_install --user https://s3.amazonaws.com/ossci-linux/wheels/tensorboard-1.14.0a0-py2-none-any.whl
@@ -75,53 +75,53 @@ fi
 # if you're not careful.  Check this if you made some changes and the
 # ASAN test is not working
 if [[ "$BUILD_ENVIRONMENT" == *asan* ]]; then
-    # Suppress vptr violations arising from multiple copies of pybind11
-    export ASAN_OPTIONS=detect_leaks=0:symbolize=1:strict_init_order=true
-    export UBSAN_OPTIONS=print_stacktrace=1:suppressions="$PWD"/ubsan.supp
-    export PYTORCH_TEST_WITH_ASAN=1
-    export PYTORCH_TEST_WITH_UBSAN=1
-    # TODO: Figure out how to avoid hard-coding these paths
-    export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-5.0/bin/llvm-symbolizer
-    export TORCH_USE_RTLD_GLOBAL=1
-    # NB: We load libtorch.so with RTLD_GLOBAL for UBSAN, unlike our
-    # default behavior.
-    #
-    # The reason for this is that without RTLD_GLOBAL, if we load multiple
-    # libraries that depend on libtorch (as is the case with C++ extensions), we
-    # will get multiple copies of libtorch in our address space.  When UBSAN is
-    # turned on, it will do a bunch of virtual pointer consistency checks which
-    # won't work correctly.  When this happens, you get a violation like:
-    #
-    #    member call on address XXXXXX which does not point to an object of
-    #    type 'std::_Sp_counted_base<__gnu_cxx::_Lock_policy::_S_atomic>'
-    #    XXXXXX note: object is of type
-    #    'std::_Sp_counted_ptr<torch::nn::LinearImpl*, (__gnu_cxx::_Lock_policy)2>'
-    #
-    # (NB: the textual types of the objects here are misleading, because
-    # they actually line up; it just so happens that there's two copies
-    # of the type info floating around in the address space, so they
-    # don't pointer compare equal.  See also
-    #   https://github.com/google/sanitizers/issues/1175
-    #
-    # UBSAN is kind of right here: if we relied on RTTI across C++ extension
-    # modules they would indeed do the wrong thing;  but in our codebase, we
-    # don't use RTTI (because it doesn't work in mobile).  To appease
-    # UBSAN, however, it's better if we ensure all the copies agree!
-    #
-    # By the way, an earlier version of this code attempted to load
-    # libtorch_python.so with LD_PRELOAD, which has a similar effect of causing
-    # it to be loaded globally.  This isn't really a good idea though, because
-    # it depends on a ton of dynamic libraries that most programs aren't gonna
-    # have, and it applies to child processes.
-    export LD_PRELOAD=/usr/lib/llvm-5.0/lib/clang/5.0.0/lib/linux/libclang_rt.asan-x86_64.so
-    # Increase stack size, because ASAN red zones use more stack
-    ulimit -s 81920
+  # Suppress vptr violations arising from multiple copies of pybind11
+  export ASAN_OPTIONS=detect_leaks=0:symbolize=1:strict_init_order=true
+  export UBSAN_OPTIONS=print_stacktrace=1:suppressions="$PWD"/ubsan.supp
+  export PYTORCH_TEST_WITH_ASAN=1
+  export PYTORCH_TEST_WITH_UBSAN=1
+  # TODO: Figure out how to avoid hard-coding these paths
+  export ASAN_SYMBOLIZER_PATH=/usr/lib/llvm-5.0/bin/llvm-symbolizer
+  export TORCH_USE_RTLD_GLOBAL=1
+  # NB: We load libtorch.so with RTLD_GLOBAL for UBSAN, unlike our
+  # default behavior.
+  #
+  # The reason for this is that without RTLD_GLOBAL, if we load multiple
+  # libraries that depend on libtorch (as is the case with C++ extensions), we
+  # will get multiple copies of libtorch in our address space.  When UBSAN is
+  # turned on, it will do a bunch of virtual pointer consistency checks which
+  # won't work correctly.  When this happens, you get a violation like:
+  #
+  #    member call on address XXXXXX which does not point to an object of
+  #    type 'std::_Sp_counted_base<__gnu_cxx::_Lock_policy::_S_atomic>'
+  #    XXXXXX note: object is of type
+  #    'std::_Sp_counted_ptr<torch::nn::LinearImpl*, (__gnu_cxx::_Lock_policy)2>'
+  #
+  # (NB: the textual types of the objects here are misleading, because
+  # they actually line up; it just so happens that there's two copies
+  # of the type info floating around in the address space, so they
+  # don't pointer compare equal.  See also
+  #   https://github.com/google/sanitizers/issues/1175
+  #
+  # UBSAN is kind of right here: if we relied on RTTI across C++ extension
+  # modules they would indeed do the wrong thing;  but in our codebase, we
+  # don't use RTTI (because it doesn't work in mobile).  To appease
+  # UBSAN, however, it's better if we ensure all the copies agree!
+  #
+  # By the way, an earlier version of this code attempted to load
+  # libtorch_python.so with LD_PRELOAD, which has a similar effect of causing
+  # it to be loaded globally.  This isn't really a good idea though, because
+  # it depends on a ton of dynamic libraries that most programs aren't gonna
+  # have, and it applies to child processes.
+  export LD_PRELOAD=/usr/lib/llvm-5.0/lib/clang/5.0.0/lib/linux/libclang_rt.asan-x86_64.so
+  # Increase stack size, because ASAN red zones use more stack
+  ulimit -s 81920
 
-    (cd test && python -c "import torch; print(torch.__version__, torch.version.git_version)")
-    echo "The next three invocations are expected to crash; if they don't that means ASAN/UBSAN is misconfigured"
-    (cd test && ! get_exit_code python -c "import torch; torch._C._crash_if_csrc_asan(3)")
-    (cd test && ! get_exit_code python -c "import torch; torch._C._crash_if_csrc_ubsan(0)")
-    (cd test && ! get_exit_code python -c "import torch; torch._C._crash_if_aten_asan(3)")
+  (cd test && python -c "import torch; print(torch.__version__, torch.version.git_version)")
+  echo "The next three invocations are expected to crash; if they don't that means ASAN/UBSAN is misconfigured"
+  (cd test && ! get_exit_code python -c "import torch; torch._C._crash_if_csrc_asan(3)")
+  (cd test && ! get_exit_code python -c "import torch; torch._C._crash_if_csrc_ubsan(0)")
+  (cd test && ! get_exit_code python -c "import torch; torch._C._crash_if_aten_asan(3)")
 fi
 
 if [[ "${BUILD_ENVIRONMENT}" == *-NO_AVX-* ]]; then
@@ -201,7 +201,7 @@ test_libtorch() {
 }
 
 test_custom_script_ops() {
-  if [[ "$BUILD_ENVIRONMENT" != *rocm* ]] && [[ "$BUILD_ENVIRONMENT" != *asan* ]] ; then
+  if [[ "$BUILD_ENVIRONMENT" != *rocm* ]] && [[ "$BUILD_ENVIRONMENT" != *asan* ]]; then
     echo "Testing custom script operators"
     CUSTOM_OP_BUILD="$PWD/../custom-op-build"
     pushd test/custom_operator
@@ -219,7 +219,7 @@ test_custom_script_ops() {
 test_xla() {
   export XLA_USE_XRT=1 XRT_DEVICE_MAP="CPU:0;/job:localservice/replica:0/task:0/device:XLA_CPU:0"
   # Issue #30717: randomize the port of XLA/gRPC workers is listening on to reduce flaky tests.
-  XLA_PORT=`shuf -i 40701-40999 -n 1`
+  XLA_PORT=$(shuf -i 40701-40999 -n 1)
   export XRT_WORKERS="localservice:0;grpc://localhost:$XLA_PORT"
   pushd xla
   echo "Running Python Tests"
