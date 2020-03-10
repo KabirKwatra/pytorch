@@ -96,9 +96,12 @@ class _InternalRPCPickler:
         except AttributeError as e:
             # Occurs when function is not found on module/class during
             # unpickling.
-            except_str = str(e) + """ Default RPC pickler does not serialize
+            except_str = (
+                str(e)
+                + """ Default RPC pickler does not serialize
             function code. Ensure that UDFs are defined on both caller and
             callee modules."""
+            )
             ret = AttributeError(except_str)
 
         # restore _thread_local_tensor_tables.recv_tables if return
