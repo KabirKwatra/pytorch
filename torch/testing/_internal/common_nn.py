@@ -2,30 +2,26 @@ import math
 import sys
 import tempfile
 import unittest
-
 from copy import deepcopy
 from functools import reduce
 from itertools import product
-from operator import mul
 from math import pi
+from operator import mul
 
-
-import torch
+import torch.backends.cudnn
 import torch.cuda
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.functional import _Reduction
-from torch.testing._internal.common_utils import (
-    TestCase,
-    to_gpu,
-    freeze_rng_state,
-    is_iterable,
-    TEST_WITH_ROCM,
-)
-from torch.testing._internal.common_cuda import TEST_CUDA
-from torch.autograd.gradcheck import get_numerical_jacobian, iter_tensors
 from torch.autograd import Variable
-import torch.backends.cudnn
+from torch.autograd.gradcheck import get_numerical_jacobian
+from torch.autograd.gradcheck import iter_tensors
+from torch.nn.functional import _Reduction
+from torch.testing._internal.common_cuda import TEST_CUDA
+from torch.testing._internal.common_utils import freeze_rng_state
+from torch.testing._internal.common_utils import is_iterable
+from torch.testing._internal.common_utils import TEST_WITH_ROCM
+from torch.testing._internal.common_utils import TestCase
+from torch.testing._internal.common_utils import to_gpu
 
 
 # tarfile module tries to obtain a file object name in python 3.3

@@ -1,22 +1,26 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
+
+import collections
 import copy
 import glob
 import imp
 import os
 import re
-import setuptools
 import subprocess
 import sys
 import sysconfig
 import tempfile
 import warnings
-import collections
+
+import setuptools
+from setuptools.command.build_ext import build_ext
 
 import torch
-from .file_baton import FileBaton
 from ._cpp_extension_versioner import ExtensionVersioner
-
-from setuptools.command.build_ext import build_ext
+from .file_baton import FileBaton
 
 
 IS_WINDOWS = sys.platform == "win32"

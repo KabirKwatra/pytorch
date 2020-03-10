@@ -1,13 +1,13 @@
 import math
-import torch
-import warnings
 import numbers
+import warnings
 
-from .module import Module
-from ..parameter import Parameter
-from ..utils.rnn import PackedSequence
+import torch
 from .. import init
 from ... import _VF
+from ..parameter import Parameter
+from ..utils.rnn import PackedSequence
+from .module import Module
 
 _rnn_impls = {
     "RNN_TANH": _VF.rnn_tanh,
