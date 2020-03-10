@@ -283,6 +283,8 @@ report("Building wheel {}-{}".format(package_name, version))
 cmake = CMake()
 
 # all the work we need to do _before_ setup runs
+
+
 def build_deps():
     report('-- Building version ' + version)
 
@@ -350,6 +352,7 @@ def build_deps():
 ################################################################################
 # Building dependent libraries
 ################################################################################
+
 
 # the list of runtime dependencies required by this built package
 install_requires = []
@@ -546,6 +549,7 @@ class clean(distutils.command.clean.clean):
         # It's an old-style class in Python 2.7...
         distutils.command.clean.clean.run(self)
 
+
 def configure_extension_build():
     r"""Configures extension build options according to system environment and user's choice.
 
@@ -639,7 +643,6 @@ def configure_extension_build():
             extra_compile_args += ['-g']
             extra_link_args += ['-g']
 
-
     def make_relative_rpath(path):
         if IS_DARWIN:
             return '-Wl,-rpath,@loader_path/' + path
@@ -705,6 +708,7 @@ def configure_extension_build():
 
     return extensions, cmdclass, packages, entry_points
 
+
 # post run, warnings, printed at the end to make them more visible
 build_update_message = """
     It is no longer necessary to use the 'build' or 'rebuild' targets
@@ -725,6 +729,7 @@ def print_box(msg):
     for l in lines:
         print('|{}{}|'.format(l, ' ' * (size - len(l))))
     print('-' * (size + 2))
+
 
 if __name__ == '__main__':
     # Parse the command line and check the arguments
