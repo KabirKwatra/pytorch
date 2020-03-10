@@ -1,13 +1,12 @@
 import collections
 import copyreg
-from enum import Enum
 import io
 import pickle
 import threading
 import traceback
+from enum import Enum
 
 import torch
-
 
 # Thread local tensor tables to store tensors while pickling torch.Tensor
 # objects
@@ -18,6 +17,7 @@ class RPCExecMode(Enum):
     SYNC = "sync"
     ASYNC = "async"
     REMOTE = "remote"
+
 
 class _InternalRPCPickler:
     r"""
@@ -47,7 +47,7 @@ class _InternalRPCPickler:
         global _thread_local_tensor_tables
         _thread_local_tensor_tables.send_tables.append(obj)
         tensor_index = len(_thread_local_tensor_tables.send_tables) - 1
-        return (_InternalRPCPickler._tensor_receiver, (tensor_index,))
+        return (_InternalRPCPickler._tensor_receiver, (tensor_index, ))
 
     def serialize(self, obj):
         r"""
@@ -95,9 +95,9 @@ class _InternalRPCPickler:
         except AttributeError as e:
             # Occurs when function is not found on module/class during
             # unpickling.
-            except_str = str(e) + """ Default RPC pickler does not serialize
+            except_str = (str(e) + """ Default RPC pickler does not serialize
             function code. Ensure that UDFs are defined on both caller and
-            callee modules."""
+            callee modules.""")
             ret = AttributeError(except_str)
 
         # restore _thread_local_tensor_tables.recv_tables if return
@@ -146,7 +146,8 @@ def _handle_exception(result):
         raise result.exception_type(result.msg)
 
 
-def _start_record_function(exec_type, func_name, current_worker_name, dest_worker_name):
+def _start_record_function(exec_type, func_name, current_worker_name,
+                           dest_worker_name):
     """
     This function should be called from RPC/RRef functions to create a
     RecordFunction object for profiling. This function also runs the before
@@ -162,14 +163,16 @@ def _start_record_function(exec_type, func_name, current_worker_name, dest_worke
     Returns:
         An instance of `torch.autograd._RecordFunction`.
     """
-    assert torch.autograd._profiler_enabled(), "Autograd profiler should be enabled."
-    profile_key = "rpc_{}#{}({} -> {})".format(
-        exec_type.value, str(func_name), current_worker_name, dest_worker_name
-    )
+    assert torch.autograd._profiler_enabled(
+    ), "Autograd profiler should be enabled."
+    profile_key = "rpc_{}#{}({} -> {})".format(exec_type.value, str(func_name),
+                                               current_worker_name,
+                                               dest_worker_name)
     rf = torch.autograd._RecordFunction()
     torch.autograd._run_before_callbacks(rf, profile_key)
     return rf
 
 
 PythonUDF = collections.namedtuple("PythonUDF", ["func", "args", "kwargs"])
-RemoteException = collections.namedtuple("RemoteException", ["msg", "exception_type"])
+RemoteException = collections.namedtuple("RemoteException",
+                                         ["msg", "exception_type"])
