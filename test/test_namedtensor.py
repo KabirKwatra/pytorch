@@ -1,18 +1,22 @@
-import unittest
-from torch.testing._internal.common_utils import TestCase, run_tests, TEST_NUMPY
-from torch.testing._internal.common_cuda import TEST_CUDA
-from collections import namedtuple, OrderedDict
-import itertools
 import functools
+import io
+import itertools
+import pickle
+import sys
+import unittest
+import warnings
+from collections import namedtuple
+from collections import OrderedDict
+from multiprocessing.reduction import ForkingPickler
+
 import torch
+import torch.nn.functional as F
 from torch import Tensor
 from torch._six import PY2
-import torch.nn.functional as F
-from multiprocessing.reduction import ForkingPickler
-import pickle
-import io
-import sys
-import warnings
+from torch.testing._internal.common_cuda import TEST_CUDA
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import TEST_NUMPY
+from torch.testing._internal.common_utils import TestCase
 
 
 def pass_name_to_python_arg_parser(name):

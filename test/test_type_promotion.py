@@ -1,14 +1,13 @@
+import itertools
 from functools import wraps
 
 import torch
-import itertools
-
-from torch.testing._internal.common_utils import TestCase, run_tests, load_tests
-from torch.testing._internal.common_device_type import (
-    instantiate_device_type_tests,
-    onlyOnCPUAndCUDA,
-    dtypes,
-)
+from torch.testing._internal.common_device_type import dtypes
+from torch.testing._internal.common_device_type import instantiate_device_type_tests
+from torch.testing._internal.common_device_type import onlyOnCPUAndCUDA
+from torch.testing._internal.common_utils import load_tests
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import TestCase
 
 # load_tests from torch.testing._internal.common_utils is used to automatically filter tests for
 # sharding on sandcastle. This line silences flake warnings

@@ -1,13 +1,15 @@
-import torch
-import numpy as np
-import unittest
-import inspect
 import functools
+import inspect
 import pprint
 import types
+import unittest
 
+import numpy as np
+
+import torch
+from torch._overrides import handle_torch_function
+from torch._overrides import has_torch_function
 from torch.testing._internal.common_utils import TestCase
-from torch._overrides import handle_torch_function, has_torch_function
 
 Tensor = torch.Tensor
 

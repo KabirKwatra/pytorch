@@ -1,10 +1,10 @@
 import collections
 import copyreg
-from enum import Enum
 import io
 import pickle
 import threading
 import traceback
+from enum import Enum
 
 import torch
 
