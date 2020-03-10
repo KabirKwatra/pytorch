@@ -45,6 +45,7 @@ def get_weight(m):
         return result
     return getattr(m, 'weights', None)
 
+
 module_tests = [
     dict(
         module_name='Linear',
@@ -182,8 +183,8 @@ module_tests = [
         constructor_args=(2, -100),
         input_size=(10, 20),
         reference_fn=(
-            lambda i, *_: ((i * 2) > -100).type_as(i) * i
-            + ((i * 2) <= -100).type_as(i) * 1. / 2. * torch.log(1 + torch.exp(2 * i))
+            lambda i, *_: ((i * 2) > -100).type_as(i) * i +
+            ((i * 2) <= -100).type_as(i) * 1. / 2. * torch.log(1 + torch.exp(2 * i))
         ),
         desc='beta_threshold',
     ),
@@ -669,6 +670,7 @@ def multilabelmarginloss_0d_no_reduce_test():
         check_sum_reduction=True,
         check_gradgrad=False,
         pickle=False)
+
 
 def multilabelmarginloss_1d_no_reduce_test():
     t = Variable(torch.rand(10).mul(10).floor().long())
@@ -2473,8 +2475,8 @@ new_module_tests = [
         constructor_args=(2, -100),
         input_size=(),
         reference_fn=(
-            lambda i, *_: ((i * 2) > -100).type_as(i) * i
-            + ((i * 2) <= -100).type_as(i) * 1.0 / 2.0 * torch.log(1 + torch.exp(2 * i))
+            lambda i, *_: ((i * 2) > -100).type_as(i) * i +
+            ((i * 2) <= -100).type_as(i) * 1.0 / 2.0 * torch.log(1 + torch.exp(2 * i))
         ),
         desc='beta_threshold_scalar',
     ),
@@ -2947,8 +2949,8 @@ criterion_tests = [
         cpp_constructor_args='',
         input_size=(2, 3, 4),
         target_size=(2, 3, 4),
-        reference_fn=lambda i, t, _: 1. / i.numel() *
-        sum((a - b).abs().sum() for a, b in zip(i, t)),
+        reference_fn=lambda i, t, _: 1. / i.numel()
+        * sum((a - b).abs().sum() for a, b in zip(i, t)),
     ),
     dict(
         module_name='NLLLoss',
@@ -3011,15 +3013,15 @@ criterion_tests = [
         input_size=(2, 3, 4, 5),
         target_size=(2, 3, 4, 5),
         reference_fn=lambda i, t, m: ((i - t).abs().pow(2).sum() / (i.numel()
-                                      if get_reduction(m) == 'mean' else 1)),
+                                                                    if get_reduction(m) == 'mean' else 1)),
         check_sum_reduction=True,
     ),
     dict(
         module_name='BCELoss',
         input_fn=lambda: torch.rand(15, 10).clamp_(1e-2, 1 - 1e-2),
         target_fn=lambda: torch.randn(15, 10).gt(0).double(),
-        reference_fn=lambda i, t, m: -(t * i.log() + (1 - t) * (1 - i).log()).sum() /
-            (i.numel() if get_reduction(m) else 1),
+        reference_fn=lambda i, t, m: -(t * i.log() + (1 - t) * (1 - i).log()).sum()
+            / (i.numel() if get_reduction(m) else 1),
         check_gradgrad=False,
         check_bfloat16=TEST_WITH_ROCM,
     ),
@@ -3028,8 +3030,8 @@ criterion_tests = [
         constructor_args_fn=lambda: (torch.rand(10),),
         input_fn=lambda: torch.rand(15, 10).clamp_(1e-2, 1 - 1e-2),
         target_fn=lambda: torch.randn(15, 10).gt(0).double(),
-        reference_fn=lambda i, t, m: -((t * i.log() + (1 - t) * (1 - i).log()) * get_weight(m)).sum() /
-            (i.numel() if get_reduction(m) else 1),
+        reference_fn=lambda i, t, m: -((t * i.log() + (1 - t) * (1 - i).log()) * get_weight(m)).sum()
+            / (i.numel() if get_reduction(m) else 1),
         desc='weights',
         check_gradgrad=False,
         check_bfloat16=TEST_WITH_ROCM,
@@ -3324,8 +3326,8 @@ new_criterion_tests = [
         module_name='MSELoss',
         input_size=(),
         target_size=(),
-        reference_fn=lambda i, t, m: ((i - t).abs().pow(2).sum() /
-                                      (i.numel() if get_reduction(m) == 'mean' else 1)),
+        reference_fn=lambda i, t, m: ((i - t).abs().pow(2).sum()
+                                      / (i.numel() if get_reduction(m) == 'mean' else 1)),
         check_sum_reduction=True,
         desc='scalar',
         check_bfloat16=TEST_WITH_ROCM,
@@ -3334,8 +3336,8 @@ new_criterion_tests = [
         module_name='MSELoss',
         input_fn=lambda: torch.ones(5, 68, 64, 64, dtype=torch.float) / 10,
         target_fn=lambda: torch.zeros(5, 68, 64, 64, dtype=torch.float),
-        reference_fn=lambda i, t, m: ((i - t).abs().pow(2).sum() /
-                                      (i.numel() if get_reduction(m) == 'mean' else 1)),
+        reference_fn=lambda i, t, m: ((i - t).abs().pow(2).sum()
+                                      / (i.numel() if get_reduction(m) == 'mean' else 1)),
         check_forward_only=True,
         desc='prec',
         check_bfloat16=TEST_WITH_ROCM,
@@ -3345,8 +3347,8 @@ new_criterion_tests = [
         constructor_args_fn=lambda: (torch.rand(()),),
         input_fn=lambda: torch.rand(()).clamp_(1e-2, 1 - 1e-2),
         target_fn=lambda: torch.rand(()).gt(0).double(),
-        reference_fn=lambda i, t, m: -((t * i.log() + (1 - t) * (1 - i).log()) * get_weight(m)).sum() /
-            (i.numel() if get_reduction(m) == 'mean' else 1),
+        reference_fn=lambda i, t, m: -((t * i.log() + (1 - t) * (1 - i).log()) * get_weight(m)).sum()
+            / (i.numel() if get_reduction(m) == 'mean' else 1),
         desc='scalar_weights',
         check_gradgrad=False,
         check_bfloat16=TEST_WITH_ROCM,
@@ -3373,8 +3375,8 @@ new_criterion_tests = [
         constructor_args=(torch.rand(10),),
         input_fn=lambda: torch.randn(5, 10),
         target_fn=lambda: torch.rand(5, 10).mul(2).floor(),
-        reference_fn=lambda i, t, m: -((t * i.sigmoid().log() + (1 - t) * (-i).sigmoid().log()) * get_weight(m)).sum() /
-            (i.numel() if get_reduction(m) == 'mean' else i.size(1) if get_reduction(m) == 'sum' else 1),
+        reference_fn=lambda i, t, m: -((t * i.sigmoid().log() + (1 - t) * (-i).sigmoid().log()) * get_weight(m)).sum()
+            / (i.numel() if get_reduction(m) == 'mean' else i.size(1) if get_reduction(m) == 'sum' else 1),
         desc='weights',
         check_sum_reduction=True,
         check_gradgrad=False,

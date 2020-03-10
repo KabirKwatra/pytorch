@@ -21,6 +21,7 @@ from setuptools.command.build_ext import build_ext
 
 IS_WINDOWS = sys.platform == 'win32'
 
+
 def _find_cuda_home():
     '''Finds the CUDA install path.'''
     # Guess #1
@@ -49,6 +50,7 @@ def _find_cuda_home():
     if cuda_home and not torch.cuda.is_available():
         print("No CUDA runtime is found, using CUDA_HOME='{}'".format(cuda_home))
     return cuda_home
+
 
 def _find_rocm_home():
     '''Finds the ROCm install path.'''
@@ -331,9 +333,9 @@ class BuildExtension(build_ext, object):
                 cflags.append(cpp_flag)
 
         def unix_cuda_flags(cflags):
-            return (COMMON_NVCC_FLAGS +
-                    ['--compiler-options', "'-fPIC'"] +
-                    cflags + _get_cuda_arch_flags(cflags))
+            return (COMMON_NVCC_FLAGS
+                    + ['--compiler-options', "'-fPIC'"]
+                    + cflags + _get_cuda_arch_flags(cflags))
 
         def unix_wrap_single_compile(obj, src, ext, cc_args, extra_postargs, pp_opts):
             # Copy before we make any modifications.
@@ -426,8 +428,8 @@ class BuildExtension(build_ext, object):
             return objects
 
         def win_cuda_flags(cflags):
-            return (COMMON_NVCC_FLAGS +
-                    cflags + _get_cuda_arch_flags(cflags))
+            return (COMMON_NVCC_FLAGS
+                    + cflags + _get_cuda_arch_flags(cflags))
 
         def win_wrap_single_compile(sources,
                                     output_dir=None,
@@ -792,8 +794,8 @@ def library_paths(cuda=False):
             lib_dir = 'lib/x64'
         else:
             lib_dir = 'lib64'
-            if (not os.path.exists(_join_cuda_home(lib_dir)) and
-                    os.path.exists(_join_cuda_home('lib'))):
+            if (not os.path.exists(_join_cuda_home(lib_dir))
+                    and os.path.exists(_join_cuda_home('lib'))):
                 # 64-bit CUDA may be installed in 'lib' (see e.g. gh-16955)
                 # Note that it's also possible both don't exist (see
                 # _find_cuda_home) - in that case we stay with 'lib64'.
@@ -1066,8 +1068,8 @@ def _jit_compile(name,
     )
     if version > 0:
         if version != old_version and verbose:
-            print('The input conditions for extension module {} have changed. '.format(name) +
-                  'Bumping to version {0} and re-building as {1}_v{0}...'.format(version, name))
+            print('The input conditions for extension module {} have changed. '.format(name)
+                  + 'Bumping to version {0} and re-building as {1}_v{0}...'.format(version, name))
         name = '{}_v{}'.format(name, version)
 
     if version != old_version:

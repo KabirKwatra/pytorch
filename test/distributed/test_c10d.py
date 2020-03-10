@@ -803,8 +803,8 @@ class ProcessGroupGlooTest(MultiProcessTestCase):
             work_handle.wait()
             self.assertEqual(
                 torch.tensor([
-                    (i * self.world_size) +
-                    (self.world_size * (self.world_size - 1) / 2)
+                    (i * self.world_size)
+                    + (self.world_size * (self.world_size - 1) / 2)
                 ]),
                 inputs[i],
                 message=("Mismatch in iteration %d" % i),
@@ -1365,7 +1365,6 @@ class ProcessGroupGlooTest(MultiProcessTestCase):
                                     "Invalid function argument.*output_tensor_lists"):
             c10d.all_gather_coalesced(dummy_output_lists, dummy_input, pg)
 
-
     def test_reduce_checks(self):
         store = c10d.FileStore(self.file_name, self.world_size)
         pg = c10d.ProcessGroupGloo(store, self.rank, self.world_size, self.opts())
@@ -1439,8 +1438,8 @@ class ProcessGroupGlooTest(MultiProcessTestCase):
             if root == self.rank:
                 self.assertEqual(
                     torch.tensor([
-                        (iter * self.world_size) +
-                        (self.world_size * (self.world_size - 1) / 2)
+                        (iter * self.world_size)
+                        + (self.world_size * (self.world_size - 1) / 2)
                     ]),
                     outputs[i],
                     message=("Mismatch in iteration %d with root rank %d" % (iter, root)),
@@ -1752,8 +1751,8 @@ class ProcessGroupNCCLTest(TestCase):
 
         for i in range(self.num_gpus):
             expected = torch.tensor([
-                float(self.num_gpus * (self.num_gpus - 1) / 2) +
-                (virtual_rank + i) * virtual_world_size
+                float(self.num_gpus * (self.num_gpus - 1) / 2)
+                + (virtual_rank + i) * virtual_world_size
             ])
             self.assertEqual(expected, output[i])
 
@@ -2275,8 +2274,8 @@ class DistributedDataParallelTest(MultiProcessTestCase):
 
         # Get this process' split of devices.
         devices = gpus_for_rank(self.world_size)[self.rank]
-        grads_batch = [(torch.ones(10, device=torch.device('cuda', d)) *
-                       (self.rank + 1)).chunk(5)
+        grads_batch = [(torch.ones(10, device=torch.device('cuda', d))
+                        * (self.rank + 1)).chunk(5)
                        for d in devices]
 
         work, local_grad_sum = c10d._queue_reduction(process_group,
@@ -2304,8 +2303,8 @@ class DistributedDataParallelTest(MultiProcessTestCase):
 
         # Get this process' split of devices.
         devices = gpus_for_rank(self.world_size)[self.rank]
-        grads_batch = [(torch.ones(10, device=torch.device('cuda', d)) *
-                       (self.rank + 1)).chunk(5)
+        grads_batch = [(torch.ones(10, device=torch.device('cuda', d))
+                        * (self.rank + 1)).chunk(5)
                        for d in devices]
         work, local_grad_sum = c10d._queue_reduction(process_group,
                                                      grads_batch,
@@ -2530,7 +2529,6 @@ class DistributedDataParallelTest(MultiProcessTestCase):
             self.assertIsNotNone(t1_p.grad)
             self.assertIsNone(task_unused_p.grad)
 
-
         store = c10d.FileStore(self.file_name, self.world_size)
         process_group = c10d.ProcessGroupGloo(store, self.rank, self.world_size)
 
@@ -2742,15 +2740,15 @@ class DistributedDataParallelTest(MultiProcessTestCase):
                 # Skip gradients sync without calling prepare_for_backward
                 step_model(
                     ddp_model.module,
-                    input[self.rank : (self.rank + 1)],
-                    target[self.rank : (self.rank + 1)])
+                    input[self.rank: (self.rank + 1)],
+                    target[self.rank: (self.rank + 1)])
                 for i, j in zip(model.parameters(), ddp_model.parameters()):
                     self.assertNotEqual(i.grad, j.grad)
             else:
                 step_model(
                     ddp_model,
-                    input[self.rank : (self.rank + 1)],
-                    target[self.rank : (self.rank + 1)])
+                    input[self.rank: (self.rank + 1)],
+                    target[self.rank: (self.rank + 1)])
                 for i, j in zip(model.parameters(), ddp_model.parameters()):
                     self.assertEqual(i.grad, j.grad)
 
@@ -3132,6 +3130,7 @@ class ComputeBucketAssignmentTest(TestCase):
         result = dist._compute_bucket_assignment_by_size(tensors, [200, 400])
         self.assertEqual([[0], [1], [2, 4], [3, 5]], result)
 
+
 @unittest.skipIf(TEST_WITH_TSAN, "TSAN is not fork-safe since we're forking in a multi-threaded environment")
 class NcclErrorHandlingTest(MultiProcessTestCase):
     def setUp(self):
@@ -3227,31 +3226,31 @@ class NcclErrorHandlingTest(MultiProcessTestCase):
     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
     @skip_if_lt_x_gpu(3)
     def test_nccl_errors_blocking_clean_exit(self):
-        self._test_nccl_errors_blocking(lambda : sys.exit(0))
+        self._test_nccl_errors_blocking(lambda: sys.exit(0))
 
     @requires_nccl()
     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
     @skip_if_lt_x_gpu(3)
     def test_nccl_errors_blocking_nonzero_exit(self):
-        self._test_nccl_errors_blocking(lambda : sys.exit(1))
+        self._test_nccl_errors_blocking(lambda: sys.exit(1))
 
     @requires_nccl()
     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
     @skip_if_lt_x_gpu(3)
     def test_nccl_errors_blocking_abort(self):
-        self._test_nccl_errors_blocking(lambda : os.abort())
+        self._test_nccl_errors_blocking(lambda: os.abort())
 
     @requires_nccl()
     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
     @skip_if_lt_x_gpu(3)
     def test_nccl_errors_blocking_sigkill(self):
-        self._test_nccl_errors_blocking(lambda : os.kill(os.getpid(), signal.SIGKILL))
+        self._test_nccl_errors_blocking(lambda: os.kill(os.getpid(), signal.SIGKILL))
 
     @requires_nccl()
     @requires_nccl_version(2400, "Need NCCL 2.4+ for error checking")
     @skip_if_lt_x_gpu(3)
     def test_nccl_errors_blocking_sigterm(self):
-        self._test_nccl_errors_blocking(lambda : os.kill(os.getpid(), signal.SIGTERM))
+        self._test_nccl_errors_blocking(lambda: os.kill(os.getpid(), signal.SIGTERM))
 
     def _run_invalid_nccl_blocking_wait_env(self, val):
         os.environ["NCCL_BLOCKING_WAIT"] = val
