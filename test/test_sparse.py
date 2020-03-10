@@ -20,7 +20,6 @@ from torch.testing._internal.common_utils import TestCase
 # Sparse tests use double as the default dtype
 torch.set_default_dtype(torch.double)
 
-
 # load_tests from torch.testing._internal.common_utils is used to automatically filter tests for
 # sharding on sandcastle. This line silences flake warnings
 load_tests = load_tests
@@ -57,14 +56,11 @@ class TestSparse(TestCase):
         self.exact_dtype = True
         self.value_dtype = torch.float64
         self.index_tensor = lambda *args: torch.tensor(
-            *args, dtype=torch.int64, device=self.device
-        )
+            *args, dtype=torch.int64, device=self.device)
         self.value_empty = lambda *args: torch.empty(
-            *args, dtype=self.value_dtype, device=self.device
-        )
+            *args, dtype=self.value_dtype, device=self.device)
         self.value_tensor = lambda *args: torch.tensor(
-            *args, dtype=self.value_dtype, device=self.device
-        )
+            *args, dtype=self.value_dtype, device=self.device)
 
         def sparse_empty_factory(*args, **kwargs):
             kwargs["dtype"] = kwargs.get("dtype", self.value_dtype)
@@ -87,9 +83,8 @@ class TestSparse(TestCase):
         if isinstance(with_size, Number):
             with_size = [with_size] * sparse_dim
 
-        x, i, v = self.genSparseTensor(
-            with_size, sparse_dim, nnz, self.is_uncoalesced, self.device
-        )
+        x, i, v = self.genSparseTensor(with_size, sparse_dim, nnz,
+                                       self.is_uncoalesced, self.device)
 
         if self.is_uncoalesced:
             self.assert_uncoalesced(x)
@@ -120,8 +115,8 @@ class TestSparse(TestCase):
     def test_print(self):
         shape_sparse_dim_nnz = [
             ((), 0, 2),
-            ((0,), 0, 10),
-            ((2,), 0, 3),
+            ((0, ), 0, 10),
+            ((2, ), 0, 3),
             ((100, 3), 1, 3),
             ((100, 20, 3), 2, 0),
             ((10, 0, 3), 0, 3),
@@ -131,7 +126,7 @@ class TestSparse(TestCase):
         printed = []
         for shape, sparse_dim, nnz in shape_sparse_dim_nnz:
             indices_shape = torch.Size((sparse_dim, nnz))
-            values_shape = torch.Size((nnz,) + shape[sparse_dim:])
+            values_shape = torch.Size((nnz, ) + shape[sparse_dim:])
             printed.append("# shape: {}".format(torch.Size(shape)))
             printed.append("# nnz: {}".format(nnz))
             printed.append("# sparse_dim: {}".format(sparse_dim))
@@ -148,11 +143,10 @@ class TestSparse(TestCase):
             if self.is_uncoalesced and indices.numel() > 0:
                 indices[:, -1] = indices[:, 0]  # make it uncoalesced
             values_numel = values_shape.numel()
-            values = (
-                torch.arange(values_numel, dtype=self.value_dtype, device=self.device)
-                .view(values_shape)
-                .div_(values_numel / 2.0)
-            )
+            values = (torch.arange(values_numel,
+                                   dtype=self.value_dtype,
+                                   device=self.device).view(values_shape).div_(
+                                       values_numel / 2.0))
             sp_tensor = self.sparse_tensor(indices, values, shape)
 
             dtypes = [torch.int32]
@@ -191,12 +185,12 @@ class TestSparse(TestCase):
             # Test .indices() and .values()
             if self.is_uncoalesced:
                 with self.assertRaisesRegex(
-                    RuntimeError, "Cannot get indices on an uncoalesced tensor"
-                ):
+                        RuntimeError,
+                        "Cannot get indices on an uncoalesced tensor"):
                     x.indices()
                 with self.assertRaisesRegex(
-                    RuntimeError, "Cannot get values on an uncoalesced tensor"
-                ):
+                        RuntimeError,
+                        "Cannot get values on an uncoalesced tensor"):
                     x.values()
             else:
                 self.assertEqual(x.indices(), x._indices())
@@ -208,8 +202,9 @@ class TestSparse(TestCase):
         test_shape(3, 0, [0, 0, 100, 5, 5, 5, 0])
 
         # Make sure that coalesce handles duplicate indices correctly
-        i = self.index_tensor([[9, 0, 0, 0, 8, 1, 1, 1, 2, 7, 2, 2, 3, 4, 6, 9]])
-        v = self.value_tensor([[idx ** 2, idx] for idx in range(i.size(1))])
+        i = self.index_tensor(
+            [[9, 0, 0, 0, 8, 1, 1, 1, 2, 7, 2, 2, 3, 4, 6, 9]])
+        v = self.value_tensor([[idx**2, idx] for idx in range(i.size(1))])
         x = self.sparse_tensor(i, v, torch.Size([10, 2]))
         self.assertEqual(self.safeCoalesce(x)._nnz(), 9)
 
@@ -219,16 +214,23 @@ class TestSparse(TestCase):
         self.assertEqual(x._values().numel(), 0)
 
     def test_coalecce(self):
-        for empty_i, empty_v, empty_nnz in itertools.product([True, False], repeat=3):
+        for empty_i, empty_v, empty_nnz in itertools.product([True, False],
+                                                             repeat=3):
             sparse_size = [] if empty_i else [2, 1]
             dense_size = [1, 0, 2] if empty_v else [1, 2]
             nnz = 0 if empty_nnz else 5
 
-            t, _, _ = self._gen_sparse(len(sparse_size), nnz, sparse_size + dense_size)
+            t, _, _ = self._gen_sparse(len(sparse_size), nnz,
+                                       sparse_size + dense_size)
             self.safeCoalesce(t)  # this tests correctness
 
     def test_ctor_size_checks(self):
-        indices = self.index_tensor([[0, 0, 0], [0, 3, 0], [0, 0, 0], [0, 0, 0],])
+        indices = self.index_tensor([
+            [0, 0, 0],
+            [0, 3, 0],
+            [0, 0, 0],
+            [0, 0, 0],
+        ])
         values = self.value_tensor([2, 1, 3, 4])
 
         # indices inconsistent with size
@@ -238,10 +240,14 @@ class TestSparse(TestCase):
         )
 
         # values inconsistent with size
-        values = self.value_tensor([[2, 1, 2, 1], [1, 0, 5, 2],])
+        values = self.value_tensor([
+            [2, 1, 2, 1],
+            [1, 0, 5, 2],
+        ])
         self.assertRaises(
             RuntimeError,
-            lambda: self.sparse_tensor(indices, values, torch.Size([2, 4, 2, 1])),
+            lambda: self.sparse_tensor(indices, values, torch.Size(
+                [2, 4, 2, 1])),
         )
 
     def test_to_dense(self):
@@ -266,44 +272,48 @@ class TestSparse(TestCase):
                 return x.to_dense()
 
             x.requires_grad_(True)
-            gradcheck(fn, (x,), check_sparse_nnz=True)
+            gradcheck(fn, (x, ), check_sparse_nnz=True)
 
-        i = self.index_tensor([[0, 1, 2, 2], [0, 0, 0, 3], [0, 0, 1, 4],])
+        i = self.index_tensor([
+            [0, 1, 2, 2],
+            [0, 0, 0, 3],
+            [0, 0, 1, 4],
+        ])
         # we don't have to_dense for half types on CPU because it is implemented
         # with a slower add_ operation
-        for dtype in (
-            [torch.float16, torch.float32, torch.float64]
-            if self.device != "cpu"
-            else [torch.float32, torch.float64]
-        ):
+        for dtype in ([
+                torch.float16, torch.float32, torch.float64
+        ] if self.device != "cpu" else [torch.float32, torch.float64]):
             v = self.value_tensor([2, 1, 3, 4]).to(dtype=dtype)
             x = self.sparse_tensor(i, v, torch.Size([3, 4, 5]))
-            res = self.value_tensor(
+            res = self.value_tensor([
                 [
-                    [
-                        [2, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0],
-                    ],
-                    [
-                        [1, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0],
-                    ],
-                    [
-                        [0, 3, 0, 0, 0],
-                        [0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 0],
-                        [0, 0, 0, 0, 4],
-                    ],
-                ]
-            ).to(dtype=dtype)
+                    [2, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                [
+                    [1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                ],
+                [
+                    [0, 3, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 4],
+                ],
+            ]).to(dtype=dtype)
 
             test_tensor(x, res)
 
-            i = self.index_tensor([[0, 1, 2, 2], [0, 0, 0, 3], [0, 0, 1, 4],])
+            i = self.index_tensor([
+                [0, 1, 2, 2],
+                [0, 0, 0, 3],
+                [0, 0, 1, 4],
+            ])
             v = self.value_empty(4, 0).to(dtype=dtype)
             x = self.sparse_tensor(i, v, torch.Size([3, 4, 5, 0]))
             res = self.value_empty(3, 4, 5, 0).to(dtype=dtype)
@@ -322,7 +332,7 @@ class TestSparse(TestCase):
         max_nnz = 1
         for dim, dim_sz in enumerate(shape, 1):
             max_nnz *= dim_sz
-            rnnz = torch.randint(2, max_nnz, (1,)).item()
+            rnnz = torch.randint(2, max_nnz, (1, )).item()
             for nnz in [0, 1, rnnz]:
                 for dtype in [torch.float16, torch.float64, torch.int]:
                     expected, _, _ = self._gen_sparse(dim, nnz, shape)
@@ -330,9 +340,8 @@ class TestSparse(TestCase):
 
                     d = self._to_dense_half_safe(expected)
                     result = d.to_sparse(dim)
-                    self.assertEqual(
-                        d, self._to_dense_half_safe(result)
-                    )  # == not implemented for sparse tensors yet
+                    self.assertEqual(d, self._to_dense_half_safe(
+                        result))  # == not implemented for sparse tensors yet
                     self.assertEqual(expected.size(), result.size())
                     self.assertEqual(dim, result.sparse_dim())
 
@@ -351,8 +360,7 @@ class TestSparse(TestCase):
 
         # tensor with multiple values
         a = self.sparse_tensor(
-            self.index_tensor([]).unsqueeze(1).expand(0, 2), [12.3, 12.3], []
-        )
+            self.index_tensor([]).unsqueeze(1).expand(0, 2), [12.3, 12.3], [])
         self.assertEqual(2, a._values().numel())
         self.assertEqual(a, a.clone())
         a_coalesced = a.coalesce()
@@ -396,21 +404,25 @@ class TestSparse(TestCase):
                 return x.to_dense()
 
             x.requires_grad_(True)
-            gradcheck(fn, (x,), check_sparse_nnz=True)
+            gradcheck(fn, (x, ), check_sparse_nnz=True)
 
-        i = self.index_tensor([[0, 1, 2, 2], [0, 0, 0, 3],])
+        i = self.index_tensor([
+            [0, 1, 2, 2],
+            [0, 0, 0, 3],
+        ])
         v = self.value_tensor([[2, 3], [1, 2], [3, 4], [4, 5]])
         x = self.sparse_tensor(i, v, torch.Size([3, 4, 2]))
-        res = self.value_tensor(
-            [
-                [[2, 3], [0, 0], [0, 0], [0, 0]],
-                [[1, 2], [0, 0], [0, 0], [0, 0]],
-                [[3, 4], [0, 0], [0, 0], [4, 5]],
-            ]
-        )
+        res = self.value_tensor([
+            [[2, 3], [0, 0], [0, 0], [0, 0]],
+            [[1, 2], [0, 0], [0, 0], [0, 0]],
+            [[3, 4], [0, 0], [0, 0], [4, 5]],
+        ])
         test_tensor(x, res)
 
-        i = self.index_tensor([[0, 1, 2, 2], [0, 0, 0, 3],])
+        i = self.index_tensor([
+            [0, 1, 2, 2],
+            [0, 0, 0, 3],
+        ])
         v = self.value_empty(4, 2, 0)
         x = self.sparse_tensor(i, v, torch.Size([3, 4, 2, 0]))
         res = self.value_empty(3, 4, 2, 0)
@@ -422,49 +434,77 @@ class TestSparse(TestCase):
             self.assertEqual(exp_i, x._indices())
             self.assertEqual(exp_v, x._values())
 
-        i = self.index_tensor(
-            [
-                [1, 0, 35, 14, 39, 6, 71, 66, 40, 27],
-                [92, 31, 62, 50, 22, 65, 89, 74, 56, 34],
-            ]
-        )
+        i = self.index_tensor([
+            [1, 0, 35, 14, 39, 6, 71, 66, 40, 27],
+            [92, 31, 62, 50, 22, 65, 89, 74, 56, 34],
+        ])
         v = self.value_tensor([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
         x = self.sparse_tensor(i, v, torch.Size([100, 100]))
-        exp_i = self.index_tensor(
-            [
-                [0, 1, 6, 14, 27, 35, 39, 40, 66, 71],
-                [31, 92, 65, 50, 34, 62, 22, 56, 74, 89],
-            ]
-        )
+        exp_i = self.index_tensor([
+            [0, 1, 6, 14, 27, 35, 39, 40, 66, 71],
+            [31, 92, 65, 50, 34, 62, 22, 56, 74, 89],
+        ])
         exp_v = self.value_tensor([2, 1, 6, 4, 10, 3, 5, 9, 8, 7])
         test_tensor(x, exp_i, exp_v)
 
-        i = self.index_tensor([[2, 0, 2, 1], [0, 0, 3, 0], [1, 0, 4, 0],])
+        i = self.index_tensor([
+            [2, 0, 2, 1],
+            [0, 0, 3, 0],
+            [1, 0, 4, 0],
+        ])
         v = self.value_tensor([3, 2, 4, 1])
         x = self.sparse_tensor(i, v, torch.Size([3, 4, 5]))
-        exp_i = self.index_tensor([[0, 1, 2, 2], [0, 0, 0, 3], [0, 0, 1, 4],])
+        exp_i = self.index_tensor([
+            [0, 1, 2, 2],
+            [0, 0, 0, 3],
+            [0, 0, 1, 4],
+        ])
         exp_v = self.value_tensor([2, 1, 3, 4])
         test_tensor(x, exp_i, exp_v)
 
-        i = self.index_tensor([[2, 0, 2, 1], [0, 0, 3, 0], [1, 0, 4, 0],])
+        i = self.index_tensor([
+            [2, 0, 2, 1],
+            [0, 0, 3, 0],
+            [1, 0, 4, 0],
+        ])
         v = self.value_empty(4, 0)
         x = self.sparse_tensor(i, v, torch.Size([3, 4, 5, 0]))
-        exp_i = self.index_tensor([[0, 1, 2, 2], [0, 0, 0, 3], [0, 0, 1, 4],])
+        exp_i = self.index_tensor([
+            [0, 1, 2, 2],
+            [0, 0, 0, 3],
+            [0, 0, 1, 4],
+        ])
         exp_v = self.value_empty(4, 0)
         test_tensor(x, exp_i, exp_v)
 
         # Duplicate indices
-        i = self.index_tensor([[0, 0, 2, 0], [0, 0, 3, 0], [0, 0, 4, 0],])
+        i = self.index_tensor([
+            [0, 0, 2, 0],
+            [0, 0, 3, 0],
+            [0, 0, 4, 0],
+        ])
         v = self.value_tensor([3, 2, 4, 1])
         x = self.sparse_tensor(i, v, torch.Size([3, 4, 5]))
-        exp_i = self.index_tensor([[0, 2], [0, 3], [0, 4],])
+        exp_i = self.index_tensor([
+            [0, 2],
+            [0, 3],
+            [0, 4],
+        ])
         exp_v = self.value_tensor([6, 4])
         test_tensor(x, exp_i, exp_v)
 
-        i = self.index_tensor([[0, 0, 2, 0], [0, 0, 3, 0], [0, 0, 4, 0],])
+        i = self.index_tensor([
+            [0, 0, 2, 0],
+            [0, 0, 3, 0],
+            [0, 0, 4, 0],
+        ])
         v = self.value_empty(4, 0)
         x = self.sparse_tensor(i, v, torch.Size([3, 4, 5, 0]))
-        exp_i = self.index_tensor([[0, 2], [0, 3], [0, 4],])
+        exp_i = self.index_tensor([
+            [0, 2],
+            [0, 3],
+            [0, 4],
+        ])
         exp_v = self.value_empty(2, 0)
         test_tensor(x, exp_i, exp_v)
 
@@ -474,75 +514,99 @@ class TestSparse(TestCase):
             self.assertEqual(exp_i, x._indices())
             self.assertEqual(exp_v, x._values())
 
-        i = self.index_tensor(
-            [
-                [1, 0, 35, 14, 39, 6, 71, 66, 40, 27],
-                [92, 31, 62, 50, 22, 65, 89, 74, 56, 34],
-            ]
-        )
-        v = self.value_tensor(
-            [
-                [1, 2],
-                [2, 3],
-                [3, 4],
-                [4, 5],
-                [5, 6],
-                [6, 7],
-                [7, 8],
-                [8, 9],
-                [9, 10],
-                [10, 11],
-            ]
-        )
+        i = self.index_tensor([
+            [1, 0, 35, 14, 39, 6, 71, 66, 40, 27],
+            [92, 31, 62, 50, 22, 65, 89, 74, 56, 34],
+        ])
+        v = self.value_tensor([
+            [1, 2],
+            [2, 3],
+            [3, 4],
+            [4, 5],
+            [5, 6],
+            [6, 7],
+            [7, 8],
+            [8, 9],
+            [9, 10],
+            [10, 11],
+        ])
         x = self.sparse_tensor(i, v, torch.Size([100, 100, 2]))
-        exp_i = self.index_tensor(
-            [
-                [0, 1, 6, 14, 27, 35, 39, 40, 66, 71],
-                [31, 92, 65, 50, 34, 62, 22, 56, 74, 89],
-            ]
-        )
-        exp_v = self.value_tensor(
-            [
-                [2, 3],
-                [1, 2],
-                [6, 7],
-                [4, 5],
-                [10, 11],
-                [3, 4],
-                [5, 6],
-                [9, 10],
-                [8, 9],
-                [7, 8],
-            ]
-        )
+        exp_i = self.index_tensor([
+            [0, 1, 6, 14, 27, 35, 39, 40, 66, 71],
+            [31, 92, 65, 50, 34, 62, 22, 56, 74, 89],
+        ])
+        exp_v = self.value_tensor([
+            [2, 3],
+            [1, 2],
+            [6, 7],
+            [4, 5],
+            [10, 11],
+            [3, 4],
+            [5, 6],
+            [9, 10],
+            [8, 9],
+            [7, 8],
+        ])
         test_tensor(x, exp_i, exp_v)
 
-        i = self.index_tensor([[2, 0, 2, 1], [0, 0, 3, 0], [1, 0, 4, 0],])
+        i = self.index_tensor([
+            [2, 0, 2, 1],
+            [0, 0, 3, 0],
+            [1, 0, 4, 0],
+        ])
         v = self.value_tensor([[3, 3, 3], [2, 2, 2], [4, 4, 4], [1, 1, 1]])
         x = self.sparse_tensor(i, v, torch.Size([3, 4, 5, 3]))
-        exp_i = self.index_tensor([[0, 1, 2, 2], [0, 0, 0, 3], [0, 0, 1, 4],])
+        exp_i = self.index_tensor([
+            [0, 1, 2, 2],
+            [0, 0, 0, 3],
+            [0, 0, 1, 4],
+        ])
         exp_v = self.value_tensor([[2, 2, 2], [1, 1, 1], [3, 3, 3], [4, 4, 4]])
         test_tensor(x, exp_i, exp_v)
 
-        i = self.index_tensor([[2, 0, 2, 1], [0, 0, 3, 0], [1, 0, 4, 0],])
+        i = self.index_tensor([
+            [2, 0, 2, 1],
+            [0, 0, 3, 0],
+            [1, 0, 4, 0],
+        ])
         v = self.value_empty(4, 3, 0)
         x = self.sparse_tensor(i, v, torch.Size([3, 4, 5, 3, 0]))
-        exp_i = self.index_tensor([[0, 1, 2, 2], [0, 0, 0, 3], [0, 0, 1, 4],])
+        exp_i = self.index_tensor([
+            [0, 1, 2, 2],
+            [0, 0, 0, 3],
+            [0, 0, 1, 4],
+        ])
         exp_v = self.value_empty(4, 3, 0)
         test_tensor(x, exp_i, exp_v)
 
         # Duplicate indices
-        i = self.index_tensor([[0, 0, 2, 0], [0, 0, 3, 0], [0, 0, 4, 0],])
+        i = self.index_tensor([
+            [0, 0, 2, 0],
+            [0, 0, 3, 0],
+            [0, 0, 4, 0],
+        ])
         v = self.value_tensor([[3, 2, 3], [2, 1, 1], [4, 3, 4], [1, 1, 1]])
         x = self.sparse_tensor(i, v, torch.Size([3, 4, 5, 3]))
-        exp_i = self.index_tensor([[0, 2], [0, 3], [0, 4],])
+        exp_i = self.index_tensor([
+            [0, 2],
+            [0, 3],
+            [0, 4],
+        ])
         exp_v = self.value_tensor([[6, 4, 5], [4, 3, 4]])
         test_tensor(x, exp_i, exp_v)
 
-        i = self.index_tensor([[0, 0, 2, 0], [0, 0, 3, 0], [0, 0, 4, 0],])
+        i = self.index_tensor([
+            [0, 0, 2, 0],
+            [0, 0, 3, 0],
+            [0, 0, 4, 0],
+        ])
         v = self.value_empty(4, 3, 0)
         x = self.sparse_tensor(i, v, torch.Size([3, 4, 5, 3, 0]))
-        exp_i = self.index_tensor([[0, 2], [0, 3], [0, 4],])
+        exp_i = self.index_tensor([
+            [0, 2],
+            [0, 3],
+            [0, 4],
+        ])
         exp_v = self.value_empty(2, 3, 0)
         test_tensor(x, exp_i, exp_v)
 
@@ -589,7 +653,8 @@ class TestSparse(TestCase):
         self.assertEqual(x1_dtype, x1.dtype)
 
         # test no broadcast
-        self.assertRaises(RuntimeError, lambda: x1.copy_(x2.narrow_copy(0, 0, 1)))
+        self.assertRaises(
+            RuntimeError, lambda: x1.copy_(x2.narrow_copy(0, 0, 1)))
 
         # test raise error on copy_() between dense and sparse Tensors
         self.assertRaises(RuntimeError, lambda: x1.copy_(torch.randn(5, 5)))
@@ -634,7 +699,8 @@ class TestSparse(TestCase):
         x2_clone = x2.clone().to("cuda:0")
         y.backward(x2_clone)
         expected_grad = x2_clone * 2
-        self.assertEqual(expected_grad.to_dense(), x2.grad.to("cuda:0").to_dense())
+        self.assertEqual(expected_grad.to_dense(),
+                         x2.grad.to("cuda:0").to_dense())
         self.assertEqual(None, x1.grad)
 
     @cuda_only
@@ -705,8 +771,7 @@ class TestSparse(TestCase):
             shape_original = x.shape
             x.t_()
             self.assertEqual(
-                torch.Size([shape_original[1], shape_original[0]]), x.size()
-            )
+                torch.Size([shape_original[1], shape_original[0]]), x.size())
             self.assertEqual(0, x._indices().numel())
             self.assertEqual(0, x._values().numel())
             self.assertEqual(x.sparse_dim(), 2)
@@ -716,8 +781,7 @@ class TestSparse(TestCase):
             shape_original = x.shape
             y = x.t()
             self.assertEqual(
-                torch.Size([shape_original[1], shape_original[0]]), y.size()
-            )
+                torch.Size([shape_original[1], shape_original[0]]), y.size())
             self.assertEqual(0, y._indices().numel())
             self.assertEqual(0, y._values().numel())
             self.assertEqual(x.sparse_dim(), 2)
@@ -749,7 +813,8 @@ class TestSparse(TestCase):
         # shapes: list of tuples (sparse_dims, nnz, sizes)
         def test_shapes(shapes, dim, fail_message=None):
             inputs = [
-                self._gen_sparse(shape[0], shape[1], shape[2])[0] for shape in shapes
+                self._gen_sparse(shape[0], shape[1], shape[2])[0]
+                for shape in shapes
             ]
             if fail_message:
                 with self.assertRaisesRegex(RuntimeError, fail_message):
@@ -759,7 +824,8 @@ class TestSparse(TestCase):
                 dense_result = torch.cat([t.to_dense() for t in inputs], dim)
                 self.assertEqual(dense_result, result.to_dense())
 
-        test_shapes([(3, 10, [2, 3, 4]), (3, 10, [2, 1, 4]), (3, 10, [2, 4, 4])], 1)
+        test_shapes([(3, 10, [2, 3, 4]), (3, 10, [2, 1, 4]),
+                     (3, 10, [2, 4, 4])], 1)
 
         # mismatched sizes
         test_shapes(
@@ -768,7 +834,8 @@ class TestSparse(TestCase):
             "All tensors must have the same shape: \\[2, 3, 4].*\\[2, 1, 4]",
         )
         # hybrid sparse/dense
-        test_shapes([(2, 10, [2, 3, 4]), (2, 10, [2, 1, 4]), (2, 10, [2, 4, 4])], 1)
+        test_shapes([(2, 10, [2, 3, 4]), (2, 10, [2, 1, 4]),
+                     (2, 10, [2, 4, 4])], 1)
         # cat along dense dim
         test_shapes([(2, 10, [2, 3, 4]), (2, 10, [2, 3, 7])], 2)
         test_shapes([(1, 10, [2, 3, 4]), (1, 10, [2, 3, 4])], 1)
@@ -780,19 +847,24 @@ class TestSparse(TestCase):
             "All tensors must have the same.*2, 1, but tensor at position 1 has 3, 0.",
         )
         # wrapped dimension
-        test_shapes([(3, 10, [2, 3, 4]), (3, 10, [2, 1, 4]), (3, 10, [2, 4, 4])], -2)
+        test_shapes([(3, 10, [2, 3, 4]), (3, 10, [2, 1, 4]),
+                     (3, 10, [2, 4, 4])], -2)
 
         # sparse with dense
         sp = self._gen_sparse(3, 10, [2, 3, 4])[0]
         dn = sp.to_dense()
         with self.assertRaisesRegex(
-            RuntimeError,
-            "Concatenating sparse tensors, but a dense tensor was found at position 1.",
+                RuntimeError,
+                "Concatenating sparse tensors, but a dense tensor was found at position 1.",
         ):
             torch.cat((sp, dn))
 
     def test_unsqueeze(self):
-        def test_shape(sparse_dims, nnz, sizes, unsqueeze_dim, fail_message=None):
+        def test_shape(sparse_dims,
+                       nnz,
+                       sizes,
+                       unsqueeze_dim,
+                       fail_message=None):
             x, _, _ = self._gen_sparse(sparse_dims, nnz, sizes)
             if fail_message:
                 with self.assertRaisesRegex(IndexError, fail_message):
@@ -822,9 +894,12 @@ class TestSparse(TestCase):
         test_shape(3, 10, [5, 7, 11, 13, 17], 6, "Dimension out of range")
 
     def test_select(self):
-        def test_shape(
-            sparse_dims, nnz, sizes, select_dim, select_index, fail_message=None
-        ):
+        def test_shape(sparse_dims,
+                       nnz,
+                       sizes,
+                       select_dim,
+                       select_index,
+                       fail_message=None):
             x, _, _ = self._gen_sparse(sparse_dims, nnz, sizes)
             if fail_message:
                 with self.assertRaisesRegex(IndexError, fail_message):
@@ -833,16 +908,16 @@ class TestSparse(TestCase):
                 result = torch.select(x, select_dim, select_index)
                 if result.is_sparse:
                     result = result.to_dense()
-                dense_result = torch.select(x.to_dense(), select_dim, select_index)
+                dense_result = torch.select(x.to_dense(), select_dim,
+                                            select_index)
                 self.assertEqual(dense_result, result)
 
         sizes = [5, 7, 11, 13, 17]
         # hybrid sparse/dense, select sparse dim, result is dense
         for i in range(sizes[0]):
             test_shape(1, 10, sizes, 0, i)
-        test_shape(
-            1, 10, sizes, 0, sizes[0] + 1, r"select[(][)][:] index \d out of range.*"
-        )
+        test_shape(1, 10, sizes, 0, sizes[0] + 1,
+                   r"select[(][)][:] index \d out of range.*")
 
         # hybrid sparse/dense, select sparse dim, result is sparse
         for d in range(3):
@@ -855,15 +930,18 @@ class TestSparse(TestCase):
                 test_shape(1, 10, sizes, d, i)
 
     def test_index_select(self):
-        def test_shape(
-            sparse_dims, nnz, sizes, select_dim, select_index, fail_message=None
-        ):
+        def test_shape(sparse_dims,
+                       nnz,
+                       sizes,
+                       select_dim,
+                       select_index,
+                       fail_message=None):
             if isinstance(select_index, int):
                 select_index = [select_index]
             if isinstance(select_index, list):
-                select_index = torch.tensor(
-                    select_index, device=self.device, dtype=torch.long
-                )
+                select_index = torch.tensor(select_index,
+                                            device=self.device,
+                                            dtype=torch.long)
             x, _, _ = self._gen_sparse(sparse_dims, nnz, sizes)
             if fail_message:
                 with self.assertRaisesRegex(IndexError, fail_message):
@@ -872,9 +950,8 @@ class TestSparse(TestCase):
                 result = torch.index_select(x, select_dim, select_index)
                 if result.is_sparse:
                     result = result.to_dense()
-                dense_result = torch.index_select(
-                    x.to_dense(), select_dim, select_index
-                )
+                dense_result = torch.index_select(x.to_dense(), select_dim,
+                                                  select_index)
                 self.assertEqual(dense_result, result)
 
         sizes = [5, 7, 11, 13, 17]
@@ -894,7 +971,11 @@ class TestSparse(TestCase):
             beta = random.random()
 
             res = torch.addmm(t, x, y, beta=beta, alpha=alpha)
-            expected = torch.addmm(t, self.safeToDense(x), y, beta=beta, alpha=alpha)
+            expected = torch.addmm(t,
+                                   self.safeToDense(x),
+                                   y,
+                                   beta=beta,
+                                   alpha=alpha)
             self.assertEqual(res, expected)
 
             res = torch.addmm(t, x, y)
@@ -923,9 +1004,11 @@ class TestSparse(TestCase):
             beta = random.random()
 
             res = torch.saddmm(t, x, y, beta=beta, alpha=alpha)
-            expected = torch.addmm(
-                self.safeToDense(t), self.safeToDense(x), y, beta=beta, alpha=alpha
-            )
+            expected = torch.addmm(self.safeToDense(t),
+                                   self.safeToDense(x),
+                                   y,
+                                   beta=beta,
+                                   alpha=alpha)
             self.assertEqual(self.safeToDense(res), expected)
 
             res = torch.saddmm(t, x, y)
@@ -953,9 +1036,8 @@ class TestSparse(TestCase):
             S = self._gen_sparse(2, nnz, [n, m])[0]
             S_dense = S.to_dense().requires_grad_(True)
             S.requires_grad_(True)
-            self.assertEqual(
-                torch.sparse.addmm(D1, S, D2), torch.addmm(D1, S_dense, D2)
-            )
+            self.assertEqual(torch.sparse.addmm(D1, S, D2),
+                             torch.addmm(D1, S_dense, D2))
 
             def fn(S, D1, D2):
                 return torch.sparse.addmm(D1, S, D2)
@@ -968,9 +1050,11 @@ class TestSparse(TestCase):
     def test_sparse_mm(self):
         def test_shape(d1, d2, d3, nnz, transposed):
             if transposed:
-                D = torch.randn(d3, d2, device=self.device).t_().requires_grad_(True)
+                D = torch.randn(d3, d2,
+                                device=self.device).t_().requires_grad_(True)
             else:
-                D = torch.randn(d2, d3, device=self.device).requires_grad_(True)
+                D = torch.randn(d2, d3,
+                                device=self.device).requires_grad_(True)
             S = self._gen_sparse(2, nnz, [d1, d2])[0]
             S_dense = S.to_dense().requires_grad_(True)
             S.requires_grad_(True)
@@ -1047,13 +1131,13 @@ class TestSparse(TestCase):
         nnz = i.size(1)
 
         # Non contiguous sparse indices tensor
-        x_ = self.sparse_tensor(i[:, ::2], v[: int(nnz / 2)], x.shape)
+        x_ = self.sparse_tensor(i[:, ::2], v[:int(nnz / 2)], x.shape)
         res = torch.add(y, x_, alpha=r)
         expected = y + r * self.safeToDense(x_)
         self.assertEqual(res, expected)
 
         # Non contiguous sparse values tensor
-        x_ = self.sparse_tensor(i[:, : int(nnz / 2)], v[::2], x.shape)
+        x_ = self.sparse_tensor(i[:, :int(nnz / 2)], v[::2], x.shape)
         res = torch.add(y, x_, alpha=r)
         expected = y + r * self.safeToDense(x_)
         self.assertEqual(res, expected)
@@ -1109,12 +1193,13 @@ class TestSparse(TestCase):
                         res = res.to_dense()
                     return res
 
-                gradcheck(fn, (S,), check_sparse_nnz=True)
+                gradcheck(fn, (S, ), check_sparse_nnz=True)
 
             else:
                 S_sum = torch.sparse.sum(S, td)
                 D_sum = D.sum(td)
-                self.assertEqual(S_sum.to_dense() if S_sum.is_sparse else S_sum, D_sum)
+                self.assertEqual(
+                    S_sum.to_dense() if S_sum.is_sparse else S_sum, D_sum)
 
                 def fn(S):
                     res = torch.sparse.sum(S, td)
@@ -1122,7 +1207,7 @@ class TestSparse(TestCase):
                         res = res.to_dense()
                     return res
 
-                gradcheck(fn, (S,), check_sparse_nnz=True)
+                gradcheck(fn, (S, ), check_sparse_nnz=True)
 
         nnz = 10
         sparse_dims = 2
@@ -1132,18 +1217,16 @@ class TestSparse(TestCase):
             test_dims += itertools.combinations(range(len(with_size)), i)
 
         # https://github.com/pytorch/pytorch/issues/16501
-        x = torch.tensor(
-            [
-                [1.0, 0.0, 0.0, 1.0],
-                [0.0, 1.0, 0.0, 0.0],
-                [0.0, 1.0, 1.0, 0.0],
-                [0.0, 1.0, 0.0, 2.0],
-            ]
-        ).to_sparse()
-        self.assertEqual(torch.sparse.sum(x, dim=0), torch.sparse.sum(x, dim=-2))
-        self.assertEqual(
-            torch.sum(x.to_dense(), dim=0), torch.sparse.sum(x, dim=0).to_dense()
-        )
+        x = torch.tensor([
+            [1.0, 0.0, 0.0, 1.0],
+            [0.0, 1.0, 0.0, 0.0],
+            [0.0, 1.0, 1.0, 0.0],
+            [0.0, 1.0, 0.0, 2.0],
+        ]).to_sparse()
+        self.assertEqual(torch.sparse.sum(x, dim=0), torch.sparse.sum(x,
+                                                                      dim=-2))
+        self.assertEqual(torch.sum(x.to_dense(), dim=0),
+                         torch.sparse.sum(x, dim=0).to_dense())
 
         # not support SparseTensor.sum()
         S = self._gen_sparse(sparse_dims, nnz, with_size)[0]
@@ -1158,13 +1241,13 @@ class TestSparse(TestCase):
         # sum an empty tensor
         empty_S = torch.sparse_coo_tensor(size=with_size)
         self.assertRaises(RuntimeError, lambda: torch.sparse.sum(empty_S, [0]))
-        self.assertEqual(
-            torch.sparse.sum(empty_S), torch.tensor(0, dtype=torch.float64)
-        )
+        self.assertEqual(torch.sparse.sum(empty_S),
+                         torch.tensor(0, dtype=torch.float64))
         empty_S.requires_grad_(True)
         empty_S_sum = torch.sparse.sum(empty_S)
         empty_S_sum.backward()
-        self.assertEqual(empty_S.grad.to_dense(), empty_S.clone().detach().to_dense())
+        self.assertEqual(empty_S.grad.to_dense(),
+                         empty_S.clone().detach().to_dense())
 
         # test values().sum()
         S = self._gen_sparse(sparse_dims, nnz, with_size)[0]
@@ -1215,10 +1298,10 @@ class TestSparse(TestCase):
         self.assertEqual(self.safeToDense(y2), expected)
 
         # TODO: add back inplace support
-        y1 = x1 ** 2
+        y1 = x1**2
         y2 = x1.clone()
         y2 = y2.pow(2)
-        expected = self.safeToDense(x1) ** 2
+        expected = self.safeToDense(x1)**2
         self.assertEqual(self.safeToDense(y1), expected)
         self.assertEqual(self.safeToDense(y2), expected)
 
@@ -1268,18 +1351,23 @@ class TestSparse(TestCase):
         self._test_basic_ops_shape(0, 0, [10, 10, 0], [2, 0])
 
     def test_add_dense_sparse_mismatch(self):
-        def test_shape(dense_size, sparse_dims_shape, dense_dims_shape, sparse_size):
-            x = torch.zeros(dense_size, dtype=self.value_dtype, device=self.device)
+        def test_shape(dense_size, sparse_dims_shape, dense_dims_shape,
+                       sparse_size):
+            x = torch.zeros(dense_size,
+                            dtype=self.value_dtype,
+                            device=self.device)
             sparse_y = self.sparse_tensor(
-                torch.zeros(sparse_dims_shape, dtype=torch.int64, device=self.device),
-                torch.randn(
-                    dense_dims_shape, dtype=self.value_dtype, device=self.device
-                ),
+                torch.zeros(sparse_dims_shape,
+                            dtype=torch.int64,
+                            device=self.device),
+                torch.randn(dense_dims_shape,
+                            dtype=self.value_dtype,
+                            device=self.device),
                 torch.Size(sparse_size),
             )
             with self.assertRaisesRegex(
-                RuntimeError, "add: expected 'self' and 'other' to have same size"
-            ):
+                    RuntimeError,
+                    "add: expected 'self' and 'other' to have same size"):
                 x + sparse_y
 
         test_shape([3, 4], [1, 4], [4, 4, 4], [3, 4, 4])
@@ -1307,24 +1395,28 @@ class TestSparse(TestCase):
         self.assertEqual(self.safeToDense(y2), expected)
 
     def _test_sparse_mask_fixed(self):
-        i = self.index_tensor([[1, 3, 0, 4], [2, 1, 2, 3],])
+        i = self.index_tensor([
+            [1, 3, 0, 4],
+            [2, 1, 2, 3],
+        ])
         v = self.value_tensor([1, 2, 3, 4])
         x = self.sparse_tensor(i, v, torch.Size([5, 4])).coalesce()
-        dense = self.value_tensor(
-            [
-                [1, 2, 3, 4],
-                [5, 6, 7, 8],
-                [9, 10, 11, 12],
-                [13, 14, 15, 16],
-                [17, 18, 19, 20],
-            ]
-        )
+        dense = self.value_tensor([
+            [1, 2, 3, 4],
+            [5, 6, 7, 8],
+            [9, 10, 11, 12],
+            [13, 14, 15, 16],
+            [17, 18, 19, 20],
+        ])
         exp_v = self.value_tensor([7, 14, 3, 20])
         res = dense.sparse_mask(x)
         expected = self.sparse_tensor(i, exp_v, torch.Size([5, 4]))
         self.assertEqual(res, expected)
 
-        i = self.index_tensor([[1, 3, 0, 4], [2, 1, 2, 3],])
+        i = self.index_tensor([
+            [1, 3, 0, 4],
+            [2, 1, 2, 3],
+        ])
         v = self.value_empty(4, 0)
         x = self.sparse_tensor(i, v, torch.Size([5, 4, 0])).coalesce()
         dense = self.value_empty(5, 4, 0)
@@ -1346,27 +1438,31 @@ class TestSparse(TestCase):
         self._test_sparse_mask_shape(0, 0, [10, 10, 0])
 
     def _test_sparse_mask_hybrid_fixed(self):
-        i = self.index_tensor([[1, 3, 0, 4], [2, 1, 2, 3],])
+        i = self.index_tensor([
+            [1, 3, 0, 4],
+            [2, 1, 2, 3],
+        ])
         v = self.value_tensor([[1, 2], [2, 3], [3, 4], [4, 5]])
         # TODO: This is also testing that, if coalesce is a no-op,
         # the indices don't get permuted. I don't know if we actually
         # want to give this invariant.
         x = self.sparse_tensor(i, v, torch.Size([5, 4, 2])).coalesce()
-        dense = self.value_tensor(
-            [
-                [[1, 3], [2, 2], [3, 3], [4, 2]],
-                [[5, 7], [6, 7], [7, 9], [8, 9]],
-                [[9, 2], [10, 4], [11, 1], [12, 3]],
-                [[13, 5], [14, 1], [15, 1], [16, 6]],
-                [[17, 7], [18, 2], [19, 7], [20, 1]],
-            ]
-        )
+        dense = self.value_tensor([
+            [[1, 3], [2, 2], [3, 3], [4, 2]],
+            [[5, 7], [6, 7], [7, 9], [8, 9]],
+            [[9, 2], [10, 4], [11, 1], [12, 3]],
+            [[13, 5], [14, 1], [15, 1], [16, 6]],
+            [[17, 7], [18, 2], [19, 7], [20, 1]],
+        ])
         res = dense.sparse_mask(x)
         exp_v = self.value_tensor([[7, 9], [14, 1], [3, 3], [20, 1]])
         expected = self.sparse_tensor(i, exp_v, torch.Size([5, 4, 2]))
         self.assertEqual(res, expected)
 
-        i = self.index_tensor([[1, 3, 0, 4], [2, 1, 2, 3],])
+        i = self.index_tensor([
+            [1, 3, 0, 4],
+            [2, 1, 2, 3],
+        ])
         v = self.value_empty(4, 2, 0)
         x = self.sparse_tensor(i, v, torch.Size([5, 4, 2, 0])).coalesce()
         dense = self.value_empty(5, 4, 2, 0)
@@ -1397,7 +1493,8 @@ class TestSparse(TestCase):
             out, _, _ = self._gen_sparse(len(out_shape_i), nnz, out_shape)
             torch.zeros(*shape, out=out)
             self.assertEqual(tuple(out.size()), tuple(shape))
-            self.assertTrue(out._indices().numel() == out._values().numel() == 0)
+            self.assertTrue(
+                out._indices().numel() == out._values().numel() == 0)
             self.assertEqual(out._nnz(), 0)
             self.assertEqual(out.sparse_dim(), len(shape))
             self.assertEqual(out.dense_dim(), 0)
@@ -1406,7 +1503,8 @@ class TestSparse(TestCase):
         def test_shape(i_shapes, v_shapes, shape, nnzs):
             for i_dim in range(1, len(i_shapes) + 1):
                 for v_dim in range(len(v_shapes) + 1):
-                    self._test_zeros(nnzs, shape, i_shapes[:i_dim], v_shapes[:v_dim])
+                    self._test_zeros(nnzs, shape, i_shapes[:i_dim],
+                                     v_shapes[:v_dim])
 
         test_shape([2, 3, 4], [3, 4, 5, 6], [2, 3, 4], [9, 12])
         test_shape([0, 3, 4], [3, 4, 5, 6], [2, 3, 4], [0])
@@ -1419,10 +1517,12 @@ class TestSparse(TestCase):
         template_shape_v = template_shape_v or []
         template_shape = template_shape_i + template_shape_v
         for nnz in nnzs:
-            t, _, _ = self._gen_sparse(len(template_shape_i), nnz, template_shape)
+            t, _, _ = self._gen_sparse(len(template_shape_i), nnz,
+                                       template_shape)
             res = torch.zeros_like(t)
             self.assertEqual(tuple(res.size()), tuple(template_shape))
-            self.assertTrue(res._indices().numel() == res._values().numel() == 0)
+            self.assertTrue(
+                res._indices().numel() == res._values().numel() == 0)
             self.assertEqual(res._nnz(), 0)
             self.assertEqual(res.sparse_dim(), len(template_shape_i))
             self.assertEqual(res.dense_dim(), len(template_shape_v))
@@ -1431,7 +1531,8 @@ class TestSparse(TestCase):
         def test_shape(i_shapes, v_shapes, nnzs):
             for i_dim in range(1, len(i_shapes) + 1):
                 for v_dim in range(len(v_shapes) + 1):
-                    self._test_zeros_like(nnzs, i_shapes[:i_dim], v_shapes[:v_dim])
+                    self._test_zeros_like(nnzs, i_shapes[:i_dim],
+                                          v_shapes[:v_dim])
 
         test_shape([2, 3, 4], [3, 4, 5, 6], [9, 12])
         test_shape([0, 3, 4], [3, 4, 5, 6], [0])
@@ -1456,24 +1557,21 @@ class TestSparse(TestCase):
         for narrow_args in self._all_narrow_combs(shape):
             self._test_narrow(input, narrow_args)
 
-        self.assertRaises(RuntimeError, lambda: input.narrow_copy(-1, 0, 3))  # dim < 0
         self.assertRaises(
-            RuntimeError, lambda: input.narrow_copy(10, 0, 3)
-        )  # dim > input.dim()
-        self.assertRaises(
-            RuntimeError, lambda: input.narrow_copy(0, shape[0] + 1, 3)
-        )  # start > size of dim
-        self.assertRaises(
-            RuntimeError, lambda: input.narrow_copy(0, 2, shape[0])
-        )  # start+length > size of dim
+            RuntimeError, lambda: input.narrow_copy(-1, 0, 3))  # dim < 0
+        self.assertRaises(RuntimeError, lambda: input.narrow_copy(10, 0, 3)
+                          )  # dim > input.dim()
+        self.assertRaises(RuntimeError, lambda: input.narrow_copy(
+            0, shape[0] + 1, 3))  # start > size of dim
+        self.assertRaises(RuntimeError, lambda: input.narrow_copy(
+            0, 2, shape[0]))  # start+length > size of dim
 
         with_dense, _, _ = self._gen_sparse(2, 7, shape)
         for narrow_args in self._all_narrow_combs(shape):
             self._test_narrow(with_dense, narrow_args)
 
-        self.assertRaises(
-            RuntimeError, lambda: with_dense.narrow_copy(10, 0, 3)
-        )  # dim > sparseDim + denseDim
+        self.assertRaises(RuntimeError, lambda: with_dense.narrow_copy(
+            10, 0, 3))  # dim > sparseDim + denseDim
 
     def _test_log1p_tensor(self, input, dense_tensor):
         expected_output = dense_tensor.log1p()
@@ -1482,8 +1580,8 @@ class TestSparse(TestCase):
 
         # test in-place op on uncoalesced input
         with self.assertRaisesRegex(
-            RuntimeError, "in-place on uncoalesced tensors is not supported yet"
-        ):
+                RuntimeError,
+                "in-place on uncoalesced tensors is not supported yet"):
             input.log1p_()
 
         input.requires_grad_()
@@ -1493,8 +1591,8 @@ class TestSparse(TestCase):
         x = input.clone()
         y = input.log1p()
         with self.assertRaisesRegex(
-            RuntimeError, "log1p of a sparse tensor is made to be non-differentiable"
-        ):
+                RuntimeError,
+                "log1p of a sparse tensor is made to be non-differentiable"):
             y.backward(x)
 
     def test_log1p(self):
@@ -1504,21 +1602,19 @@ class TestSparse(TestCase):
             torch.Size([3]),
             device=self.device,
         )
-        self._test_log1p_tensor(input, torch.as_tensor([3, 4, 5], dtype=torch.float32))
+        self._test_log1p_tensor(
+            input, torch.as_tensor([3, 4, 5], dtype=torch.float32))
 
         # test uncoalesced input
         input_uncoalesced = torch.sparse_coo_tensor(
-            torch.LongTensor([[0], [1], [2], [0], [1], [2]])
-            .transpose(1, 0)
-            .clone()
-            .detach(),
+            torch.LongTensor([[0], [1], [2], [0], [1],
+                              [2]]).transpose(1, 0).clone().detach(),
             torch.FloatTensor([2, 3, 4, 1, 1, 1]),
             torch.Size([3]),
             device=self.device,
         )
         self._test_log1p_tensor(
-            input_uncoalesced, torch.as_tensor([3, 4, 5], dtype=torch.float32)
-        )
+            input_uncoalesced, torch.as_tensor([3, 4, 5], dtype=torch.float32))
 
         input = torch.sparse_coo_tensor(
             torch.zeros([2, 0]),
@@ -1526,7 +1622,8 @@ class TestSparse(TestCase):
             torch.Size([0, 0, 5, 5, 5, 5, 5, 5, 0]),
             device=self.device,
         )
-        self._test_log1p_tensor(input, torch.zeros([0, 0, 5, 5, 5, 5, 5, 5, 0]))
+        self._test_log1p_tensor(input, torch.zeros([0, 0, 5, 5, 5, 5, 5, 5,
+                                                    0]))
 
         input = torch.sparse_coo_tensor(
             torch.zeros([1, 5]),
@@ -1589,15 +1686,15 @@ class TestSparse(TestCase):
         v = self.value_tensor([5]).cuda(0)
         # NB: non-legacy constructor allows this and moves indices
         self.assertRaises(
-            RuntimeError, lambda: self.legacy_sparse_tensor(i, v, torch.Size([3]))
-        )
+            RuntimeError, lambda: self.legacy_sparse_tensor(
+                i, v, torch.Size([3])))
 
         i = self.index_tensor([[2]]).cuda(1)
         v = self.value_empty(1, 0).cuda(0)
         # NB: non-legacy constructor allows this and moves indices
         self.assertRaises(
-            RuntimeError, lambda: self.legacy_sparse_tensor(i, v, torch.Size([3, 0]))
-        )
+            RuntimeError, lambda: self.legacy_sparse_tensor(
+                i, v, torch.Size([3, 0])))
 
     def _test_new_device(self, size, device):
         with torch.cuda.device(device):
@@ -1647,28 +1744,26 @@ class TestSparse(TestCase):
             for include_size in [True, False]:
                 for use_tensor_idx in [True, False]:
                     for use_tensor_val in [True, False]:
-                        for use_cuda in (
-                            [False] if not torch.cuda.is_available() else [True, False]
-                        ):
+                        for use_cuda in ([
+                                False
+                        ] if not torch.cuda.is_available() else [True, False]):
                             for dtype in [torch.float64, torch.float16]:
                                 # have to include size with cuda sparse tensors
                                 include_size = include_size or use_cuda
                                 long_dtype = torch.int64
                                 device = (
-                                    torch.device("cpu")
-                                    if not use_cuda
-                                    else torch.device(torch.cuda.device_count() - 1)
-                                )
-                                indices = (
-                                    torch.tensor(([0], [2]), dtype=long_dtype)
-                                    if use_tensor_idx
-                                    else ([0], [2])
-                                )
+                                    torch.device("cpu") if not use_cuda else
+                                    torch.device(torch.cuda.device_count() -
+                                                 1))
+                                indices = (torch.tensor(
+                                    ([0], [2]), dtype=long_dtype)
+                                           if use_tensor_idx else ([0], [2]))
                                 if test_empty_tensor:
                                     values = self.value_empty(1, 0).to(dtype)
                                 else:
                                     if use_tensor_val:
-                                        values = torch.tensor([1.0], dtype=dtype)
+                                        values = torch.tensor([1.0],
+                                                              dtype=dtype)
                                     else:
                                         values = 1.0
                                 if include_size:
@@ -1688,8 +1783,10 @@ class TestSparse(TestCase):
                                         device=device,
                                         requires_grad=True,
                                     )
-                                self.assertEqual(indices, sparse_tensor._indices())
-                                self.assertEqual(values, sparse_tensor._values())
+                                self.assertEqual(indices,
+                                                 sparse_tensor._indices())
+                                self.assertEqual(values,
+                                                 sparse_tensor._values())
                                 self.assertEqual(
                                     size if include_size else default_size,
                                     sparse_tensor.size(),
@@ -1697,15 +1794,17 @@ class TestSparse(TestCase):
                                 self.assertEqual(dtype, sparse_tensor.dtype)
                                 if use_cuda:
                                     self.assertEqual(
-                                        device, sparse_tensor._values().device
-                                    )
-                                self.assertEqual(True, sparse_tensor.requires_grad)
+                                        device,
+                                        sparse_tensor._values().device)
+                                self.assertEqual(True,
+                                                 sparse_tensor.requires_grad)
 
     def test_factory_size_check(self):
         indices = self.index_tensor([[1, 2], [0, 2]])
         values = self.value_tensor([0.5, 0.5])
         sizes = torch.Size([2, 3])
-        with self.assertRaisesRegex(RuntimeError, "size is inconsistent with indices"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "size is inconsistent with indices"):
             torch.sparse_coo_tensor(indices, values, sizes)
 
         indices.fill_(-1)
@@ -1715,13 +1814,15 @@ class TestSparse(TestCase):
         indices = self.index_tensor([[1, 2], [0, 2]])
         values = self.value_empty(2, 1, 0)
         sizes = torch.Size([2, 3, 1, 0])
-        with self.assertRaisesRegex(RuntimeError, "size is inconsistent with indices"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "size is inconsistent with indices"):
             torch.sparse_coo_tensor(indices, values, sizes)
 
         indices = self.index_tensor([[1, 2], [0, 2]])
         values = self.value_empty(2, 2, 2)
         sizes = torch.Size([0, 0, 2, 2])
-        with self.assertRaisesRegex(RuntimeError, "size is inconsistent with indices"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "size is inconsistent with indices"):
             torch.sparse_coo_tensor(indices, values, sizes)
 
         indices = self.index_tensor([[1, 2], [0, 2]])
@@ -1757,7 +1858,8 @@ class TestSparse(TestCase):
         expected_indices = torch.empty((3, 0), dtype=torch.long, device=device)
         self.assertEqual(tensor._indices(), expected_indices)
 
-        tensor = torch.sparse_coo_tensor(torch.Size([2, 2, 0, 0]), device=device)
+        tensor = torch.sparse_coo_tensor(torch.Size([2, 2, 0, 0]),
+                                         device=device)
         expected_indices = torch.empty((4, 0), dtype=torch.long, device=device)
         self.assertEqual(tensor._indices(), expected_indices)
 
@@ -1765,17 +1867,15 @@ class TestSparse(TestCase):
         indices = self.index_tensor([[0]])  # (sparse_dim, nnz): (1, 1)
         values = self.value_tensor([[1, 1], [1, 1]])  # (nnz, ...): (2, 2)
         sizes = torch.Size([2, 2])
-        with self.assertRaisesRegex(
-            RuntimeError, "indices and values must have same nnz"
-        ):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "indices and values must have same nnz"):
             torch.sparse_coo_tensor(indices, values, sizes)
 
         indices = self.index_tensor([[0]])  # (sparse_dim, nnz): (1, 1)
         values = self.value_empty(2, 0)  # (nnz, ...): (2, 0)
         sizes = torch.Size([2, 0])
-        with self.assertRaisesRegex(
-            RuntimeError, "indices and values must have same nnz"
-        ):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "indices and values must have same nnz"):
             torch.sparse_coo_tensor(indices, values, sizes)
 
     def test_factory_nnz_zero(self):
@@ -1789,11 +1889,15 @@ class TestSparse(TestCase):
                     device=device,
                 )
             else:
-                t = torch.sparse_coo_tensor(
-                    torch.empty(i_shape), torch.empty(v_shape), device=device
-                )
-            expected_indices = torch.empty(i_shape, device=device, dtype=torch.int64)
-            expected_values = torch.empty(v_shape, device=device, dtype=torch.float64)
+                t = torch.sparse_coo_tensor(torch.empty(i_shape),
+                                            torch.empty(v_shape),
+                                            device=device)
+            expected_indices = torch.empty(i_shape,
+                                           device=device,
+                                           dtype=torch.int64)
+            expected_values = torch.empty(v_shape,
+                                          device=device,
+                                          dtype=torch.float64)
             expected_size = torch.Size(expected_size)
             self.assertEqual(t._indices(), expected_indices)
             self.assertEqual(t._values(), expected_values)
@@ -1802,8 +1906,10 @@ class TestSparse(TestCase):
         test_shape([1, 0], [0, 2, 4, 0], None, [0, 2, 4, 0])
         test_shape([3, 0], [0, 2, 4, 0], None, [0, 0, 0, 2, 4, 0])
         test_shape([1, 0], [0, 2, 4, 0], [0, 2, 4, 0], [0, 2, 4, 0])
-        test_shape([3, 0], [0, 2, 4, 0], [0, 0, 0, 2, 4, 0], [0, 0, 0, 2, 4, 0])
-        test_shape([3, 0], [0, 2, 4, 0], [1, 2, 3, 2, 4, 0], [1, 2, 3, 2, 4, 0])
+        test_shape([3, 0], [0, 2, 4, 0], [0, 0, 0, 2, 4, 0],
+                   [0, 0, 0, 2, 4, 0])
+        test_shape([3, 0], [0, 2, 4, 0], [1, 2, 3, 2, 4, 0],
+                   [1, 2, 3, 2, 4, 0])
 
     def test_factory_dense_dim(self):
         indices = self.index_tensor([[0]])
@@ -1820,28 +1926,30 @@ class TestSparse(TestCase):
 
     @cpu_only
     def test_factory_type_inference(self):
-        t = torch.sparse_coo_tensor(
-            torch.tensor(([0], [2])), torch.tensor([1.0], dtype=torch.float16)
-        )
+        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])),
+                                    torch.tensor([1.0], dtype=torch.float16))
         self.assertEqual(torch.float16, t.dtype)
-        t = torch.sparse_coo_tensor(
-            torch.tensor(([0], [2])), torch.tensor([1.0], dtype=torch.float32)
-        )
+        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])),
+                                    torch.tensor([1.0], dtype=torch.float32))
         self.assertEqual(torch.float32, t.dtype)
-        t = torch.sparse_coo_tensor(
-            torch.tensor(([0], [2])), torch.tensor([1.0], dtype=torch.float64)
-        )
+        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])),
+                                    torch.tensor([1.0], dtype=torch.float64))
         self.assertEqual(torch.float64, t.dtype)
-        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])), torch.tensor([1]))
+        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])),
+                                    torch.tensor([1]))
         self.assertEqual(torch.int64, t.dtype)
 
-        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])), torch.HalfTensor(1, 0))
+        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])),
+                                    torch.HalfTensor(1, 0))
         self.assertEqual(torch.float16, t.dtype)
-        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])), torch.FloatTensor(1, 0))
+        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])),
+                                    torch.FloatTensor(1, 0))
         self.assertEqual(torch.float32, t.dtype)
-        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])), torch.DoubleTensor(1, 0))
+        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])),
+                                    torch.DoubleTensor(1, 0))
         self.assertEqual(torch.float64, t.dtype)
-        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])), torch.LongTensor(1, 0))
+        t = torch.sparse_coo_tensor(torch.tensor(([0], [2])),
+                                    torch.LongTensor(1, 0))
         self.assertEqual(torch.int64, t.dtype)
 
     @cuda_only
@@ -1854,43 +1962,42 @@ class TestSparse(TestCase):
                     for test_empty_tensor in [True, False]:
                         if test_empty_tensor:
                             t = torch.sparse_coo_tensor(
-                                torch.tensor(([0], [2]), device=indices_device),
+                                torch.tensor(([0], [2]),
+                                             device=indices_device),
                                 self.value_empty(1, 0).to(values_device),
                                 (1, 3, 0),
                                 device=sparse_device,
                             )
                         else:
                             t = torch.sparse_coo_tensor(
-                                torch.tensor(([0], [2]), device=indices_device),
+                                torch.tensor(([0], [2]),
+                                             device=indices_device),
                                 torch.tensor([1.0], device=values_device),
                                 (1, 3),
                                 device=sparse_device,
                             )
                         should_be_cuda = sparse_device == "cuda" or (
-                            sparse_device is None and values_device == "cuda"
-                        )
+                            sparse_device is None and values_device == "cuda")
                         self.assertEqual(should_be_cuda, t.is_cuda)
 
     @cpu_only
     def test_factory_copy(self):
         def test_tensor(indices, values, indices_equal, values_equal):
-            sparse_tensor = torch.sparse_coo_tensor(
-                indices, values, dtype=torch.float64
-            )
+            sparse_tensor = torch.sparse_coo_tensor(indices,
+                                                    values,
+                                                    dtype=torch.float64)
             if indices_equal:
-                self.assertEqual(
-                    indices.data_ptr(), sparse_tensor._indices().data_ptr()
-                )
+                self.assertEqual(indices.data_ptr(),
+                                 sparse_tensor._indices().data_ptr())
             else:
-                self.assertNotEqual(
-                    indices.data_ptr(), sparse_tensor._indices().data_ptr()
-                )
+                self.assertNotEqual(indices.data_ptr(),
+                                    sparse_tensor._indices().data_ptr())
             if values_equal:
-                self.assertEqual(values.data_ptr(), sparse_tensor._values().data_ptr())
+                self.assertEqual(values.data_ptr(),
+                                 sparse_tensor._values().data_ptr())
             else:
-                self.assertNotEqual(
-                    values.data_ptr(), sparse_tensor._values().data_ptr()
-                )
+                self.assertNotEqual(values.data_ptr(),
+                                    sparse_tensor._values().data_ptr())
 
         # both correct
         indices = torch.tensor(([0], [2]), dtype=torch.int64)
@@ -1912,9 +2019,8 @@ class TestSparse(TestCase):
 
         indices = torch.tensor(([0], [2]), dtype=torch.int64)
         values = torch.FloatTensor(1, 0)
-        test_tensor(
-            indices, values, True, True
-        )  # An empty tensor's data_ptr is always equal to 0
+        test_tensor(indices, values, True,
+                    True)  # An empty tensor's data_ptr is always equal to 0
 
         # only values correct
         indices = torch.tensor(([0], [2]), dtype=torch.int32)
@@ -1932,9 +2038,8 @@ class TestSparse(TestCase):
 
         indices = torch.tensor(([0], [2]), dtype=torch.int32)
         values = torch.FloatTensor(1, 0)
-        test_tensor(
-            indices, values, False, True
-        )  # An empty tensor's data_ptr is always equal to 0
+        test_tensor(indices, values, False,
+                    True)  # An empty tensor's data_ptr is always equal to 0
 
     @cpu_only  # just run once, we test both cpu and cuda
     def test_constructor_device_legacy(self):
@@ -1942,62 +2047,65 @@ class TestSparse(TestCase):
         v = torch.tensor([3.0, 4.0, 5.0])
         size = torch.Size([2, 3])
 
-        self.assertRaises(RuntimeError, lambda: torch.sparse.FloatTensor(device="cuda"))
+        self.assertRaises(
+            RuntimeError, lambda: torch.sparse.FloatTensor(device="cuda"))
         self.assertRaises(
             RuntimeError, lambda: torch.sparse.FloatTensor(i, v, device="cuda")
         )
         self.assertRaises(
-            RuntimeError, lambda: torch.sparse.FloatTensor(i, v, size, device="cuda")
-        )
+            RuntimeError, lambda: torch.sparse.FloatTensor(
+                i, v, size, device="cuda"))
         self.assertRaises(
             RuntimeError,
-            lambda: torch.sparse.FloatTensor(torch.Size([2, 3, 4]), device="cuda"),
+            lambda: torch.sparse.FloatTensor(torch.Size([2, 3, 4]),
+                                             device="cuda"),
         )
 
         x = torch.sparse_coo_tensor(i, v, size, device="cpu")
         self.assertRaises(RuntimeError, lambda: x.new(device="cuda"))
         self.assertRaises(RuntimeError, lambda: x.new(i, v, device="cuda"))
-        self.assertRaises(RuntimeError, lambda: x.new(i, v, size, device="cuda"))
         self.assertRaises(
-            RuntimeError, lambda: x.new(torch.Size([2, 3, 4]), device="cuda")
-        )
+            RuntimeError, lambda: x.new(i, v, size, device="cuda"))
+        self.assertRaises(
+            RuntimeError, lambda: x.new(torch.Size([2, 3, 4]), device="cuda"))
 
         if torch.cuda.is_available():
             self.assertRaises(
-                RuntimeError, lambda: torch.cuda.sparse.FloatTensor(device="cpu")
-            )
+                RuntimeError, lambda: torch.cuda.sparse.FloatTensor(device=
+                                                                    "cpu"))
             self.assertRaises(
-                RuntimeError, lambda: torch.cuda.sparse.FloatTensor(i, v, device="cpu")
+                RuntimeError, lambda: torch.cuda.sparse.FloatTensor(
+                    i, v, device="cpu"))
+            self.assertRaises(
+                RuntimeError,
+                lambda: torch.cuda.sparse.FloatTensor(i, v, size, device="cpu"
+                                                      ),
             )
             self.assertRaises(
                 RuntimeError,
-                lambda: torch.cuda.sparse.FloatTensor(i, v, size, device="cpu"),
-            )
-            self.assertRaises(
-                RuntimeError,
-                lambda: torch.cuda.sparse.FloatTensor(
-                    torch.Size([2, 3, 4]), device="cpu"
-                ),
+                lambda: torch.cuda.sparse.FloatTensor(torch.Size([2, 3, 4]),
+                                                      device="cpu"),
             )
 
             x = torch.sparse_coo_tensor(i, v, size, device="cuda")
             self.assertRaises(RuntimeError, lambda: x.new(device="cpu"))
             self.assertRaises(RuntimeError, lambda: x.new(i, v, device="cpu"))
-            self.assertRaises(RuntimeError, lambda: x.new(i, v, size, device="cpu"))
             self.assertRaises(
-                RuntimeError, lambda: x.new(torch.Size([2, 3, 4]), device="cpu")
-            )
+                RuntimeError, lambda: x.new(i, v, size, device="cpu"))
+            self.assertRaises(
+                RuntimeError, lambda: x.new(torch.Size([2, 3, 4]),
+                                            device="cpu"))
 
     def test_legacy_constructor(self):
         i = torch.tensor([[0, 1, 1], [2, 0, 2]])
         v = torch.tensor([3.0, 4.0, 5.0])
         size = torch.Size([2, 3])
 
-        self.assertRaises(TypeError, lambda: torch.sparse.FloatTensor(v.storage()))
+        self.assertRaises(
+            TypeError, lambda: torch.sparse.FloatTensor(v.storage()))
         self.assertRaises(TypeError, lambda: torch.sparse.FloatTensor(v))
-        self.assertEqual(
-            torch.sparse_coo, torch.sparse.FloatTensor(torch.Size([2, 3])).layout
-        )
+        self.assertEqual(torch.sparse_coo,
+                         torch.sparse.FloatTensor(torch.Size([2, 3])).layout)
         self.assertRaises(TypeError, lambda: torch.sparse.FloatTensor([6]))
 
     def test_legacy_new(self):
@@ -2015,23 +2123,21 @@ class TestSparse(TestCase):
     @cpu_only  # not really, but we only really want to run this once
     def test_dtypes(self):
         all_sparse_dtypes = torch.testing.get_all_dtypes()
-        do_test_dtypes(self, all_sparse_dtypes, torch.sparse_coo, torch.device("cpu"))
+        do_test_dtypes(self, all_sparse_dtypes, torch.sparse_coo,
+                       torch.device("cpu"))
         if torch.cuda.is_available():
-            do_test_dtypes(
-                self, all_sparse_dtypes, torch.sparse_coo, torch.device("cuda:0")
-            )
+            do_test_dtypes(self, all_sparse_dtypes, torch.sparse_coo,
+                           torch.device("cuda:0"))
 
     @cpu_only  # not really, but we only really want to run this once
     def test_empty_full(self):
         all_sparse_dtypes = torch.testing.get_all_dtypes()
-        do_test_empty_full(
-            self, all_sparse_dtypes, torch.sparse_coo, torch.device("cpu")
-        )
+        do_test_empty_full(self, all_sparse_dtypes, torch.sparse_coo,
+                           torch.device("cpu"))
         if torch.cuda.device_count() > 0:
             do_test_empty_full(self, all_sparse_dtypes, torch.sparse_coo, None)
-            do_test_empty_full(
-                self, all_sparse_dtypes, torch.sparse_coo, torch.device("cuda:0")
-            )
+            do_test_empty_full(self, all_sparse_dtypes, torch.sparse_coo,
+                               torch.device("cuda:0"))
 
     def test_is_sparse(self):
         x = torch.randn(3, 3)
@@ -2067,9 +2173,9 @@ class TestSparse(TestCase):
             torch.Size(x_size),
         )
         x_dense = x.to_dense()
-        y = torch.sparse_coo_tensor(
-            torch.zeros(y_i), torch.ones(y_v).to(torch.float), torch.Size(y_size)
-        )
+        y = torch.sparse_coo_tensor(torch.zeros(y_i),
+                                    torch.ones(y_v).to(torch.float),
+                                    torch.Size(y_size))
         y_dense = y.to_dense()
         x.resize_as_(y)
         x_dense.resize_as_(y_dense)
@@ -2086,140 +2192,122 @@ class TestSparse(TestCase):
 
     def test_resize(self):
         # 1. Expand the size of some dense dimensions [Supported]
-        self._test_resize_shape(
-            [1, 1], [1, 2, 3], [2, 2, 3], [1, 1], [1, 2, 4], [2, 2, 4]
-        )
+        self._test_resize_shape([1, 1], [1, 2, 3], [2, 2, 3], [1, 1],
+                                [1, 2, 4], [2, 2, 4])
 
-        self._test_resize_shape(
-            [1, 1], [1, 2, 0], [2, 2, 0], [1, 1], [1, 2, 4], [2, 2, 4]
-        )
+        self._test_resize_shape([1, 1], [1, 2, 0], [2, 2, 0], [1, 1],
+                                [1, 2, 4], [2, 2, 4])
 
         # 2. Expand the size of some sparse dimensions [Supported]
-        self._test_resize_shape(
-            [1, 1], [1, 2, 3], [2, 2, 3], [1, 1], [1, 2, 3], [4, 2, 3]
-        )
+        self._test_resize_shape([1, 1], [1, 2, 3], [2, 2, 3], [1, 1],
+                                [1, 2, 3], [4, 2, 3])
 
         # 3. Change the shapes of both sparse and dense dimensions when nnz is zero [Supported]
-        self._test_resize_shape(
-            [1, 0], [0, 2, 3], [2, 2, 3], [2, 0], [0, 2, 4, 5], [1, 1, 2, 4, 5]
-        )
+        self._test_resize_shape([1, 0], [0, 2, 3], [2, 2, 3], [2, 0],
+                                [0, 2, 4, 5], [1, 1, 2, 4, 5])
 
-        self._test_resize_shape(
-            [1, 0], [0, 2, 3], [2, 2, 3], [2, 0], [0, 2, 4, 0], [1, 1, 2, 4, 0]
-        )
+        self._test_resize_shape([1, 0], [0, 2, 3], [2, 2, 3], [2, 0],
+                                [0, 2, 4, 0], [1, 1, 2, 4, 0])
 
         # 4. Add dims to dense dimensions [Not Supported]
-        with self.assertRaisesRegex(
-            RuntimeError, "changing the number of dense dimensions"
-        ):
-            self._test_resize_shape(
-                [1, 1], [1, 2, 3], [2, 2, 3], [1, 1], [1, 2, 3, 4], [2, 2, 3, 4]
-            )
+        with self.assertRaisesRegex(RuntimeError,
+                                    "changing the number of dense dimensions"):
+            self._test_resize_shape([1, 1], [1, 2, 3], [2, 2, 3], [1, 1],
+                                    [1, 2, 3, 4], [2, 2, 3, 4])
 
-        with self.assertRaisesRegex(
-            RuntimeError, "changing the number of dense dimensions"
-        ):
-            self._test_resize_shape(
-                [1, 1], [1, 2, 3], [2, 2, 3], [1, 1], [1, 2, 3, 0], [2, 2, 3, 0]
-            )
+        with self.assertRaisesRegex(RuntimeError,
+                                    "changing the number of dense dimensions"):
+            self._test_resize_shape([1, 1], [1, 2, 3], [2, 2, 3], [1, 1],
+                                    [1, 2, 3, 0], [2, 2, 3, 0])
 
         # 5. Remove dims from dense dimensions [Not Supported]
-        with self.assertRaisesRegex(
-            RuntimeError, "changing the number of dense dimensions"
-        ):
-            self._test_resize_shape(
-                [1, 1], [1, 2, 3], [2, 2, 3], [1, 1], [1, 2], [2, 2]
-            )
+        with self.assertRaisesRegex(RuntimeError,
+                                    "changing the number of dense dimensions"):
+            self._test_resize_shape([1, 1], [1, 2, 3], [2, 2, 3], [1, 1],
+                                    [1, 2], [2, 2])
 
         # 6. Change the number of sparse dimensions on a non-empty sparse tensor [Not Supported]
         with self.assertRaisesRegex(
-            RuntimeError, "changing the number of sparse dimensions"
-        ):
-            self._test_resize_shape(
-                [1, 1], [1, 2, 3], [2, 2, 3], [2, 1], [1, 2, 3], [1, 2, 2, 3]
-            )
+                RuntimeError, "changing the number of sparse dimensions"):
+            self._test_resize_shape([1, 1], [1, 2, 3], [2, 2, 3], [2, 1],
+                                    [1, 2, 3], [1, 2, 2, 3])
 
         # 7. Shrink the size of some sparse dimensions on a non-empty sparse tensor [Not Supported]
-        with self.assertRaisesRegex(
-            RuntimeError, "shrinking the size of sparse dimensions"
-        ):
-            self._test_resize_shape(
-                [1, 1], [1, 2, 3], [2, 2, 3], [1, 1], [1, 2, 3], [1, 2, 3]
-            )
+        with self.assertRaisesRegex(RuntimeError,
+                                    "shrinking the size of sparse dimensions"):
+            self._test_resize_shape([1, 1], [1, 2, 3], [2, 2, 3], [1, 1],
+                                    [1, 2, 3], [1, 2, 3])
 
         # 8. Shrink the size of some dense dimensions on a non-empty sparse tensor [Not Supported]
-        with self.assertRaisesRegex(
-            RuntimeError, "shrinking the size of dense dimensions"
-        ):
-            self._test_resize_shape(
-                [1, 1], [1, 2, 3], [2, 2, 3], [1, 1], [1, 2, 2], [2, 2, 2]
-            )
+        with self.assertRaisesRegex(RuntimeError,
+                                    "shrinking the size of dense dimensions"):
+            self._test_resize_shape([1, 1], [1, 2, 3], [2, 2, 3], [1, 1],
+                                    [1, 2, 2], [2, 2, 2])
 
-        with self.assertRaisesRegex(
-            RuntimeError, "shrinking the size of dense dimensions"
-        ):
-            self._test_resize_shape(
-                [1, 1], [1, 2, 3], [2, 2, 3], [1, 1], [1, 2, 0], [2, 2, 0]
-            )
+        with self.assertRaisesRegex(RuntimeError,
+                                    "shrinking the size of dense dimensions"):
+            self._test_resize_shape([1, 1], [1, 2, 3], [2, 2, 3], [1, 1],
+                                    [1, 2, 0], [2, 2, 0])
 
     def test_is_nonzero(self):
-        self.assertTrue(torch.sparse_coo_tensor(([0],), 1.0, (1,)).is_nonzero())
-        self.assertFalse(torch.sparse_coo_tensor(([0],), 0.0, (1,)).is_nonzero())
-        self.assertFalse(torch.sparse_coo_tensor(([0], [0]), 0.0, (1, 1)).is_nonzero())
-        self.assertFalse(
-            torch.sparse_coo_tensor(([0, 0],), (0.0, 0.0), (1,)).is_nonzero()
-        )
-        self.assertFalse(
-            torch.sparse_coo_tensor(([0, 0],), (-1.0, 1.0), (1,)).is_nonzero()
-        )
         self.assertTrue(
-            torch.sparse_coo_tensor(torch.zeros(0, 1), 12.3, []).is_nonzero()
-        )  # scalar sparse tensor
+            torch.sparse_coo_tensor(([0], ), 1.0, (1, )).is_nonzero())
+        self.assertFalse(
+            torch.sparse_coo_tensor(([0], ), 0.0, (1, )).is_nonzero())
+        self.assertFalse(
+            torch.sparse_coo_tensor(([0], [0]), 0.0, (1, 1)).is_nonzero())
+        self.assertFalse(
+            torch.sparse_coo_tensor(([0, 0], ), (0.0, 0.0),
+                                    (1, )).is_nonzero())
+        self.assertFalse(
+            torch.sparse_coo_tensor(([0, 0], ), (-1.0, 1.0),
+                                    (1, )).is_nonzero())
+        self.assertTrue(
+            torch.sparse_coo_tensor(torch.zeros(0, 1), 12.3,
+                                    []).is_nonzero())  # scalar sparse tensor
         with self.assertRaisesRegex(
-            RuntimeError, "bool value of Tensor with no values is ambiguous"
-        ):
-            torch.sparse_coo_tensor(
-                ([0, 1],), self.value_empty(2, 0), (4, 0)
-            ).is_nonzero()
+                RuntimeError,
+                "bool value of Tensor with no values is ambiguous"):
+            torch.sparse_coo_tensor(([0, 1], ), self.value_empty(2, 0),
+                                    (4, 0)).is_nonzero()
 
     def test_allow_tensor_metadata_change(self):
         def do_test(t):
             with self.assertRaisesRegex(
-                RuntimeError,
-                "raw_resize_ is not allowed on a Tensor created from .data or .detach()",
+                    RuntimeError,
+                    "raw_resize_ is not allowed on a Tensor created from .data or .detach()",
             ):
                 t.transpose_(0, 1)
             with self.assertRaisesRegex(
-                RuntimeError,
-                "resize_ is not allowed on a Tensor created from .data or .detach()",
+                    RuntimeError,
+                    "resize_ is not allowed on a Tensor created from .data or .detach()",
             ):
                 t.resize_as_(self.sparse_empty(3, 3))
             with self.assertRaisesRegex(
-                RuntimeError,
-                "resize_and_clear_ is not allowed on a Tensor created from .data or .detach()",
+                    RuntimeError,
+                    "resize_and_clear_ is not allowed on a Tensor created from .data or .detach()",
             ):
                 t.mul_(t)
             with self.assertRaisesRegex(
-                RuntimeError,
-                "set_coalesced is not allowed on a Tensor created from .data or .detach()",
+                    RuntimeError,
+                    "set_coalesced is not allowed on a Tensor created from .data or .detach()",
             ):
                 t._coalesced_(True)
             with self.assertRaisesRegex(
-                RuntimeError,
-                "set_indices_and_values_unsafe is not allowed on a Tensor created from .data or .detach()",
+                    RuntimeError,
+                    "set_indices_and_values_unsafe is not allowed on a Tensor created from .data or .detach()",
             ):
-                a = self.sparse_tensor(
-                    torch.tensor([[0, 1, 1], [2, 0, 2]]), torch.tensor([3.0, 4.0, 5.0])
-                ).data
+                a = self.sparse_tensor(torch.tensor([[0, 1, 1], [2, 0, 2]]),
+                                       torch.tensor([3.0, 4.0, 5.0])).data
                 a.add_(a)
             with self.assertRaisesRegex(
-                RuntimeError,
-                "resize_and_clear_ is not allowed on a Tensor created from .data or .detach()",
+                    RuntimeError,
+                    "resize_and_clear_ is not allowed on a Tensor created from .data or .detach()",
             ):
                 a.zero_()
             with self.assertRaisesRegex(
-                RuntimeError,
-                "resize_ is not allowed on a Tensor created from .data or .detach()",
+                    RuntimeError,
+                    "resize_ is not allowed on a Tensor created from .data or .detach()",
             ):
                 a.copy_(self.sparse_empty(3, 3))
 
@@ -2275,8 +2363,8 @@ class TestSparse(TestCase):
 
         shape_sparse_dim_nnz = [
             ((), 0, 2),
-            ((0,), 0, 10),
-            ((2,), 0, 3),
+            ((0, ), 0, 10),
+            ((2, ), 0, 3),
             ((100, 3), 1, 3),
             ((100, 20, 3), 2, 0),
             ((10, 0, 3), 0, 3),
@@ -2285,7 +2373,7 @@ class TestSparse(TestCase):
 
         for shape, sparse_dim, nnz in shape_sparse_dim_nnz:
             indices_shape = torch.Size((sparse_dim, nnz))
-            values_shape = torch.Size((nnz,) + shape[sparse_dim:])
+            values_shape = torch.Size((nnz, ) + shape[sparse_dim:])
             indices = torch.arange(
                 indices_shape.numel(),
                 dtype=self.index_tensor(0).dtype,
@@ -2296,57 +2384,49 @@ class TestSparse(TestCase):
             if self.is_uncoalesced and indices.numel() > 0:
                 indices[:, -1] = indices[:, 0]  # make it uncoalesced
             values_numel = values_shape.numel()
-            values = (
-                torch.arange(values_numel, dtype=self.value_dtype, device=self.device)
-                .view(values_shape)
-                .div_(values_numel / 2.0)
-            )
+            values = (torch.arange(values_numel,
+                                   dtype=self.value_dtype,
+                                   device=self.device).view(values_shape).div_(
+                                       values_numel / 2.0))
             sp_tensor = self.sparse_tensor(indices, values, shape)
             serialized = pickle.dumps(sp_tensor)
             sp_tensor_loaded = pickle.loads(serialized)
             self.assertEqual(sp_tensor, sp_tensor_loaded)
 
     def test_any(self):
-        t = torch.sparse_coo_tensor(
-            torch.tensor(([0, 0], [2, 0])), torch.tensor([False, False])
-        )
+        t = torch.sparse_coo_tensor(torch.tensor(([0, 0], [2, 0])),
+                                    torch.tensor([False, False]))
         t_any = torch.tensor(False)
         self.assertEqual(torch.any(t), t_any)
-        t = torch.sparse_coo_tensor(
-            torch.tensor(([0, 0], [2, 0])), torch.tensor([True, False])
-        )
+        t = torch.sparse_coo_tensor(torch.tensor(([0, 0], [2, 0])),
+                                    torch.tensor([True, False]))
         t_any = torch.tensor(True)
         self.assertEqual(torch.any(t), t_any)
 
     def test_isnan(self):
-        t = torch.sparse_coo_tensor(
-            torch.tensor(([0, 0], [2, 0])), torch.tensor([1, 4])
-        )
-        t_nan = torch.sparse_coo_tensor(
-            torch.tensor(([0, 0], [2, 0])), torch.tensor([False, False])
-        )
+        t = torch.sparse_coo_tensor(torch.tensor(([0, 0], [2, 0])),
+                                    torch.tensor([1, 4]))
+        t_nan = torch.sparse_coo_tensor(torch.tensor(([0, 0], [2, 0])),
+                                        torch.tensor([False, False]))
         self.assertEqual(torch.isnan(t).int(), t_nan.int())
-        t = torch.sparse_coo_tensor(
-            torch.tensor(([0, 0], [2, 0])), torch.tensor([1, float("nan")])
-        )
-        t_nan = torch.sparse_coo_tensor(
-            torch.tensor(([0, 0], [2, 0])), torch.tensor([False, True])
-        )
+        t = torch.sparse_coo_tensor(torch.tensor(([0, 0], [2, 0])),
+                                    torch.tensor([1, float("nan")]))
+        t_nan = torch.sparse_coo_tensor(torch.tensor(([0, 0], [2, 0])),
+                                        torch.tensor([False, True]))
         self.assertEqual(torch.isnan(t).int(), t_nan.int())
 
     def test_div_by_sparse_error(self):
         self.assertRaisesRegex(
             RuntimeError,
             "A Sparse Tensor can only be divided",
-            lambda: torch.tensor(1.0, device=self.device).to_sparse()
-            / torch.tensor(1.0, device=self.device).to_sparse(),
+            lambda: torch.tensor(1.0, device=self.device).to_sparse() / torch.
+            tensor(1.0, device=self.device).to_sparse(),
         )
 
     @unittest.skipIf(not TEST_NUMPY, "Numpy not found")
     def test_sparse_to_numpy(self):
-        t = torch.sparse_coo_tensor(
-            torch.tensor(([0, 0], [2, 0])), torch.tensor([1, 4])
-        )
+        t = torch.sparse_coo_tensor(torch.tensor(([0, 0], [2, 0])),
+                                    torch.tensor([1, 4]))
         self.assertRaises(TypeError, lambda: t.numpy())
 
 
@@ -2376,38 +2456,38 @@ class TestSparseOneOff(TestCase):
     @unittest.skipIf(not TEST_CUDA, "CUDA not available")
     def test_cuda_from_cpu(self):
         with self.assertRaisesRegex(
-            RuntimeError,
-            "backend of indices \\(CUDA\\) must match backend of values \\(CPU\\)",
+                RuntimeError,
+                "backend of indices \\(CUDA\\) must match backend of values \\(CPU\\)",
         ):
             torch.sparse.FloatTensor(
-                torch.zeros(1, 4).long().cuda(), torch.randn(4, 4, 4), [3, 4, 4]
-            )
+                torch.zeros(1, 4).long().cuda(), torch.randn(4, 4, 4),
+                [3, 4, 4])
 
         with self.assertRaisesRegex(
-            RuntimeError,
-            "backend of indices \\(CUDA\\) must match backend of values \\(CPU\\)",
+                RuntimeError,
+                "backend of indices \\(CUDA\\) must match backend of values \\(CPU\\)",
         ):
             torch.sparse.FloatTensor(
-                torch.zeros(1, 4).long().cuda(), torch.randn(4, 4, 4, 0), [3, 4, 4, 0]
-            )
+                torch.zeros(1, 4).long().cuda(), torch.randn(4, 4, 4, 0),
+                [3, 4, 4, 0])
 
         with self.assertRaisesRegex(
-            RuntimeError,
-            "backend of indices \\(CUDA\\) must match backend of values \\(CPU\\)",
+                RuntimeError,
+                "backend of indices \\(CUDA\\) must match backend of values \\(CPU\\)",
         ):
             torch.sparse.FloatTensor(
-                torch.LongTensor(1, 0).cuda(), torch.randn(0, 4, 4, 0), [0, 4, 4, 0]
-            )
+                torch.LongTensor(1, 0).cuda(), torch.randn(0, 4, 4, 0),
+                [0, 4, 4, 0])
 
     @unittest.skipIf(not TEST_CUDA, "CUDA not available")
     def test_cuda_sparse_cpu_dense_add(self):
         x = torch.zeros(3, 4, 4)
         sparse_y = torch.cuda.sparse.FloatTensor(
-            torch.zeros(1, 4).long().cuda(), torch.randn(4, 4, 4).cuda(), [3, 4, 4]
-        )
+            torch.zeros(1, 4).long().cuda(),
+            torch.randn(4, 4, 4).cuda(), [3, 4, 4])
         with self.assertRaisesRegex(
-            RuntimeError,
-            "add: expected 'self' to be a CUDA tensor, but got a CPU tensor",
+                RuntimeError,
+                "add: expected 'self' to be a CUDA tensor, but got a CPU tensor",
         ):
             x + sparse_y
 
@@ -2418,18 +2498,18 @@ class TestSparseOneOff(TestCase):
             [3, 4, 4, 0],
         )
         with self.assertRaisesRegex(
-            RuntimeError,
-            "add: expected 'self' to be a CUDA tensor, but got a CPU tensor",
+                RuntimeError,
+                "add: expected 'self' to be a CUDA tensor, but got a CPU tensor",
         ):
             x + sparse_y
 
         x = torch.zeros(0, 4, 4, 0)
         sparse_y = torch.cuda.sparse.FloatTensor(
-            torch.LongTensor(1, 0).cuda(), torch.randn(0, 4, 4, 0).cuda(), [0, 4, 4, 0]
-        )
+            torch.LongTensor(1, 0).cuda(),
+            torch.randn(0, 4, 4, 0).cuda(), [0, 4, 4, 0])
         with self.assertRaisesRegex(
-            RuntimeError,
-            "add: expected 'self' to be a CUDA tensor, but got a CPU tensor",
+                RuntimeError,
+                "add: expected 'self' to be a CUDA tensor, but got a CPU tensor",
         ):
             x + sparse_y
 
