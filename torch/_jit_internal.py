@@ -3,10 +3,10 @@ The weak_script annotation needs to be here instead of inside torch/jit/ so it
 can be used in other places in torch/ (namely torch.nn) without running into
 circular dependency problems
 """
-
 import inspect
-import weakref
 import warnings
+import weakref
+
 import torch
 from torch._six import builtins
 from torch._utils_internal import get_source_lines_and_file
