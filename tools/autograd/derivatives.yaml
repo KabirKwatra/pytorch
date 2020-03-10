@@ -539,9 +539,9 @@
   mask: non_differentiable
 
 - name: masked_select(Tensor self, Tensor mask) -> Tensor
-# normally broadcasting is handled implicitly, but here, because we call an inplace
-# function as an optimization and the LHS doesn't broadcast for inplace functions,
-# we need to explicitly broadcast.
+  # normally broadcasting is handled implicitly, but here, because we call an inplace
+  # function as an optimization and the LHS doesn't broadcast for inplace functions,
+  # we need to explicitly broadcast.
   self: zeros_like(self.expand(at::infer_size(self.sizes(), mask.sizes())), at::MemoryFormat::Preserve).masked_scatter_(mask, grad)
   mask: non_differentiable
 
@@ -1357,7 +1357,7 @@
   target: non_differentiable
 
 - name: rrelu_with_noise_backward(Tensor grad_output, Tensor self, Tensor noise, Scalar lower, Scalar upper, bool training, bool self_is_result) -> Tensor
-  # self_is_result is always false here since double backward call is an out-of-place call, self is input itself 
+  # self_is_result is always false here since double backward call is an out-of-place call, self is input itself
   grad_output: rrelu_with_noise_backward(grad, self, noise, lower, upper, training, false)
   self: zeros_like(grad, at::MemoryFormat::Preserve)
 
