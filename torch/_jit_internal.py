@@ -142,7 +142,6 @@ def get_closure(fn):
 # values global in the function.
 
 
-
 def createResolutionCallbackFromClosure(fn):
     """
     Create a resolutionCallback by introspecting the function instead of
@@ -335,6 +334,7 @@ def unused(fn):
     fn._torchscript_modifier = FunctionModifiers.UNUSED
     return fn
 
+
 def ignore(drop=False, **kwargs):
     """
     This decorator indicates to the compiler that a function or method should
@@ -433,6 +433,7 @@ def _copy_to_script_wrapper(fn):
     fn._torchscript_modifier = FunctionModifiers.COPY_TO_SCRIPT_WRAPPER
     return fn
 
+
 def module_has_exports(mod):
     for name in dir(mod):
         item = getattr(mod, name)
@@ -440,6 +441,7 @@ def module_has_exports(mod):
             if get_torchscript_modifier(item) is FunctionModifiers.EXPORT:
                 return True
     return False
+
 
 def should_drop(fn):
     attr = get_torchscript_modifier(fn)
@@ -452,12 +454,14 @@ def is_ignored_fn(fn):
     mod = get_torchscript_modifier(fn)
     return mod is FunctionModifiers.UNUSED or mod is FunctionModifiers.IGNORE
 
+
 def get_torchscript_modifier(fn):
     if not callable(fn):
         return None
     if hasattr(fn, '__func__'):
         fn = fn.__func__
     return getattr(fn, '_torchscript_modifier', FunctionModifiers.DEFAULT)
+
 
 def copy_torchscript_modifier(orig, new):
     attr = get_torchscript_modifier(orig)
@@ -469,8 +473,10 @@ def copy_torchscript_modifier(orig, new):
 # overloads get registered in this file, and compiled in torch/jit/__init__.py
 # so that they can be imported in nn/functional.py without an import cycle
 
+
 # qualified_name => list[overload_functions]
 _overloaded_fns = {}  # noqa: T484
+
 
 def _overload(func):
     qual_name = _qualified_name(func)
@@ -482,11 +488,14 @@ def _overload(func):
     fn_overload_list.append(func)
     return func
 
+
 def _get_fn_overloads(qual_name):
     return _overloaded_fns.get(qual_name)
 
+
 def _clear_fn_overloads(qual_name):
     del _overloaded_fns[qual_name]
+
 
 def get_class_name_lineno(method):
     current_frame = inspect.currentframe()
@@ -507,12 +516,14 @@ def get_class_name_lineno(method):
 # the class name, and throwing an error whenever overloads are used
 # when modules of the same name are in the same file
 
+
 # qualified_name => class name => list[overload_functions]
 _overloaded_methods = {}  # noqa: T484
 
 
 # (qualified_name, class name) => class_fileno
 _overloaded_method_class_fileno = {}
+
 
 def _overload_method(func):
     qual_name = _qualified_name(func)
@@ -537,6 +548,7 @@ def _overload_method(func):
     method_overloads.append(func)
     return func
 
+
 def _get_overloaded_methods(method, mod_class):
     # TODO: __name__ not set for submodules in recursive script
     if not hasattr(method, "__name__"):
@@ -555,6 +567,7 @@ def _get_overloaded_methods(method, mod_class):
     if not (method_line_no >= mod_class_fileno and method_line_no <= mod_end_fileno):
         raise Exception("Overloads are not useable when a module is redeclared within the same file: " + str(method))
     return overloads
+
 
 try:
     import typing
@@ -736,6 +749,7 @@ class BroadcastingListCls(object):
     def __getitem__(self, types):
         return
 
+
 # mypy doesn't support parameters on types, so we have to explicitly type each
 # list size
 BroadcastingList1 = BroadcastingListCls()
@@ -743,6 +757,8 @@ for i in range(2, 7):
     globals()["BroadcastingList{}".format(i)] = BroadcastingList1
 
 # Retrieves a fully-qualified name (module hierarchy + classname) for a given obj.
+
+
 def _qualified_name(obj):
     # This special case allows us to override the qualified name on a type.
     # It's currently used in conjunction with tracing, where we create a

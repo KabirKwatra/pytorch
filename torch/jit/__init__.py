@@ -35,6 +35,7 @@ from torch._jit_internal import ignore, export, unused
 if sys.version_info[0] > 2:
     import pathlib
 
+
 def _parse_env(name, default, true_message, false_message):
     value = os.environ.get(name)
     if value is None:
@@ -72,6 +73,7 @@ if _enabled:
 else:
     def Attribute(value, type):
         return value
+
 
 @contextlib.contextmanager
 def optimized_execution(should_optimize):
@@ -151,6 +153,7 @@ def save(m, f, _extra_files=DEFAULT_EXTRA_FILES_MAP):
     else:
         ret = m.save_to_buffer(_extra_files=_extra_files)
         f.write(ret)
+
 
 def load(f, map_location=None, _extra_files=DEFAULT_EXTRA_FILES_MAP):
     r"""
@@ -238,11 +241,13 @@ def load(f, map_location=None, _extra_files=DEFAULT_EXTRA_FILES_MAP):
     # TODO: Pretty sure this approach loses ConstSequential status and such
     return torch.jit._recursive.wrap_cpp_module(cpp_module)
 
+
 def export_opnames(m):
     r"""
         Returns a list of operator names of a script module and its submodules
     """
     return torch._C._export_opnames(m._c)
+
 
 def _get_trace_graph(f, args=(), kwargs=None, _force_outplace=False,
                      return_inputs=False, _return_inputs_states=False):
@@ -725,11 +730,13 @@ def make_module(mod, _module_class, _compilation_unit):
             _module_class = TopLevelTracedModule
         return _module_class(mod, _compilation_unit=_compilation_unit)
 
+
 def wrap_check_inputs(check_inputs):
     if check_inputs is None:
         return None
 
-    return [{'forward' : c} for c in check_inputs]
+    return [{'forward': c} for c in check_inputs]
+
 
 def trace(func,
           example_inputs,
@@ -874,7 +881,6 @@ def trace(func,
         warnings.warn('The input to trace is already a ScriptModule, tracing it is a no-op. Returning the object as is.')
         return func
 
-
     if isinstance(func, torch.nn.Module):
         return trace_module(func, {'forward': example_inputs}, None,
                             check_trace, wrap_check_inputs(check_inputs),
@@ -913,7 +919,9 @@ def trace(func,
 
     return traced
 
+
 _trace_module_map = None
+
 
 def trace_module(mod,
                  inputs,
@@ -1109,10 +1117,12 @@ def whichmodule(obj):
             pass
     return '__main__'
 
+
 def _compile_and_register_class(obj, rcb, qualified_name):
     ast = get_jit_class_def(obj, obj.__name__)
     _jit_script_class_compile(qualified_name, ast, rcb)
     _add_script_class(obj, qualified_name)
+
 
 def script(obj, optimize=None, _frames_up=0, _rcb=None):
     r"""
@@ -1299,6 +1309,7 @@ def script(obj, optimize=None, _frames_up=0, _rcb=None):
         _set_jit_function_cache(obj, fn)
         return fn
 
+
 def interface(obj):
     if not inspect.isclass(obj):
         raise RuntimeError("interface must be applied to a class")
@@ -1322,7 +1333,6 @@ def interface(obj):
     return obj
 
 
-
 def script_method(fn):
     if not _enabled:
         return fn
@@ -1341,7 +1351,6 @@ def script_method(fn):
     _rcb = _jit_internal.createResolutionCallbackFromFrame(frames_up=2)
     ast = get_jit_def(fn, self_name="ScriptModule")
     return ScriptMethodStub(_rcb, ast, fn)
-
 
 
 # These OrderedDictWrapper classes replace the actual OrderedDicts in
@@ -1427,7 +1436,6 @@ class OrderedModuleDict(OrderedDictWrapper):
             raise RuntimeError("Cannot re-assign modules in a ScriptModule with non-scripted "
                                "module, tried to replace existing module '{}': {}".format(k, v))
 
-
     def __getitem__(self, k):
         return self._python_modules[k]
 
@@ -1439,6 +1447,8 @@ class OrderedModuleDict(OrderedDictWrapper):
 #     run. This has to occur after the user-defined __init__ so that submodules and
 #     parameters are initialized _before_ the script compiler resolve references to
 #     `self.param` or `self.module`.
+
+
 class ScriptMeta(type):
     def __init__(cls, name, bases, attrs):
         # Aggregate all the ScriptMethods and constants from superclasses
@@ -1508,6 +1518,7 @@ if _enabled:
         contain methods, attributes, parameters, and
         constants. These can be accessed the same as on a normal ``nn.Module``.
         """
+
         def __init__(self):
             super(ScriptModule, self).__init__()
 
@@ -1555,7 +1566,6 @@ if _enabled:
             rcb = _jit_internal.createResolutionCallbackFromFrame(frames_up=1)
             ast = torch._C._parse_source_def(src)
             self._methods[ast.name().name] = ScriptMethodStub(rcb, ast, None)
-
 
     class RecursiveScriptModule(ScriptModule):
         # XXX: RecursiveScriptModule inherits from ScriptModule for the sole
@@ -1812,7 +1822,6 @@ if _enabled:
         # In Python 3 unbound methods are functions, but in Python 2 they are methods
         return inspect.getmembers(cls, predicate=lambda x: inspect.isfunction(x) or inspect.ismethod(x))
 
-
     _compiled_methods_whitelist = {
         'forward', 'register_buffer', 'register_parameter', 'add_module',
         '_apply', 'apply', 'cuda', 'cpu', 'to', 'type', 'float', 'double', 'half',
@@ -1822,7 +1831,6 @@ if _enabled:
         'named_modules', 'zero_grad', 'share_memory', '_get_name', 'extra_repr',
         '_slow_forward', '_tracing_name', 'eval', 'train',
     }
-
 
     def _make_fail(name):
         def fail(self, *args, **kwargs):
@@ -1920,6 +1928,7 @@ if _enabled:
     class TopLevelTracedModule(TracedModule):
         forward = _CachedForward()
 
+
 def is_scripting():
     r"""
     Function that returns True when in compilation and False otherwise. This
@@ -1941,9 +1950,11 @@ def is_scripting():
     """
     return False
 
+
 def _unwrap_optional(x):
     assert x is not None, "Unwrapping null optional"
     return x
+
 
 _register_builtin(_unwrap_optional, 'aten::_unwrap_optional')
 _register_builtin(_wait, 'aten::wait')
@@ -1961,6 +1972,7 @@ _register_builtin(is_scripting, 'aten::is_scripting')
 _jit_caching_layer = weakref.WeakKeyDictionary()
 _jit_function_overload_caching = weakref.WeakKeyDictionary()
 
+
 def _try_get_jit_cached_overloads(key):
     qual_names = _jit_function_overload_caching.get(key, None)
     if qual_names:
@@ -1968,8 +1980,10 @@ def _try_get_jit_cached_overloads(key):
     else:
         return None
 
+
 def _set_jit_overload_cache(key, compiled_fns):
     _jit_function_overload_caching[key] = [fn.qualified_name for fn in compiled_fns]
+
 
 def _try_get_jit_cached_function(key):
     qual_name = _jit_caching_layer.get(key, None)
@@ -1977,6 +1991,7 @@ def _try_get_jit_cached_function(key):
         return _python_cu.find_function(qual_name)
     else:
         return None
+
 
 def _set_jit_function_cache(key, value):
     # only free functions currently supported
@@ -2003,6 +2018,7 @@ def _get_script_class(name):
 # overloads are registered in _jit_internal and compiled here so that _overload
 # can be used in nn/functional.py without an import cycle
 
+
 def _check_overload_defaults(impl_defaults, overload_defaults, loc):
     for name, overload_value in overload_defaults.items():
         if name not in impl_defaults or impl_defaults[name] != overload_value:
@@ -2010,6 +2026,7 @@ def _check_overload_defaults(impl_defaults, overload_defaults, loc):
                 loc, "Default parameters on overloads do not affect the runtime so they "
                 "must equal to the default parameter on the implementation function. Found on "
                 "parameter {name}".format(name=name))
+
 
 def _compile_function_with_overload(overload_fn, qual_name, impl_fn):
     overload_decl = torch.jit.get_jit_def(overload_fn).decl()
@@ -2022,6 +2039,7 @@ def _compile_function_with_overload(overload_fn, qual_name, impl_fn):
     fn = torch._C._jit_script_compile_overload(qual_name, overload_decl, impl_ast, _rcb,
                                                implementation_defaults, overload_signature)
     return fn
+
 
 def _get_overloads(obj):
     # check for cached compiled fns
@@ -2043,6 +2061,7 @@ def _get_overloads(obj):
     _jit_internal._clear_fn_overloads(qual_name)
     return compiled_fns
 
+
 def _check_directly_compile_overloaded(obj):
     qual_name = _qualified_name(obj)
     if _jit_internal._get_fn_overloads(qual_name) or _try_get_jit_cached_overloads(obj):
@@ -2050,12 +2069,14 @@ def _check_directly_compile_overloaded(obj):
                            " is overloaded. It must be used in a context of a function"
                            " where its inputs can determine which overload to call.".format(qual_name))
 
+
 # torch.jit.Error
 Error = torch._C.JITException
 set_module(Error, "torch.jit")
 # This is not perfect but works in common cases
 Error.__name__ = "Error"
 Error.__qualname__ = "Error"
+
 
 def _get_named_tuple_properties(obj):
     assert issubclass(obj, tuple) and hasattr(obj, '_fields')
@@ -2070,9 +2091,11 @@ def _get_named_tuple_properties(obj):
             annotations.append(torch._C.TensorType.get())
     return type(obj).__name__, fields, annotations
 
+
 def _create_named_tuple(t, unqual_name, field_names):
     TupleType = collections.namedtuple(unqual_name, field_names)
     return TupleType(*t)
+
 
 class _disable_tracing(object):
     def __enter__(self):
@@ -2089,12 +2112,14 @@ def annotate(the_type, the_value):
     # noop in python
     return the_value
 
+
 last_executed_optimized_graph = torch._C._last_executed_optimized_graph
 
 
 def _graph_for(self, *args, **kwargs):
     self(*args, **kwargs)
     return last_executed_optimized_graph()
+
 
 torch._C.ScriptMethod.graph_for = _graph_for
 torch._C.ScriptFunction.graph_for = _graph_for
