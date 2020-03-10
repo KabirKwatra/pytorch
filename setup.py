@@ -160,35 +160,37 @@
 #   USE_TBB
 #      enable TBB support
 #
-
 from __future__ import print_function
-from setuptools import setup, Extension, distutils, find_packages
+
+import distutils.command.clean
+import distutils.sysconfig
+import filecmp
+import glob
+import importlib
+import json
+import os
+import shutil
+import subprocess
+import sys
 from collections import defaultdict
 from distutils import core
 from distutils.core import Distribution
 from distutils.errors import DistutilsArgError
+
 import setuptools.command.build_ext
 import setuptools.command.install
-import distutils.command.clean
-import distutils.sysconfig
-import filecmp
-import subprocess
-import shutil
-import sys
-import os
-import json
-import glob
-import importlib
+from setuptools import distutils
+from setuptools import Extension
+from setuptools import find_packages
+from setuptools import setup
 
 from tools.build_pytorch_libs import build_caffe2
-from tools.setup_helpers.env import (
-    IS_WINDOWS,
-    IS_DARWIN,
-    IS_LINUX,
-    check_env_flag,
-    build_type,
-)
 from tools.setup_helpers.cmake import CMake
+from tools.setup_helpers.env import build_type
+from tools.setup_helpers.env import check_env_flag
+from tools.setup_helpers.env import IS_DARWIN
+from tools.setup_helpers.env import IS_LINUX
+from tools.setup_helpers.env import IS_WINDOWS
 
 try:
     FileNotFoundError
