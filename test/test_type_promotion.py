@@ -44,8 +44,7 @@ class TestTypePromotion(TestCase):
         int_tensor = torch.ones([4, 4, 4], dtype=torch.int32, device=device)
 
         self.assertRaisesRegex(
-            RuntimeError, "can't be cast to", lambda: int_tensor.add_(1.5)
-        )
+            RuntimeError, "can't be cast to", lambda: int_tensor.add_(1.5))
 
         expected = torch.ones([4, 4, 4], dtype=torch.int32, device=device)
 
@@ -57,11 +56,13 @@ class TestTypePromotion(TestCase):
         self.assertEqual(int_tensor.dtype, torch.int32)
 
         bool_tensor = torch.tensor([1, 1, 1], dtype=torch.bool, device=device)
-        uint8_tensor = torch.tensor([1, 1, 1], dtype=torch.uint8, device=device)
+        uint8_tensor = torch.tensor([1, 1, 1],
+                                    dtype=torch.uint8,
+                                    device=device)
         # We treat bool as a separate category, which means uint8 cannot cast to bool.
         self.assertRaisesRegex(
-            RuntimeError, "can't be cast to", lambda: bool_tensor.add_(uint8_tensor)
-        )
+            RuntimeError,
+            "can't be cast to", lambda: bool_tensor.add_(uint8_tensor))
 
         # We allow demotion from signed to unsigned, unlike numpy, because:
         # * We don't want the performance penalty of inspecting scalar values.
@@ -69,7 +70,9 @@ class TestTypePromotion(TestCase):
         # in promotion rules.
         # We don't want signed to be a separate category because if it was,
         # uint16_tensor + 5 would result in a long_tensor, which is not what we want.
-        int16_tensor = torch.tensor([1, 1, 1], dtype=torch.int16, device=device)
+        int16_tensor = torch.tensor([1, 1, 1],
+                                    dtype=torch.int16,
+                                    device=device)
         uint8_tensor *= int16_tensor
 
     @float_double_default_dtype
@@ -138,21 +141,20 @@ class TestTypePromotion(TestCase):
         half = torch.tensor(5.5, dtype=torch.float16, device=device)
         if self.device_type == "cpu":
             self.assertRaisesRegex(
-                RuntimeError, "not implemented for 'Half'", lambda: half + 2.2
-            )
+                RuntimeError, "not implemented for 'Half'", lambda: half + 2.2)
         else:
             self.assertEqual((half + 2.2).dtype, torch.float16)
             self.assertEqual((half + 100000).dtype, torch.float16)  # inf
             default_tensor = torch.tensor(100000.0, device=device)
-            self.assertEqual((half + default_tensor).dtype, torch.get_default_dtype())
+            self.assertEqual((half + default_tensor).dtype,
+                             torch.get_default_dtype())
 
     @float_double_default_dtype
     def test_alternate_result(self, device):
         f = torch.tensor([1, 1, 1, 1], dtype=torch.float, device=device)
         o = torch.tensor([0, 0, 0, 0], dtype=torch.long, device=device)
         self.assertRaisesRegex(
-            RuntimeError, "can't be cast to", lambda: torch.add(f, f, out=o)
-        )
+            RuntimeError, "can't be cast to", lambda: torch.add(f, f, out=o))
         d = torch.tensor([1, 1, 1, 1], dtype=torch.double, device=device)
         torch.add(f, f, out=d)
         self.assertEqual(d.dtype, torch.double)
@@ -160,7 +162,10 @@ class TestTypePromotion(TestCase):
 
     @float_double_default_dtype
     def test_mixed_type_backward(self, device):
-        f = torch.ones([3, 3], dtype=torch.float, requires_grad=True, device=device)
+        f = torch.ones([3, 3],
+                       dtype=torch.float,
+                       requires_grad=True,
+                       device=device)
         ten = torch.tensor([10.0], dtype=torch.double, device=device)
         tens = f * ten
         s = (tens + 2).sum()
@@ -176,17 +181,23 @@ class TestTypePromotion(TestCase):
             f_dtypes = f_dtypes + [torch.half]
         i_dtypes = [torch.int, torch.long]
         for func in [torch.add, torch.sub, torch.rsub, torch.mul, torch.div]:
-            for dtype1, dtype2 in itertools.product(f_dtypes, f_dtypes + i_dtypes):
-                x = torch.ones(10, requires_grad=True, dtype=dtype1, device=device)
+            for dtype1, dtype2 in itertools.product(f_dtypes,
+                                                    f_dtypes + i_dtypes):
+                x = torch.ones(10,
+                               requires_grad=True,
+                               dtype=dtype1,
+                               device=device)
                 y = torch.ones(10, dtype=dtype2, device=device)
                 func(x, y).sum().backward()
 
     def _get_test_tensor(self, device, dtype, remove_zeros=False):
         shape = [5, 5, 5]
         if dtype == torch.bool:
-            tensor = torch.randint(
-                int(remove_zeros), 2, shape, device=device, dtype=dtype
-            )
+            tensor = torch.randint(int(remove_zeros),
+                                   2,
+                                   shape,
+                                   device=device,
+                                   dtype=dtype)
         elif dtype.is_floating_point:
             # "_th_normal_ not supported on CPUType for Half" so simpler create and convert
             tensor = torch.randn(shape, device=device)
@@ -194,9 +205,11 @@ class TestTypePromotion(TestCase):
             if remove_zeros:
                 tensor[torch.abs(tensor) < 0.05] = 5
         else:
-            tensor = torch.randint(
-                -5 if dtype.is_signed else 0, 10, shape, device=device, dtype=dtype
-            )
+            tensor = torch.randint(-5 if dtype.is_signed else 0,
+                                   10,
+                                   shape,
+                                   device=device,
+                                   dtype=dtype)
             if remove_zeros:
                 tensor[tensor == 0] = 5
         return tensor
@@ -250,20 +263,24 @@ class TestTypePromotion(TestCase):
         x = torch.ones(4, dtype=torch.double, device=device)
         self.assertRaises(
             RuntimeError,
-            lambda: torch.neg(torch.ones(4, dtype=torch.float, device=device), out=x),
+            lambda: torch.neg(torch.ones(4, dtype=torch.float, device=device),
+                              out=x),
         )
         self.assertRaises(
             RuntimeError,
-            lambda: torch.lerp(x, torch.ones(4, dtype=torch.float, device=device), 1),
+            lambda: torch.lerp(
+                x, torch.ones(4, dtype=torch.float, device=device), 1),
         )
 
     @float_double_default_dtype
     def test_alpha_mismatch(self, device):
         x = torch.ones(4, dtype=torch.int, device=device)
         err = "alpha must not be"
-        self.assertRaisesRegex(RuntimeError, err, lambda: torch.add(x, x, alpha=1.1))
+        self.assertRaisesRegex(RuntimeError,
+                               err, lambda: torch.add(x, x, alpha=1.1))
         x = x.to(torch.bool)
-        self.assertRaisesRegex(RuntimeError, err, lambda: torch.add(x, x, alpha=1.1))
+        self.assertRaisesRegex(RuntimeError,
+                               err, lambda: torch.add(x, x, alpha=1.1))
         self.assertEqual(x + x, torch.add(x, x, alpha=True))
 
     @float_double_default_dtype
@@ -295,10 +312,11 @@ class TestTypePromotion(TestCase):
         expected = torch.tensor([0], dtype=torch.int64, device=device)
         self.assertEqual(torch.arange(False, True, device=device), expected)
         self.assertEqual(torch.arange(True, device=device), expected)
-        expected = torch.tensor(
-            [0, 0.5], dtype=torch.get_default_dtype(), device=device
-        )
-        self.assertEqual(torch.arange(False, True, 0.5, device=device), expected)
+        expected = torch.tensor([0, 0.5],
+                                dtype=torch.get_default_dtype(),
+                                device=device)
+        self.assertEqual(torch.arange(False, True, 0.5, device=device),
+                         expected)
         expected = torch.ones(0, dtype=torch.int64, device=device)
         self.assertEqual(torch.arange(False, False, device=device), expected)
 
@@ -312,18 +330,20 @@ class TestTypePromotion(TestCase):
         )
 
         # this seems like odd behavior but ints also create float tensors, numpy doesn't have this function.
-        self.assertEqual(
-            torch.scalar_tensor(False, device=device), torch.tensor(0.0, device=device)
-        )
+        self.assertEqual(torch.scalar_tensor(False, device=device),
+                         torch.tensor(0.0, device=device))
 
     @float_double_default_dtype
     def test_result_type(self, device):
         self.assertEqual(
-            torch.result_type(torch.tensor(1, dtype=torch.int, device=device), 1),
+            torch.result_type(torch.tensor(1, dtype=torch.int, device=device),
+                              1),
             torch.int,
         )
         self.assertEqual(
-            torch.result_type(1, torch.tensor(1, dtype=torch.int, device=device)),
+            torch.result_type(1, torch.tensor(1,
+                                              dtype=torch.int,
+                                              device=device)),
             torch.int,
         )
         self.assertEqual(torch.result_type(1, 1.0), torch.get_default_dtype())
@@ -340,8 +360,8 @@ class TestTypePromotion(TestCase):
         )
         self.assertEqual(
             torch.result_type(
-                torch.tensor([1.0, 1.0], dtype=torch.float, device=device), 1.0
-            ),
+                torch.tensor([1.0, 1.0], dtype=torch.float, device=device),
+                1.0),
             torch.float,
         )
         self.assertEqual(
@@ -373,48 +393,42 @@ class TestTypePromotion(TestCase):
             dict(
                 name="lt",
                 out_op=lambda x, y, d: torch.lt(
-                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)
-                ),
+                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)),
                 ret_op=lambda x, y: torch.lt(x, y),
                 compare_op=lambda x, y: x < y,
             ),
             dict(
                 name="le",
                 out_op=lambda x, y, d: torch.le(
-                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)
-                ),
+                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)),
                 ret_op=lambda x, y: torch.le(x, y),
                 compare_op=lambda x, y: x <= y,
             ),
             dict(
                 name="gt",
                 out_op=lambda x, y, d: torch.gt(
-                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)
-                ),
+                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)),
                 ret_op=lambda x, y: torch.gt(x, y),
                 compare_op=lambda x, y: x > y,
             ),
             dict(
                 name="ge",
                 out_op=lambda x, y, d: torch.ge(
-                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)
-                ),
+                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)),
                 ret_op=lambda x, y: torch.ge(x, y),
                 compare_op=lambda x, y: x >= y,
             ),
             dict(
                 name="eq",
                 out_op=lambda x, y, d: torch.eq(
-                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)
-                ),
+                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)),
                 ret_op=lambda x, y: torch.eq(x, y),
                 compare_op=lambda x, y: x == y,
             ),
             dict(
                 name="ne",
                 out_op=lambda x, y, d: torch.ne(
-                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)
-                ),
+                    x, y, out=torch.empty(1, dtype=torch.bool, device=d)),
                 ret_op=lambda x, y: torch.ne(x, y),
                 compare_op=lambda x, y: x != y,
             ),
@@ -426,9 +440,8 @@ class TestTypePromotion(TestCase):
                     val2 = value_for_type[dt2]
                     t1 = torch.tensor([val1], dtype=dt1, device=device)
                     t2 = torch.tensor([val2], dtype=dt2, device=device)
-                    expected = torch.tensor(
-                        [op["compare_op"](val1, val2)], dtype=torch.bool
-                    )
+                    expected = torch.tensor([op["compare_op"](val1, val2)],
+                                            dtype=torch.bool)
 
                     out_res = op["out_op"](t1, t2, device)
                     self.assertEqual(out_res, expected)
@@ -445,9 +458,8 @@ class TestTypePromotion(TestCase):
                     # test that comparing a zero dim tensor with another zero dim tensor has type promotion behavior
                     t1 = torch.tensor(val1, dtype=dt1, device=device)
                     t2 = torch.tensor(val2, dtype=dt2, device=device)
-                    expected = torch.tensor(
-                        op["compare_op"](val1, val2), dtype=torch.bool
-                    )
+                    expected = torch.tensor(op["compare_op"](val1, val2),
+                                            dtype=torch.bool)
 
                     out_res = op["out_op"](t1, t2, device)
                     self.assertEqual(out_res, expected)
@@ -487,9 +499,12 @@ class TestTypePromotion(TestCase):
 
     @float_double_default_dtype
     def test_promote_types(self, device):
-        self.assertEqual(torch.promote_types(torch.float, torch.int), torch.float)
-        self.assertEqual(torch.promote_types(torch.float, torch.double), torch.double)
-        self.assertEqual(torch.promote_types(torch.int, torch.uint8), torch.int)
+        self.assertEqual(torch.promote_types(torch.float, torch.int),
+                         torch.float)
+        self.assertEqual(torch.promote_types(torch.float, torch.double),
+                         torch.double)
+        self.assertEqual(torch.promote_types(torch.int, torch.uint8),
+                         torch.int)
 
     @float_double_default_dtype
     def test_promote_self(self, device):
@@ -512,7 +527,8 @@ class TestTypePromotion(TestCase):
         tmp = torch.ones(9, 9, dtype=torch.float, device=device)
         mask = torch.ones(10, 10, dtype=torch.uint8, device=device)
         result = tmp + mask[1:, 1:]
-        expected = torch.full([9, 9], 2.0, dtype=torch.float, device=device).fill_(2.0)
+        expected = torch.full([9, 9], 2.0, dtype=torch.float,
+                              device=device).fill_(2.0)
         self.assertEqual(result, expected)
 
     @float_double_default_dtype
@@ -527,8 +543,7 @@ class TestTypePromotion(TestCase):
         dividend = torch.randn(5, device=device).to(dtype)
         divisor = torch.arange(1, 6, device=device).to(dtype)
         casting_result = dividend.to(torch.get_default_dtype()) / divisor.to(
-            torch.get_default_dtype()
-        )
+            torch.get_default_dtype())
         self.assertEqual(casting_result, torch.true_divide(dividend, divisor))
 
     @dtypes(torch.bool, torch.short, torch.uint8, torch.int, torch.long)
@@ -542,17 +557,20 @@ class TestTypePromotion(TestCase):
             torch.true_divide(dividend, divisor, out=integral_quotient)
 
         # Tests that requests for a floating quotient succeed
-        floating_quotient = torch.empty(
-            5, device=device, dtype=torch.get_default_dtype()
-        )
+        floating_quotient = torch.empty(5,
+                                        device=device,
+                                        dtype=torch.get_default_dtype())
         casting_result = dividend.to(torch.get_default_dtype()) / divisor.to(
-            torch.get_default_dtype()
-        )
+            torch.get_default_dtype())
         self.assertEqual(
-            casting_result, torch.true_divide(dividend, divisor, out=floating_quotient)
-        )
+            casting_result,
+            torch.true_divide(dividend, divisor, out=floating_quotient))
 
-    def _test_sparse_op_input_tensors(self, device, dtype, coalesced, zeros=True):
+    def _test_sparse_op_input_tensors(self,
+                                      device,
+                                      dtype,
+                                      coalesced,
+                                      zeros=True):
         t = self._get_test_tensor(device, dtype, not zeros)
         if zeros and dtype != torch.bool:
             # ensure sparsity. Bool should already have sufficient sparsity.
@@ -588,7 +606,8 @@ class TestTypePromotion(TestCase):
         # uses default
         return None
 
-    def _test_sparse_op(self, op_name, inplace, dtype1, dtype2, device, coalesced):
+    def _test_sparse_op(self, op_name, inplace, dtype1, dtype2, device,
+                        coalesced):
         suffix = "_" if inplace else ""
         err = "{} {}({}, {})".format(
             "  coalesced" if coalesced else "uncoalesced",
@@ -602,12 +621,13 @@ class TestTypePromotion(TestCase):
 
         add_sub = op_name == "add" or op_name == "sub"
 
-        (dense1, sparse1) = self._test_sparse_op_input_tensors(
-            device, dtype1, coalesced
-        )
-        (dense2, sparse2) = self._test_sparse_op_input_tensors(
-            device, dtype2, coalesced, op_name != "div"
-        )
+        (dense1,
+         sparse1) = self._test_sparse_op_input_tensors(device, dtype1,
+                                                       coalesced)
+        (dense2,
+         sparse2) = self._test_sparse_op_input_tensors(device, dtype2,
+                                                       coalesced,
+                                                       op_name != "div")
         common_dtype = torch.result_type(dense1, dense2)
         if self.device_type == "cpu" and common_dtype == torch.half:
             self.assertRaises(RuntimeError, lambda: op(s1, d2))
@@ -623,9 +643,8 @@ class TestTypePromotion(TestCase):
         expected = op(dense1.clone(), dense2)
         precision = self._get_precision(expected.dtype, coalesced)
         test_tensors = [expected, dense1, sparse1, dense2, sparse2]
-        e, d1, s1, d2, s2 = (
-            [x.clone() for x in test_tensors] if inplace else test_tensors
-        )
+        e, d1, s1, d2, s2 = ([x.clone() for x in test_tensors]
+                             if inplace else test_tensors)
 
         # Test op(sparse, sparse)
         if op_name != "div":
@@ -654,7 +673,8 @@ class TestTypePromotion(TestCase):
         self.assertRaises(RuntimeError, lambda: op(s1, d2))
 
         # Test op(sparse, scalar)
-        if not add_sub and not (self.device_type == "cpu" and dtype1 == torch.half):
+        if not add_sub and not (self.device_type == "cpu"
+                                and dtype1 == torch.half):
             if inplace:
                 e, d1, s1, d2, s2 = [x.clone() for x in test_tensors]
             scalar = d2.view(d2.numel())[0].item()
@@ -662,23 +682,24 @@ class TestTypePromotion(TestCase):
             sparse = op(s1, scalar)
             dense_scalar = op(d1, scalar)
             self.assertEqual(sparse.dtype, dense_scalar.dtype)
-            self.assertEqual(
-                dense_scalar, sparse.to_dense(), prec=precision, message=err
-            )
+            self.assertEqual(dense_scalar,
+                             sparse.to_dense(),
+                             prec=precision,
+                             message=err)
         else:
             # add(sparse, dense) is not supported. Use add(dense, sparse) instead.
             # "mul_cpu" / "div_cpu" not implemented for 'Half'
             self.assertRaises(
-                RuntimeError, lambda: op(s1, d2.view(d2.numel())[0].item())
-            )
+                RuntimeError, lambda: op(s1,
+                                         d2.view(d2.numel())[0].item()))
 
     def _run_all_tests_for_sparse_op(self, op_name, device):
         dtypes = torch.testing.get_all_math_dtypes(device)
         for dtype1, dtype2 in itertools.product(dtypes, dtypes):
-            for inplace, coalesced in itertools.product([True, False], [True, False]):
-                self._test_sparse_op(
-                    op_name, inplace, dtype1, dtype2, device, coalesced
-                )
+            for inplace, coalesced in itertools.product([True, False],
+                                                        [True, False]):
+                self._test_sparse_op(op_name, inplace, dtype1, dtype2, device,
+                                     coalesced)
 
     @onlyOnCPUAndCUDA
     def test_sparse_add(self, device):
@@ -704,9 +725,8 @@ class TestTypePromotion(TestCase):
         divisor = 2
         dividend_sparse = dividend.to_sparse()
         casting_result = dividend.to(torch.get_default_dtype()) / 2
-        self.assertEqual(
-            casting_result, torch.true_divide(dividend_sparse, 2).to_dense()
-        )
+        self.assertEqual(casting_result,
+                         torch.true_divide(dividend_sparse, 2).to_dense())
 
 
 instantiate_device_type_tests(TestTypePromotion, globals())

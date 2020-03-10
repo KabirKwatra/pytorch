@@ -20,7 +20,7 @@ from torch.testing._internal.common_utils import TestCase
 
 
 def pass_name_to_python_arg_parser(name):
-    x = torch.empty(2, names=(name,))
+    x = torch.empty(2, names=(name, ))
 
 
 def flatten(lst):
@@ -82,17 +82,20 @@ class TestNamedTensor(TestCase):
             self.assertTrue(
                 str(warns[0].message).startswith(
                     "Named tensors and all their associated APIs are an experimental feature"
-                )
-            )
+                ))
 
     def test_trivial(self):
         pass
 
-    def _test_name_inference(
-        self, op, args=(), expected_names=(), device="cpu", maybe_raises_regex=None
-    ):
+    def _test_name_inference(self,
+                             op,
+                             args=(),
+                             expected_names=(),
+                             device="cpu",
+                             maybe_raises_regex=None):
         casted_args = [
-            arg.to(device) if isinstance(arg, torch.Tensor) else arg for arg in args
+            arg.to(device) if isinstance(arg, torch.Tensor) else arg
+            for arg in args
         ]
         if maybe_raises_regex is not None:
             with self.assertRaisesRegex(RuntimeError, maybe_raises_regex):
@@ -103,8 +106,7 @@ class TestNamedTensor(TestCase):
             result.names,
             expected_names,
             message="Name inference for {} on device {} failed".format(
-                op.__name__, device
-            ),
+                op.__name__, device),
         )
 
     # TODO(rzou): Some form of this check should be added to self.assertEqual.
@@ -132,26 +134,27 @@ class TestNamedTensor(TestCase):
         self.assertEqual(x.names, ("N", None, "D"))
 
         with self.assertRaisesRegex(
-            RuntimeError, "must contain alphabetical characters and/or underscore"
-        ):
-            x = factory(2, names=("?",), device=device)
+                RuntimeError,
+                "must contain alphabetical characters and/or underscore"):
+            x = factory(2, names=("?", ), device=device)
 
         with self.assertRaisesRegex(RuntimeError, "Number of names"):
-            x = factory(2, 1, names=("N",), device=device)
+            x = factory(2, 1, names=("N", ), device=device)
 
-        with self.assertRaisesRegex(TypeError, "invalid combination of arguments"):
+        with self.assertRaisesRegex(TypeError,
+                                    "invalid combination of arguments"):
             x = factory(2, 1, names="N", device=device)
 
-        with self.assertRaisesRegex(
-            RuntimeError, "construct a tensor with duplicate names"
-        ):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "construct a tensor with duplicate names"):
             x = factory(2, 1, 1, names=("N", "C", "N"), device=device)
 
         names64 = ["A" * i for i in range(1, 65)]
         x = factory([1] * 64, names=names64, device=device)
         self.assertEqual(x.names, names64)
 
-        with self.assertRaisesRegex(RuntimeError, "only support up to 64 dims"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "only support up to 64 dims"):
             names65 = ["A" * i for i in range(1, 66)]
             x = factory([1] * 65, names=names64, device=device)
 
@@ -165,7 +168,8 @@ class TestNamedTensor(TestCase):
         self.assertEqual(
             sys.getrefcount(None),
             prev_none_refcnt,
-            message="Using tensor.names should not change " "the refcount of Py_None",
+            message="Using tensor.names should not change "
+            "the refcount of Py_None",
         )
 
     def test_has_names(self):
@@ -197,9 +201,9 @@ class TestNamedTensor(TestCase):
         )
 
         # Named tensor -> Named tensor
-        self._test_name_inference(
-            Tensor.refine_names, [create("N:1,C:2,H:3"), "N", "C", "H"], ["N", "C", "H"]
-        )
+        self._test_name_inference(Tensor.refine_names,
+                                  [create("N:1,C:2,H:3"), "N", "C", "H"],
+                                  ["N", "C", "H"])
 
         # Partially named tensor -> named tensor
         self._test_name_inference(
@@ -239,11 +243,11 @@ class TestNamedTensor(TestCase):
     def test_detach(self):
         names = ["N"]
         self._test_name_inference(
-            Tensor.detach_, [torch.randn(3, requires_grad=True, names=names)], names
-        )
+            Tensor.detach_, [torch.randn(3, requires_grad=True, names=names)],
+            names)
         self._test_name_inference(
-            Tensor.detach, [torch.randn(3, requires_grad=True, names=names)], names
-        )
+            Tensor.detach, [torch.randn(3, requires_grad=True, names=names)],
+            names)
 
     def test_index_fill(self):
         for device in torch.testing.get_all_device_types():
@@ -253,17 +257,15 @@ class TestNamedTensor(TestCase):
             output = x.index_fill_("C", torch.tensor([0, 1], device=device), 5)
             self.assertEqual(output.names, expected_names)
 
-            output = x.index_fill_(
-                "C", torch.tensor([0, 1], device=device), torch.tensor(4.0)
-            )
+            output = x.index_fill_("C", torch.tensor([0, 1], device=device),
+                                   torch.tensor(4.0))
             self.assertEqual(output.names, expected_names)
 
             output = x.index_fill("C", torch.tensor([0, 1], device=device), 5)
             self.assertEqual(output.names, expected_names)
 
-            output = x.index_fill(
-                "C", torch.tensor([0, 1], device=device), torch.tensor(4.0)
-            )
+            output = x.index_fill("C", torch.tensor([0, 1], device=device),
+                                  torch.tensor(4.0))
             self.assertEqual(output.names, expected_names)
 
     def test_equal(self):
@@ -272,14 +274,11 @@ class TestNamedTensor(TestCase):
             other = tensor.clone()
 
             self.assertTrue(
-                torch.equal(tensor.rename("N", "C"), other.rename("N", "C"))
-            )
+                torch.equal(tensor.rename("N", "C"), other.rename("N", "C")))
             self.assertFalse(
-                torch.equal(tensor.rename("M", "C"), other.rename("N", "C"))
-            )
+                torch.equal(tensor.rename("M", "C"), other.rename("N", "C")))
             self.assertFalse(
-                torch.equal(tensor.rename(None, "C"), other.rename("N", "C"))
-            )
+                torch.equal(tensor.rename(None, "C"), other.rename("N", "C")))
 
     def test_squeeze(self):
         x = create("N:3,C:1,H:1,W:1")
@@ -307,8 +306,8 @@ class TestNamedTensor(TestCase):
         self.assertEqual(named_tensor.diagonal(1, 3).names, ["A", "C", None])
 
         self.assertEqual(
-            named_tensor.diagonal(outdim="E", dim1="B", dim2="D").names, ["A", "C", "E"]
-        )
+            named_tensor.diagonal(outdim="E", dim1="B", dim2="D").names,
+            ["A", "C", "E"])
 
     def test_max_pooling(self):
         def check_tuple_return(op, inputs, expected_names):
@@ -318,25 +317,36 @@ class TestNamedTensor(TestCase):
 
         for device in torch.testing.get_all_device_types():
 
-            named_tensor_1d = torch.zeros(2, 3, 5, device=device, names=list("ABC"))
-            named_tensor_2d = torch.zeros(2, 3, 5, 7, device=device, names=list("ABCD"))
-            named_tensor_3d = torch.zeros(
-                2, 3, 5, 7, 9, device=device, names=list("ABCDE")
-            )
+            named_tensor_1d = torch.zeros(2,
+                                          3,
+                                          5,
+                                          device=device,
+                                          names=list("ABC"))
+            named_tensor_2d = torch.zeros(2,
+                                          3,
+                                          5,
+                                          7,
+                                          device=device,
+                                          names=list("ABCD"))
+            named_tensor_3d = torch.zeros(2,
+                                          3,
+                                          5,
+                                          7,
+                                          9,
+                                          device=device,
+                                          names=list("ABCDE"))
 
             self.assertEqual(
-                F.max_pool1d(named_tensor_1d, 2).names, named_tensor_1d.names
-            )
+                F.max_pool1d(named_tensor_1d, 2).names, named_tensor_1d.names)
             self.assertEqual(
-                F.max_pool2d(named_tensor_2d, [2, 2]).names, named_tensor_2d.names
-            )
+                F.max_pool2d(named_tensor_2d, [2, 2]).names,
+                named_tensor_2d.names)
             self.assertEqual(
-                F.max_pool3d(named_tensor_3d, [2, 2, 2]).names, named_tensor_3d.names
-            )
+                F.max_pool3d(named_tensor_3d, [2, 2, 2]).names,
+                named_tensor_3d.names)
 
-            check_tuple_return(
-                F.max_pool1d_with_indices, [named_tensor_1d, 2], named_tensor_1d.names
-            )
+            check_tuple_return(F.max_pool1d_with_indices, [named_tensor_1d, 2],
+                               named_tensor_1d.names)
             check_tuple_return(
                 F.max_pool2d_with_indices,
                 [named_tensor_2d, [2, 2]],
@@ -413,9 +423,8 @@ class TestNamedTensor(TestCase):
         with self.assertRaisesRegex(RuntimeError, "duplicate names"):
             tensor.rename("N", "N")
 
-        with self.assertRaisesRegex(
-            RuntimeError, "either positional args or keyword args"
-        ):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "either positional args or keyword args"):
             tensor.rename(None, N="batch")
 
         # rename returns a view on the tensor
@@ -431,29 +440,30 @@ class TestNamedTensor(TestCase):
         self.assertEqual(scalar.rename("...").names, [])
 
         # Check that it works with unnamed tensors
-        self.assertEqual(unnamed_tensor.rename("...").names, unnamed_tensor.names)
         self.assertEqual(
-            unnamed_tensor.rename("...", "H", "W").names, [None, None, "H", "W"]
-        )
+            unnamed_tensor.rename("...").names, unnamed_tensor.names)
         self.assertEqual(
-            unnamed_tensor.rename("N", "...", "W").names, ["N", None, None, "W"]
-        )
+            unnamed_tensor.rename("...", "H", "W").names,
+            [None, None, "H", "W"])
         self.assertEqual(
-            unnamed_tensor.rename("N", "C", "...").names, ["N", "C", None, None]
-        )
+            unnamed_tensor.rename("N", "...", "W").names,
+            ["N", None, None, "W"])
+        self.assertEqual(
+            unnamed_tensor.rename("N", "C", "...").names,
+            ["N", "C", None, None])
 
         # Check that it works with named tensors
         self.assertEqual(named_tensor.rename("...").names, named_tensor.names)
         self.assertEqual(
-            named_tensor.rename("...", "width").names, ["N", "C", "H", "width"]
-        )
+            named_tensor.rename("...", "width").names,
+            ["N", "C", "H", "width"])
         self.assertEqual(
             named_tensor.rename("batch", "channels", "...", "width").names,
             ["batch", "channels", "H", "width"],
         )
         self.assertEqual(
-            named_tensor.rename("batch", "...").names, ["batch", "C", "H", "W"]
-        )
+            named_tensor.rename("batch", "...").names,
+            ["batch", "C", "H", "W"])
 
         # Test empty glob
         self.assertEqual(
@@ -461,8 +471,8 @@ class TestNamedTensor(TestCase):
             [None, None, None, None],
         )
         self.assertEqual(
-            named_tensor.rename("N", "C", "H", "...", "W").names, ["N", "C", "H", "W"]
-        )
+            named_tensor.rename("N", "C", "H", "...", "W").names,
+            ["N", "C", "H", "W"])
 
         # Multiple globs throw
         with self.assertRaisesRegex(RuntimeError, "More than one "):
@@ -483,9 +493,9 @@ class TestNamedTensor(TestCase):
             named_tensor.rename(H="height", B="batch")
 
         self.assertEqual(
-            named_tensor.rename(N="batch").data_ptr(), named_tensor.data_ptr()
-        )
-        self.assertEqual(named_tensor.rename(N="batch").names, ["batch", "C", "H", "W"])
+            named_tensor.rename(N="batch").data_ptr(), named_tensor.data_ptr())
+        self.assertEqual(
+            named_tensor.rename(N="batch").names, ["batch", "C", "H", "W"])
         self.assertEqual(
             named_tensor.rename(N="batch", H="height").names,
             ["batch", "C", "height", "W"],
@@ -529,8 +539,7 @@ class TestNamedTensor(TestCase):
         ]
 
         for op, device in itertools.product(
-            supported, torch.testing.get_all_device_types()
-        ):
+                supported, torch.testing.get_all_device_types()):
             _test(op, device)
 
         # Test torch.full
@@ -545,7 +554,7 @@ class TestNamedTensor(TestCase):
         tensor = torch.tensor([[1]], names=names)
         self.assertEqual(tensor.names, names)
 
-        names = ("N",)
+        names = ("N", )
         tensor = torch.tensor([1], names=names)
         self.assertEqual(tensor.names, names)
 
@@ -587,9 +596,11 @@ class TestNamedTensor(TestCase):
         t = torch.empty(2, 3, 5, names=("N", None, "C"))
         self.assertEqual(t.size("N"), 2)
         self.assertEqual(t.size("C"), 5)
-        with self.assertRaisesRegex(RuntimeError, "Please look up dimensions by name*"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "Please look up dimensions by name*"):
             t.size(None)
-        with self.assertRaisesRegex(RuntimeError, "Name 'channels' not found in "):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "Name 'channels' not found in "):
             t.size("channels")
         with self.assertRaisesRegex(RuntimeError, "Name 'N' not found in "):
             torch.empty(2, 3, 4).size("N")
@@ -598,9 +609,11 @@ class TestNamedTensor(TestCase):
         t = torch.empty(2, 3, 5, names=("N", None, "C"))
         self.assertEqual(t.stride("N"), 3 * 5)
         self.assertEqual(t.stride("C"), 1)
-        with self.assertRaisesRegex(RuntimeError, "Please look up dimensions by name"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "Please look up dimensions by name"):
             t.stride(None)
-        with self.assertRaisesRegex(RuntimeError, "Name 'channels' not found in "):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "Name 'channels' not found in "):
             t.stride("channels")
         with self.assertRaisesRegex(RuntimeError, "Name 'N' not found in "):
             torch.empty(2, 3, 4).stride("N")
@@ -615,21 +628,22 @@ class TestNamedTensor(TestCase):
 
     def test_resize(self):
         for device in torch.testing.get_all_device_types():
-            named = torch.randn(2, names=("N",), device=device)
+            named = torch.randn(2, names=("N", ), device=device)
             named.resize_([2])
             self.assertEqual(named.names, ["N"])
 
-            with self.assertRaisesRegex(RuntimeError, "Cannot resize named tensor"):
+            with self.assertRaisesRegex(RuntimeError,
+                                        "Cannot resize named tensor"):
                 named.resize_([3])
 
-            other_named = torch.randn(2, names=("N",), device=device)
+            other_named = torch.randn(2, names=("N", ), device=device)
             named.resize_as_(other_named)
             self.assertEqual(other_named.names, ["N"])
 
             unnamed = torch.randn(2, device=device)
             with self.assertRaisesRegex(
-                RuntimeError, r"names .* are not the same as the computed output names"
-            ):
+                    RuntimeError,
+                    r"names .* are not the same as the computed output names"):
                 named.resize_as_(unnamed)
 
             unnamed = torch.randn(1, device=device)
@@ -638,14 +652,20 @@ class TestNamedTensor(TestCase):
 
     def test_cdist(self):
         for device in torch.testing.get_all_device_types():
-            tensor = torch.randn(
-                3, 1, 2, 7, names=("M", "N", "first_group", "features"), device=device
-            )
-            other = torch.randn(
-                5, 11, 7, names=("N", "second_group", "features"), device=device
-            )
+            tensor = torch.randn(3,
+                                 1,
+                                 2,
+                                 7,
+                                 names=("M", "N", "first_group", "features"),
+                                 device=device)
+            other = torch.randn(5,
+                                11,
+                                7,
+                                names=("N", "second_group", "features"),
+                                device=device)
             result = torch.cdist(tensor, other)
-            self.assertEqual(result.names, ["M", "N", "first_group", "second_group"])
+            self.assertEqual(result.names,
+                             ["M", "N", "first_group", "second_group"])
 
     def test_info_smoke(self):
         # Smoke test for info functions / methods / attributes on named tensors.
@@ -719,7 +739,7 @@ class TestNamedTensor(TestCase):
 
     def test_any_all(self):
         for device in torch.testing.get_all_device_types():
-            x = torch.zeros(3, dtype=torch.bool, device=device, names=("C",))
+            x = torch.zeros(3, dtype=torch.bool, device=device, names=("C", ))
             self.assertEqual(x.any().names, [])
             self.assertEqual(x.all().names, [])
 
@@ -744,8 +764,8 @@ class TestNamedTensor(TestCase):
         def test_basic(op):
             a = torch.empty(2, 3, names=("N", "C"))
             b = torch.empty(3, 2, names=("C", "N"))
-            c = torch.empty(3, names=("C",))
-            d = torch.empty(5, names=("W",))
+            c = torch.empty(3, names=("C", ))
+            d = torch.empty(5, names=("W", ))
 
             self.assertEqual(op(a, a).names, ("N", "C"))
             self.assertEqual(op(a, c).names, ("N", "C"))
@@ -779,7 +799,8 @@ class TestNamedTensor(TestCase):
                 unnamed = other if tensor.has_names() else tensor
                 unnamed_dim = unnamed.dim()
                 if unnamed_dim > named.dim():
-                    return [None] * (unnamed_dim - named.dim()) + list(named.names)
+                    return [None] * (unnamed_dim - named.dim()) + list(
+                        named.names)
                 else:
                     return named.names
 
@@ -796,11 +817,16 @@ class TestNamedTensor(TestCase):
                 self.assertEqual(op(tensor, other).names, expected_names)
 
         def method(name, *args, **kwargs):
-            return [Function(name, lambda a, b: getattr(a, name)(b, *args, **kwargs))]
+            return [
+                Function(
+                    name, lambda a, b: getattr(a, name)(b, *args, **kwargs))
+            ]
 
         def function(name, *args, **kwargs):
             return [
-                Function(name, lambda a, b: getattr(torch, name)(a, b, *args, **kwargs))
+                Function(
+                    name, lambda a, b: getattr(torch, name)(a, b, *args, **
+                                                            kwargs))
             ]
 
         def out_function(name, *args, **kwargs):
@@ -814,11 +840,9 @@ class TestNamedTensor(TestCase):
             return [Function(name, fn)]
 
         def fn_method_and_inplace(name, *args, **kwargs):
-            return (
-                method(name, *args, **kwargs)
-                + method(name + "_", *args, **kwargs)
-                + out_function(name, *args, **kwargs)
-            )
+            return (method(name, *args, **kwargs) +
+                    method(name + "_", *args, **kwargs) +
+                    out_function(name, *args, **kwargs))
 
         tests = [
             fn_method_and_inplace("add"),
@@ -927,27 +951,32 @@ class TestNamedTensor(TestCase):
             self.assertEqual(out.names, tensor.names, message=testcase.name)
 
         def fn(name, *args, **kwargs):
-            return [Function(name, lambda t: getattr(torch, name)(t, *args, **kwargs))]
+            return [
+                Function(
+                    name, lambda t: getattr(torch, name)(t, *args, **kwargs))
+            ]
 
         def method(name, *args, **kwargs):
-            return [Function(name, lambda t: getattr(t, name)(*args, **kwargs))]
+            return [
+                Function(name, lambda t: getattr(t, name)(*args, **kwargs))
+            ]
 
         def out_function(name, *args, **kwargs):
             out_fn = getattr(torch, name)
 
             def fn(tensor):
-                result = torch.empty([0], dtype=tensor.dtype, device=tensor.device)
+                result = torch.empty([0],
+                                     dtype=tensor.dtype,
+                                     device=tensor.device)
                 out_fn(tensor, *args, out=result, **kwargs)
                 return result
 
             return [Function(name + "_out", fn)]
 
         def fn_method_and_inplace(name, *args, **kwargs):
-            return (
-                method(name, *args, **kwargs)
-                + method(name + "_", *args, **kwargs)
-                + out_function(name, *args, **kwargs)
-            )
+            return (method(name, *args, **kwargs) +
+                    method(name + "_", *args, **kwargs) +
+                    out_function(name, *args, **kwargs))
 
         # All of these operate on 2x2 tensors.
         tests = [
@@ -1048,21 +1077,18 @@ class TestNamedTensor(TestCase):
             method("log_softmax", dim=1),
             method("log_softmax", dim="D"),
             [
-                Function(
-                    "F.dropout(inplace)", lambda t: F.dropout(t, p=0.5, inplace=True)
-                )
+                Function("F.dropout(inplace)", lambda t: F.dropout(
+                    t, p=0.5, inplace=True))
             ],
             [
-                Function(
-                    "F.dropout(outplace)", lambda t: F.dropout(t, p=0.5, inplace=False)
-                )
+                Function("F.dropout(outplace)", lambda t: F.dropout(
+                    t, p=0.5, inplace=False))
             ],
         ]
         tests = flatten(tests)
 
         for testcase, device in itertools.product(
-            tests, torch.testing.get_all_device_types()
-        ):
+                tests, torch.testing.get_all_device_types()):
             _test(testcase, device=device)
 
     def test_cummax_cummin(self):
@@ -1084,7 +1110,8 @@ class TestNamedTensor(TestCase):
             result = torch.empty(0, dtype=torch.bool)
 
             self.assertEqual(tensor.bitwise_not().names, names)
-            self.assertEqual(torch.bitwise_not(tensor, out=result).names, names)
+            self.assertEqual(
+                torch.bitwise_not(tensor, out=result).names, names)
             self.assertEqual(tensor.bitwise_not_().names, names)
 
     def test_logical_not(self):
@@ -1094,7 +1121,8 @@ class TestNamedTensor(TestCase):
             result = torch.empty(0, dtype=torch.bool)
 
             self.assertEqual(tensor.logical_not().names, names)
-            self.assertEqual(torch.logical_not(tensor, out=result).names, names)
+            self.assertEqual(
+                torch.logical_not(tensor, out=result).names, names)
             self.assertEqual(tensor.logical_not_().names, names)
 
     def test_bernoulli(self):
@@ -1149,7 +1177,8 @@ class TestNamedTensor(TestCase):
         self.assertEqual(out.shape, (7, 2, 3, 5, 11))
 
         # accepts OrderedDict
-        out = tensor.unflatten("D", OrderedDict((("C", 2), ("H", 3), ("W", 5))))
+        out = tensor.unflatten("D", OrderedDict(
+            (("C", 2), ("H", 3), ("W", 5))))
         self.assertEqual(out.names, ("N", "C", "H", "W", "K"))
         self.assertEqual(out.shape, (7, 2, 3, 5, 11))
 
@@ -1176,7 +1205,8 @@ class TestNamedTensor(TestCase):
         with self.assertRaisesRegex(RuntimeError, "don't multiply up to"):
             tensor.unflatten("D", (("H", 3), ("W", 5)))
 
-        with self.assertRaisesRegex(RuntimeError, "OrderedDict or iterable of tuples"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "OrderedDict or iterable of tuples"):
             tensor.unflatten("D", None)
 
         with self.assertRaisesRegex(RuntimeError, "non-empty"):
@@ -1185,8 +1215,7 @@ class TestNamedTensor(TestCase):
     def test_unsupported_op_error_msg(self):
         named = torch.randn(3, 3, names=("N", "C"))
         with self.assertRaisesRegex(
-            RuntimeError, "pdist is not yet supported with named tensors"
-        ):
+                RuntimeError, "pdist is not yet supported with named tensors"):
             torch.pdist(named)
 
     def test_reduction_fns(self):
@@ -1210,17 +1239,19 @@ class TestNamedTensor(TestCase):
             check_output(op(t, 1), ["N", "L"])
             check_output(op(t, -1), ["N", "C"])
             check_output(op(t, "C"), ["N", "L"])
-            with self.assertRaisesRegex(
-                RuntimeError, "Please look up dimensions by name"
-            ):
+            with self.assertRaisesRegex(RuntimeError,
+                                        "Please look up dimensions by name"):
                 op(t, None)
             with self.assertRaisesRegex(RuntimeError, "Name 'H' not found"):
                 op(t, "H")
 
         def test_autograd_supports_dimname_overload(op, device):
-            t = torch.empty(
-                2, 3, 5, names=("N", "C", "L"), device=device, requires_grad=True
-            )
+            t = torch.empty(2,
+                            3,
+                            5,
+                            names=("N", "C", "L"),
+                            device=device,
+                            requires_grad=True)
             sum_all_outputs(op(t, "C")).backward()
             self.assertIsNotNone(t.grad)
 
@@ -1234,9 +1265,8 @@ class TestNamedTensor(TestCase):
             check_output(op(t, [1, 2]), ["N"])
             check_output(op(t, [0, -1]), ["C"])
             check_output(op(t, ["C", "L"]), ["N"])
-            with self.assertRaisesRegex(
-                RuntimeError, "Please look up dimensions by name"
-            ):
+            with self.assertRaisesRegex(RuntimeError,
+                                        "Please look up dimensions by name"):
                 op(t, [None, "C"])
 
         def test_out_variant(op, output_lambda, device):
@@ -1287,13 +1317,13 @@ class TestNamedTensor(TestCase):
             Case(torch.unbind, False, False, False, False, None),
             Case(torch.logsumexp, False, True, True, True, None),
             Case(torch.mode, False, False, True, True, values_and_indices),
-            Case(kthvalue_wrapper, False, False, True, True, values_and_indices),
+            Case(kthvalue_wrapper, False, False, True, True,
+                 values_and_indices),
             Case(torch.median, True, False, True, True, values_and_indices),
         ]
 
         for testcase, device in itertools.product(
-            tests, torch.testing.get_all_device_types()
-        ):
+                tests, torch.testing.get_all_device_types()):
             op = testcase.op
             test_simple_reduce(op, device)
             test_autograd_supports_dimname_overload(op, device)
@@ -1339,7 +1369,8 @@ class TestNamedTensor(TestCase):
         # out=
         self._test_name_inference(
             out_fn(torch.masked_select),
-            (create("0"), create("N:2,C:3"), (create("2,3") > 0).rename("N", "C")),
+            (create("0"), create("N:2,C:3"),
+             (create("2,3") > 0).rename("N", "C")),
             expected_names=[None],
         )
 
@@ -1352,9 +1383,9 @@ class TestNamedTensor(TestCase):
         )
 
         # error: zero dim
-        self._test_name_inference(
-            torch.cat, [[create(""), create("")]], maybe_raises_regex="zero-dim"
-        )
+        self._test_name_inference(torch.cat,
+                                  [[create(""), create("")]],
+                                  maybe_raises_regex="zero-dim")
 
         # error: names don't match
         self._test_name_inference(
@@ -1373,7 +1404,8 @@ class TestNamedTensor(TestCase):
         # out=
         self._test_name_inference(
             out_fn(torch.cat),
-            [create("0"), [create("N:2,C:3"), create("N:2,C:3")]],
+            [create("0"), [create("N:2,C:3"),
+                           create("N:2,C:3")]],
             expected_names=["N", "C"],
         )
 
@@ -1473,7 +1505,8 @@ class TestNamedTensor(TestCase):
         y = x.select("C", 1)
         self.assertEqual(y.names, ("N", "H", "W"))
 
-        with self.assertRaisesRegex(RuntimeError, "Please look up dimensions by name"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "Please look up dimensions by name"):
             y = x.select(None, 1)
 
     def test_select(self):
@@ -1486,7 +1519,7 @@ class TestNamedTensor(TestCase):
     def _test_as_strided(self, device):
         x = torch.empty(2, 3, 4, 5, names=("N", "C", "H", "W"), device=device)
         y = x.as_strided([2 * 3 * 4 * 5], [1])
-        self.assertEqual(y.names, (None,))
+        self.assertEqual(y.names, (None, ))
 
     def test_as_strided(self):
         self._test_as_strided("cpu")
@@ -1497,16 +1530,18 @@ class TestNamedTensor(TestCase):
 
     def test_no_jit_tracer_support(self):
         def foo(x):
-            return torch.full(x.shape, 2, names=("N",))
+            return torch.full(x.shape, 2, names=("N", ))
 
-        with self.assertRaisesRegex(RuntimeError, "not supported with the tracer"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "not supported with the tracer"):
             x = torch.randn(3)
             torch.jit.trace(foo, example_inputs=x)
 
         def bar(x):
             return x.select("N", 1)
 
-        with self.assertRaisesRegex(RuntimeError, "not supported with the tracer"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "not supported with the tracer"):
             x = torch.randn(3)
             torch.jit.trace(bar, example_inputs=x)
 
@@ -1557,8 +1592,8 @@ class TestNamedTensor(TestCase):
 
         # All input dimensions must be named
         with self.assertRaisesRegex(
-            RuntimeError, "All input dims must be named. Found unnamed dim at index 0"
-        ):
+                RuntimeError,
+                "All input dims must be named. Found unnamed dim at index 0"):
             create("None:2,C:3").align_to("N", "C")
 
         # not enough names
@@ -1604,12 +1639,12 @@ class TestNamedTensor(TestCase):
         self.assertEqual(output.shape, [7, 2, 3, 5])
 
         with self.assertRaisesRegex(
-            RuntimeError, "order of dimensions cannot contain a None"
-        ):
+                RuntimeError, "order of dimensions cannot contain a None"):
             partially_named.align_to("C", None, "...")
 
         # Input order partially named
-        with self.assertRaisesRegex(RuntimeError, "cannot contain a None name"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "cannot contain a None name"):
             tensor.align_to("...", "N", None)
 
         # Input order duplicate names
@@ -1627,7 +1662,8 @@ class TestNamedTensor(TestCase):
 
     @unittest.skip("Not implemented yet")
     def test_align_tensors_two_inputs(self):
-        def _test(tensor_namedshape, align_names, expected_sizes, expected_error):
+        def _test(tensor_namedshape, align_names, expected_sizes,
+                  expected_error):
             tensor_names, tensor_sizes = tensor_namedshape
             tensor = torch.empty(*tensor_sizes, names=tensor_names)
             other = torch.empty([1] * len(align_names), names=align_names)
@@ -1642,7 +1678,12 @@ class TestNamedTensor(TestCase):
 
         Case = namedtuple(
             "Case",
-            ["tensor_namedshape", "align_names", "expected_sizes", "expected_error",],
+            [
+                "tensor_namedshape",
+                "align_names",
+                "expected_sizes",
+                "expected_error",
+            ],
         )
 
         tests = [
@@ -1776,7 +1817,7 @@ class TestNamedTensor(TestCase):
 
         x = torch.empty(1, 1, names=("N", "H"))
         y = torch.empty(2, 3, 5, names=("N", "C", "H"))
-        z = torch.empty(2, names=("N",))
+        z = torch.empty(2, names=("N", ))
         output = torch.align_tensors(x, y, z)
         expected_tensors = reference_fn(x, y, z)
         for tensor, expected in zip(output, expected_tensors):
@@ -1867,7 +1908,8 @@ class TestNamedTensor(TestCase):
             self._test_name_inference(
                 torch.addmm,
                 device=device,
-                args=(create("N:3,None:5"), create("N:3,C:2"), create("W:2,H:5")),
+                args=(create("N:3,None:5"), create("N:3,C:2"),
+                      create("W:2,H:5")),
                 expected_names=("N", "H"),
             )
 
@@ -1929,7 +1971,8 @@ class TestNamedTensor(TestCase):
             self._test_name_inference(
                 out_fn(torch.bmm),
                 device=device,
-                args=(create("0"), create("N:7,A:3,B:2"), create("N:7,A:2,B:5")),
+                args=(create("0"), create("N:7,A:3,B:2"),
+                      create("N:7,A:2,B:5")),
                 expected_names=("N", "A", "B"),
             )
 
@@ -2047,7 +2090,8 @@ class TestNamedTensor(TestCase):
             self._test_name_inference(
                 out_fn(torch.matmul),
                 device=device,
-                args=(create("0"), create("N:7,A:3,B:2"), create("N:7,A:2,B:5")),
+                args=(create("0"), create("N:7,A:3,B:2"),
+                      create("N:7,A:2,B:5")),
                 expected_names=("N", "A", "B"),
             )
 
@@ -2073,7 +2117,7 @@ class TestNamedTensor(TestCase):
                 torch.mv,
                 device=device,
                 args=(create("N:3,C:2"), create("W:2")),
-                expected_names=("N",),
+                expected_names=("N", ),
             )
 
             # left arg is unnamed
@@ -2081,7 +2125,7 @@ class TestNamedTensor(TestCase):
                 torch.mv,
                 device=device,
                 args=(create("3,2"), create("W:2")),
-                expected_names=(None,),
+                expected_names=(None, ),
             )
 
             # right arg is unnamed
@@ -2089,7 +2133,7 @@ class TestNamedTensor(TestCase):
                 torch.mv,
                 device=device,
                 args=(create("N:3,C:2"), create("2")),
-                expected_names=("N",),
+                expected_names=("N", ),
             )
 
             # out=
@@ -2097,7 +2141,7 @@ class TestNamedTensor(TestCase):
                 out_fn(torch.mv),
                 device=device,
                 args=(create("0"), create("N:3,C:2"), create("W:2")),
-                expected_names=("N",),
+                expected_names=("N", ),
             )
 
     def test_addmv(self):
@@ -2115,15 +2159,16 @@ class TestNamedTensor(TestCase):
                 torch.addmv,
                 device=device,
                 args=(create("3"), create("N:3,C:2"), create("H:2")),
-                expected_names=("N",),
+                expected_names=("N", ),
             )
 
             # out=
             self._test_name_inference(
                 out_fn(torch.addmv),
                 device=device,
-                args=(create("0"), create("N:3"), create("N:3,C:2"), create("H:2")),
-                expected_names=("N",),
+                args=(create("0"), create("N:3"), create("N:3,C:2"),
+                      create("H:2")),
+                expected_names=("N", ),
             )
 
             # inplace
@@ -2131,7 +2176,7 @@ class TestNamedTensor(TestCase):
                 torch.Tensor.addmv_,
                 device=device,
                 args=(create("N:3"), create("N:3,C:2"), create("H:2")),
-                expected_names=("N",),
+                expected_names=("N", ),
             )
 
     def test_autograd_ignores_names(self):
@@ -2162,13 +2207,12 @@ class TestNamedTensor(TestCase):
             self.assertEqual(len(warns), 1)
             self.assertTrue(
                 str(warns[0].message).startswith(
-                    "Autograd was passed a named grad tensor"
-                )
-            )
+                    "Autograd was passed a named grad tensor"))
 
     def test_nyi_dimname_overload_msg(self):
         x = torch.randn(3, 3)
-        with self.assertRaisesRegex(RuntimeError, "squeeze: You passed a dimname"):
+        with self.assertRaisesRegex(RuntimeError,
+                                    "squeeze: You passed a dimname"):
             x.squeeze_("N")
 
     def test_dot(self):
