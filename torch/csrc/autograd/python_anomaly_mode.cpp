@@ -1,7 +1,7 @@
-#include <torch/csrc/autograd/python_anomaly_mode.h>
 #include <c10/util/Exception.h>
 #include <pybind11/pybind11.h>
 #include <torch/csrc/Exceptions.h>
+#include <torch/csrc/autograd/python_anomaly_mode.h>
 #include <torch/csrc/python_headers.h>
 #include <torch/csrc/utils/auto_gil.h>
 #include <torch/csrc/utils/object_ptr.h>
@@ -9,7 +9,8 @@
 
 #include <iostream>
 
-namespace torch { namespace autograd {
+namespace torch {
+namespace autograd {
 
 void PyAnomalyMetadata::store_stack() {
   pybind11::gil_scoped_acquire gil;
@@ -37,9 +38,12 @@ void PyAnomalyMetadata::print_stack(const std::string& current_node_name) {
   // PyDict_GetItemString returns a borrowed reference
   PyObject* stack(PyDict_GetItemString(dict(), ANOMALY_TRACE_KEY));
   if (!stack) {
-    AT_WARN("Error detected in ", current_node_name, ". ",
-            "No forward pass information available. Enable detect anomaly "
-            "during forward pass for more information.");
+    AT_WARN(
+        "Error detected in ",
+        current_node_name,
+        ". ",
+        "No forward pass information available. Enable detect anomaly "
+        "during forward pass for more information.");
     return;
   }
 
@@ -55,9 +59,13 @@ void PyAnomalyMetadata::print_stack(const std::string& current_node_name) {
     throw python_error();
   }
 
-  AT_WARN("Error detected in ", current_node_name, ". ",
-          "Traceback of forward call that caused the error:\n",
-          THPUtils_unpackString(msg.get()));
+  AT_WARN(
+      "Error detected in ",
+      current_node_name,
+      ". ",
+      "Traceback of forward call that caused the error:\n",
+      THPUtils_unpackString(msg.get()));
 }
 
-}}
+} // namespace autograd
+} // namespace torch

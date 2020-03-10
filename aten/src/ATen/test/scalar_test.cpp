@@ -17,7 +17,7 @@ using namespace at;
 
 constexpr auto Float = ScalarType::Float;
 
-template<typename scalar_type>
+template <typename scalar_type>
 struct Foo {
   static void apply(Tensor a, Tensor b) {
     scalar_type s = 1;
@@ -27,7 +27,7 @@ struct Foo {
     (void)data;
   }
 };
-template<>
+template <>
 struct Foo<Half> {
   static void apply(Tensor a, Tensor b) {}
 };
@@ -97,8 +97,11 @@ TEST(TestScalar, TestScalar) {
   test_overflow();
 
   if (at::hasCUDA()) {
-    auto r = next_h.to(at::Device(kCUDA), kFloat, /*non_blocking=*/ false, /*copy=*/ true);
-    ASSERT_TRUE(r.to(at::Device(kCPU), kFloat, /*non_blocking=*/ false, /*copy=*/ true).equal(next_h));
+    auto r = next_h.to(
+        at::Device(kCUDA), kFloat, /*non_blocking=*/false, /*copy=*/true);
+    ASSERT_TRUE(
+        r.to(at::Device(kCPU), kFloat, /*non_blocking=*/false, /*copy=*/true)
+            .equal(next_h));
   }
   ASSERT_NO_THROW(randn({10, 10, 2}, options));
 
@@ -111,8 +114,7 @@ TEST(TestScalar, TestScalar) {
     AT_DISPATCH_ALL_TYPES(x.scalar_type(), "foo", [&] {
       scalar_t s = 1;
       std::stringstream ss;
-      ASSERT_NO_THROW(
-          ss << "hello, dispatch" << x.toString() << s << "\n");
+      ASSERT_NO_THROW(ss << "hello, dispatch" << x.toString() << s << "\n");
       auto data = (scalar_t*)x.data_ptr();
       (void)data;
     });

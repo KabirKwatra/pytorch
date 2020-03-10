@@ -5,7 +5,8 @@
 #include <torch/csrc/python_headers.h>
 #include <torch/csrc/utils/auto_gil.h>
 
-namespace torch { namespace autograd {
+namespace torch {
+namespace autograd {
 
 struct PyAnomalyMetadata : public AnomalyMetadata {
   static constexpr char* ANOMALY_TRACE_KEY = "traceback_";
@@ -25,8 +26,9 @@ struct PyAnomalyMetadata : public AnomalyMetadata {
     return dict_;
   }
 
-private:
+ private:
   PyObject* dict_;
 };
 
-}}
+} // namespace autograd
+} // namespace torch

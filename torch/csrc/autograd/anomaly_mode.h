@@ -1,9 +1,10 @@
 #pragma once
 
-#include <string>
 #include <torch/csrc/WindowsTorchApiMacro.h>
+#include <string>
 
-namespace torch { namespace autograd {
+namespace torch {
+namespace autograd {
 
 struct TORCH_API AnomalyMode {
   static bool is_enabled() {
@@ -13,10 +14,9 @@ struct TORCH_API AnomalyMode {
     _enabled = enabled;
   }
 
-private:
+ private:
   static bool _enabled;
 };
-
 
 struct TORCH_API AnomalyMetadata {
   virtual ~AnomalyMetadata();
@@ -24,4 +24,5 @@ struct TORCH_API AnomalyMetadata {
   virtual void print_stack(const std::string& current_node_name) = 0;
 };
 
-}}
+} // namespace autograd
+} // namespace torch

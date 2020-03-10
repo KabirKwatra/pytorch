@@ -45,8 +45,9 @@ void RNNImplBase<Derived>::reset() {
 
   for (int64_t layer = 0; layer < options.layers(); ++layer) {
     for (auto direction = 0; direction < num_directions; direction++) {
-      const auto layer_input_size = layer == 0 ? options.input_size() :
-        options.hidden_size() * num_directions;
+      const auto layer_input_size = layer == 0
+          ? options.input_size()
+          : options.hidden_size() * num_directions;
       const auto suffix = direction == 1 ? "_reverse" : "";
       const auto layer_idx = (layer * num_directions) + direction;
       w_ih[layer_idx] = this->register_parameter(
@@ -58,11 +59,11 @@ void RNNImplBase<Derived>::reset() {
 
       if (options.with_bias()) {
         b_ih[layer_idx] = this->register_parameter(
-          "bias_ih_l" + std::to_string(layer) + suffix,
-          torch::empty({gate_size}));
+            "bias_ih_l" + std::to_string(layer) + suffix,
+            torch::empty({gate_size}));
         b_hh[layer_idx] = this->register_parameter(
-          "bias_hh_l" + std::to_string(layer) + suffix,
-          torch::empty({gate_size}));
+            "bias_hh_l" + std::to_string(layer) + suffix,
+            torch::empty({gate_size}));
       }
     }
   }
@@ -154,8 +155,8 @@ RNNOutput RNNImplBase<Derived>::generic_forward(
     const auto batch_size = input.size(options.batch_first() ? 0 : 1);
     const auto num_directions = options.bidirectional() ? 2 : 1;
     state = torch::zeros(
-      {options.layers() * num_directions, batch_size, options.hidden_size()},
-      input.options());
+        {options.layers() * num_directions, batch_size, options.hidden_size()},
+        input.options());
   }
   Tensor output, new_state;
   std::tie(output, new_state) = function(
@@ -270,7 +271,10 @@ RNNOutput LSTMImpl::forward(const Tensor& input, Tensor state) {
     const auto batch_size = input.size(options.batch_first() ? 0 : 1);
     const auto num_directions = options.bidirectional() ? 2 : 1;
     state = torch::zeros(
-        {2, options.layers() * num_directions, batch_size, options.hidden_size()},
+        {2,
+         options.layers() * num_directions,
+         batch_size,
+         options.hidden_size()},
         input.options());
   }
   Tensor output, hidden_state, cell_state;
