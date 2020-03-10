@@ -14,6 +14,7 @@ import torch.nn.functional as F
 
 torch.set_default_dtype(torch.double)
 
+
 class TestDataParallel(TestCase):
 
     @unittest.skipIf(not TEST_MULTIGPU, "multi-GPU not supported")

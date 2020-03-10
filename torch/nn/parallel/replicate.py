@@ -60,6 +60,7 @@ def _replicatable_module(module, memo=None):
 
     return True
 
+
 def _broadcast_coalesced_reshape(tensors, devices, detach=False):
     from ._functions import Broadcast
     if detach:
