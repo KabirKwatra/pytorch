@@ -1,23 +1,22 @@
 import contextlib
 import unittest
-from copy import deepcopy
 from collections import OrderedDict
+from copy import deepcopy
 
 import torch
-from torch import nn
-import torch.nn.parallel as dp
-from torch.testing._internal.common_cuda import TEST_MULTIGPU, TEST_CUDA
-from torch.testing._internal.common_utils import (
-    run_tests,
-    TestCase,
-    skipIfRocm,
-    repeat_test_for_types,
-    ALL_TENSORTYPES,
-    PY3,
-)
-from torch.testing._internal.common_utils import _assertGradAndGradgradChecks
-from torch.testing._internal.common_utils import dtype2prec_DONTUSE
 import torch.nn.functional as F
+import torch.nn.parallel as dp
+from torch import nn
+from torch.testing._internal.common_cuda import TEST_CUDA
+from torch.testing._internal.common_cuda import TEST_MULTIGPU
+from torch.testing._internal.common_utils import _assertGradAndGradgradChecks
+from torch.testing._internal.common_utils import ALL_TENSORTYPES
+from torch.testing._internal.common_utils import dtype2prec_DONTUSE
+from torch.testing._internal.common_utils import PY3
+from torch.testing._internal.common_utils import repeat_test_for_types
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import skipIfRocm
+from torch.testing._internal.common_utils import TestCase
 
 torch.set_default_dtype(torch.double)
 
