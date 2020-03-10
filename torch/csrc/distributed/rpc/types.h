@@ -11,26 +11,26 @@ using worker_id_t = int16_t;
 using local_id_t = int64_t;
 
 struct TORCH_API GloballyUniqueId final {
-  GloballyUniqueId(worker_id_t createdOn, local_id_t localId);
-  GloballyUniqueId(const GloballyUniqueId& other) = default;
-  GloballyUniqueId& operator=(const GloballyUniqueId& other) = delete;
+    GloballyUniqueId(worker_id_t createdOn, local_id_t localId);
+    GloballyUniqueId(const GloballyUniqueId& other) = default;
+    GloballyUniqueId& operator=(const GloballyUniqueId& other) = delete;
 
-  bool operator==(const GloballyUniqueId& other) const;
-  bool operator!=(const GloballyUniqueId& other) const;
+    bool operator==(const GloballyUniqueId& other) const;
+    bool operator!=(const GloballyUniqueId& other) const;
 
-  at::IValue toIValue() const;
-  static GloballyUniqueId fromIValue(const at::IValue&);
+    at::IValue toIValue() const;
+    static GloballyUniqueId fromIValue(const at::IValue&);
 
-  struct Hash {
-    size_t operator()(const GloballyUniqueId& key) const {
-      return (uint64_t(key.createdOn_) << kLocalIdBits) | key.localId_;
-    }
-  };
+    struct Hash {
+        size_t operator()(const GloballyUniqueId& key) const {
+            return (uint64_t(key.createdOn_) << kLocalIdBits) | key.localId_;
+        }
+    };
 
-  static constexpr int kLocalIdBits = 48;
+    static constexpr int kLocalIdBits = 48;
 
-  const worker_id_t createdOn_;
-  const local_id_t localId_;
+    const worker_id_t createdOn_;
+    const local_id_t localId_;
 };
 
 TORCH_API std::ostream& operator<<(
@@ -41,14 +41,14 @@ using RRefId = GloballyUniqueId;
 using ForkId = GloballyUniqueId;
 
 struct TORCH_API SerializedPyObj final {
-  SerializedPyObj(std::string&& payload, std::vector<at::Tensor>&& tensors)
-      : payload_(std::move(payload)), tensors_(std::move(tensors)) {}
+    SerializedPyObj(std::string&& payload, std::vector<at::Tensor>&& tensors)
+        : payload_(std::move(payload)), tensors_(std::move(tensors)) {}
 
-  std::vector<at::IValue> toIValues() &&;
-  static SerializedPyObj fromIValues(std::vector<at::IValue> value);
+    std::vector<at::IValue> toIValues() &&;
+    static SerializedPyObj fromIValues(std::vector<at::IValue> value);
 
-  std::string payload_;
-  std::vector<at::Tensor> tensors_;
+    std::string payload_;
+    std::vector<at::Tensor> tensors_;
 };
 
 } // namespace rpc

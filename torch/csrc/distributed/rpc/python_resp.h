@@ -9,17 +9,17 @@ namespace rpc {
 
 // RPC call representing the response of a Python UDF over RPC.
 class TORCH_API PythonResp final : public RpcCommandBase {
- public:
-  explicit PythonResp(SerializedPyObj&& serializedPyObj);
+public:
+    explicit PythonResp(SerializedPyObj&& serializedPyObj);
 
-  Message toMessage() && override;
+    Message toMessage() && override;
 
-  static std::unique_ptr<PythonResp> fromMessage(const Message& message);
+    static std::unique_ptr<PythonResp> fromMessage(const Message& message);
 
-  const SerializedPyObj& serializedPyObj() const;
+    const SerializedPyObj& serializedPyObj() const;
 
- private:
-  SerializedPyObj serializedPyObj_;
+private:
+    SerializedPyObj serializedPyObj_;
 };
 
 } // namespace rpc
