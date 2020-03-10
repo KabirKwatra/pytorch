@@ -1,19 +1,19 @@
+from torch.autograd.gradcheck import gradcheck
+from numbers import Number
+from torch.testing._internal.common_cuda import TEST_CUDA
+from torch.testing._internal.common_utils import TestCase, run_tests, skipIfRocm, do_test_dtypes, \
+    do_test_empty_full, load_tests, TEST_NUMPY
+import unittest
+import sys
+import random
+import functools
+import itertools
 import torch
 
 # TODO: remove this global setting
 # Sparse tests use double as the default dtype
 torch.set_default_dtype(torch.double)
 
-import itertools
-import functools
-import random
-import sys
-import unittest
-from torch.testing._internal.common_utils import TestCase, run_tests, skipIfRocm, do_test_dtypes, \
-    do_test_empty_full, load_tests, TEST_NUMPY
-from torch.testing._internal.common_cuda import TEST_CUDA
-from numbers import Number
-from torch.autograd.gradcheck import gradcheck
 
 # load_tests from torch.testing._internal.common_utils is used to automatically filter tests for
 # sharding on sandcastle. This line silences flake warnings
@@ -228,7 +228,7 @@ class TestSparse(TestCase):
             x.to_dense()  # Tests triple to_dense for memory corruption
             x.to_dense()
             x.to_dense()
-            # We dont have to_dense for half types, so we don't request 
+            # We dont have to_dense for half types, so we don't request
             # exact_dtype if res.type is torch.float16.
             dense_x = x.to_dense()
             safe_dense_x = self.safeToDense(x)
@@ -842,7 +842,6 @@ class TestSparse(TestCase):
                 dense_result = torch.select(x.to_dense(), select_dim, select_index)
                 self.assertEqual(dense_result, result)
 
-
         sizes = [5, 7, 11, 13, 17]
         # hybrid sparse/dense, select sparse dim, result is dense
         for i in range(sizes[0]):
@@ -858,7 +857,6 @@ class TestSparse(TestCase):
         for d in range(1, 3):
             for i in range(sizes[d]):
                 test_shape(1, 10, sizes, d, i)
-
 
     def test_index_select(self):
         def test_shape(sparse_dims, nnz, sizes, select_dim, select_index, fail_message=None):
@@ -1641,7 +1639,7 @@ class TestSparse(TestCase):
 
     def test_factory_size_check(self):
         indices = self.index_tensor([[1, 2],
-                                    [0, 2]])
+                                     [0, 2]])
         values = self.value_tensor([.5, .5])
         sizes = torch.Size([2, 3])
         with self.assertRaisesRegex(RuntimeError, "size is inconsistent with indices"):
@@ -1652,28 +1650,28 @@ class TestSparse(TestCase):
             torch.sparse_coo_tensor(indices, values, sizes)
 
         indices = self.index_tensor([[1, 2],
-                                    [0, 2]])
+                                     [0, 2]])
         values = self.value_empty(2, 1, 0)
         sizes = torch.Size([2, 3, 1, 0])
         with self.assertRaisesRegex(RuntimeError, "size is inconsistent with indices"):
             torch.sparse_coo_tensor(indices, values, sizes)
 
         indices = self.index_tensor([[1, 2],
-                                    [0, 2]])
+                                     [0, 2]])
         values = self.value_empty(2, 2, 2)
         sizes = torch.Size([0, 0, 2, 2])
         with self.assertRaisesRegex(RuntimeError, "size is inconsistent with indices"):
             torch.sparse_coo_tensor(indices, values, sizes)
 
         indices = self.index_tensor([[1, 2],
-                                    [0, 2]])
+                                     [0, 2]])
         values = self.value_tensor([[1, 1, 1], [1, 1, 1]])
         sizes = torch.Size([3, 3, 2])
         with self.assertRaisesRegex(RuntimeError, "values has incorrect size"):
             torch.sparse_coo_tensor(indices, values, sizes)
 
         indices = self.index_tensor([[1, 2],
-                                    [0, 2]])
+                                     [0, 2]])
         values = self.value_empty(2, 1, 0)
         sizes = torch.Size([3, 3, 2, 0])
         with self.assertRaisesRegex(RuntimeError, "values has incorrect size"):
@@ -2144,8 +2142,8 @@ class TestSparse(TestCase):
 
     def test_div_by_sparse_error(self):
         self.assertRaisesRegex(RuntimeError, 'A Sparse Tensor can only be divided',
-                               lambda: torch.tensor(1., device=self.device).to_sparse()
-                               / torch.tensor(1., device=self.device).to_sparse())
+                               lambda: torch.tensor(1., device=self.device).to_sparse() /
+                               torch.tensor(1., device=self.device).to_sparse())
 
     @unittest.skipIf(not TEST_NUMPY, "Numpy not found")
     def test_sparse_to_numpy(self):

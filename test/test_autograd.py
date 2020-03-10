@@ -1,3 +1,29 @@
+from torch.testing._internal.common_device_type import (instantiate_device_type_tests, skipCUDAIfRocm,
+                                                        onlyCPU, onlyCUDA, dtypes, dtypesIfCUDA,
+                                                        deviceCountAtLeast, skipCUDAIfCudnnVersionLessThan)
+from torch.testing._internal.common_methods_invocations import (method_tests,
+                                                                create_input, unpack_variables,
+                                                                EXCLUDE_FUNCTIONAL, EXCLUDE_GRADCHECK,
+                                                                EXCLUDE_GRADGRADCHECK,
+                                                                EXCLUDE_GRADGRADCHECK_BY_TEST_NAME,
+                                                                exclude_tensor_method,
+                                                                mask_not_all_zeros,
+                                                                S)
+from torch.testing import randn_like
+from torch.autograd.function import InplaceFunction
+from torch.autograd import Variable, Function, detect_anomaly
+from torch.testing._internal.common_utils import (TEST_MKL, TEST_WITH_ROCM, TestCase, run_tests, skipIfNoLapack,
+                                                  suppress_warnings, slowTest,
+                                                  load_tests, random_symmetric_pd_matrix, random_symmetric_matrix,
+                                                  IS_WINDOWS, IS_MACOS)
+from torch.utils.checkpoint import checkpoint
+from torch.autograd.profiler import (profile, format_time, EventList,
+                                     FunctionEvent, FunctionEventAvg,
+                                     record_function, emit_nvtx)
+from torch.autograd.function import once_differentiable
+from torch.autograd.gradcheck import gradgradcheck, gradcheck
+from torch._six import inf, nan, istuple
+from torch import nn
 import contextlib
 import gc
 import sys
@@ -18,32 +44,6 @@ import json
 # Autograd tests use double as the default dtype
 torch.set_default_dtype(torch.double)
 
-from torch import nn
-from torch._six import inf, nan, istuple
-from torch.autograd.gradcheck import gradgradcheck, gradcheck
-from torch.autograd.function import once_differentiable
-from torch.autograd.profiler import (profile, format_time, EventList,
-                                     FunctionEvent, FunctionEventAvg,
-                                     record_function, emit_nvtx)
-from torch.utils.checkpoint import checkpoint
-from torch.testing._internal.common_utils import (TEST_MKL, TEST_WITH_ROCM, TestCase, run_tests, skipIfNoLapack,
-                                                  suppress_warnings, slowTest,
-                                                  load_tests, random_symmetric_pd_matrix, random_symmetric_matrix,
-                                                  IS_WINDOWS, IS_MACOS)
-from torch.autograd import Variable, Function, detect_anomaly
-from torch.autograd.function import InplaceFunction
-from torch.testing import randn_like
-from torch.testing._internal.common_methods_invocations import (method_tests,
-                                                                create_input, unpack_variables,
-                                                                EXCLUDE_FUNCTIONAL, EXCLUDE_GRADCHECK,
-                                                                EXCLUDE_GRADGRADCHECK,
-                                                                EXCLUDE_GRADGRADCHECK_BY_TEST_NAME,
-                                                                exclude_tensor_method,
-                                                                mask_not_all_zeros,
-                                                                S)
-from torch.testing._internal.common_device_type import (instantiate_device_type_tests, skipCUDAIfRocm,
-                                                        onlyCPU, onlyCUDA, dtypes, dtypesIfCUDA,
-                                                        deviceCountAtLeast, skipCUDAIfCudnnVersionLessThan)
 
 # load_tests from common_utils is used to automatically filter tests for
 # sharding on sandcastle. This line silences flake warnings
@@ -679,7 +679,6 @@ class TestAutograd(TestCase):
         with self.assertRaisesRegex(RuntimeError,
                                     "calculating the gradient of a sparse Tensor argument to mm is not supported."):
             z.sum().backward()
-
 
     def test_multi_backward(self):
         x = torch.randn(5, 5, requires_grad=True)
@@ -1450,7 +1449,7 @@ class TestAutograd(TestCase):
         self._test_setitem_tensor((5, 5, 5), [slice(None), [2, 4], [1, 3]])
         self._test_setitem_tensor((5, 5, 5), [[1, 3], [2, 4], slice(None)])
         self._test_setitem_tensor((5, 5, 5), [Variable(torch.LongTensor([1,
-                                              3]), requires_grad=False), [2, 4], slice(None)])
+                                                                         3]), requires_grad=False), [2, 4], slice(None)])
 
     def test_setitem_mask(self):
         mask = torch.BoolTensor(5, 5).bernoulli_()
@@ -2208,7 +2207,6 @@ class TestAutograd(TestCase):
                               lambda y, x: torch.trapz(y, x),
                               True, f_args_variable, f_args_tensor)
 
-
     def test_var_mean_differentiable(self):
         dim = [2, 4]
         keepdim = False
@@ -2801,7 +2799,6 @@ class TestAutograd(TestCase):
         # doesn't throw.
         rf.__exit__()
 
-
     def test_dir(self):
         x = torch.randn(10, 10)
         keys = dir(x)
@@ -3051,7 +3048,7 @@ class TestAutograd(TestCase):
         )
 
         x = torch.tensor([[[[1.0, 1.0]]]], requires_grad=True)
-        g, = torch.autograd.grad(net(x).pow(2), [x], grad_outputs=x.new_ones(x.shape) , create_graph=True)
+        g, = torch.autograd.grad(net(x).pow(2), [x], grad_outputs=x.new_ones(x.shape), create_graph=True)
         torch.autograd.grad(g.sum(), [x])
         self.assertEqual(x, torch.tensor([[[[1.0, 1.0]]]]))
 
@@ -3695,7 +3692,6 @@ for shape in [(1,), ()]:
                     a = torch.ones(2, requires_grad=True)
                     b = torch.ones(2, requires_grad=True)
 
-
                     if fn_id == "two_output" and inplace and output_is_a_view:
                         with self.assertRaisesRegex(RuntimeError, err_msg_two_outputs):
                             fn(a, b)
@@ -3798,7 +3794,6 @@ for shape in [(1,), ()]:
             def backward(ctx, grad):
                 bw_called[0] += 1
                 return grad, grad
-
 
         a = torch.ones(2, requires_grad=True)
         b = torch.ones(2, requires_grad=True)
@@ -3992,6 +3987,7 @@ for shape in [(1,), ()]:
             with self.assertRaisesRegex(RuntimeError, "call out-of-place version"):
                 b.backward(torch.ones(2, device=device))
 
+
 def index_variable(shape, max_indices):
     if not isinstance(shape, tuple):
         shape = (shape,)
@@ -4043,6 +4039,7 @@ def gradgradcheck_method_precision_override(test_name):
             # errors accumulated across multiple dimensions
             override = {'atol': override['atol'] * S * S, 'rtol': override['atol'] * S * S}
     return override
+
 
 def run_grad_and_gradgrad_checks(test_case, name, test_name, apply_method, output_variable,
                                  input_variables, run_gradgradcheck=True):
@@ -4107,7 +4104,8 @@ def add_test(
                 if is_inplace:
                     self_variable.requires_grad = False
                 # need to record this because methods can change the size (e.g. unsqueeze)
-                args_variable, kwargs_variable = create_input(args, requires_grad=not is_inplace, call_kwargs=kwargs, device=device)
+                args_variable, kwargs_variable = create_input(
+                    args, requires_grad=not is_inplace, call_kwargs=kwargs, device=device)
                 self_tensor = deepcopy(self_variable)
                 args_tensor = deepcopy(unpack_variables(args_variable))
                 if not exclude_tensor_method(name, test_name):
@@ -4137,7 +4135,8 @@ def add_test(
                     f_args_variable = (self_variable,) + args_variable
                     f_args_tensor = (self_tensor,) + args_tensor
                     # could run the gradchecks again, but skip since we did it for the methods above.
-                    run_gradcheck = exclude_tensor_method(name, test_name) and not is_inplace and name not in EXCLUDE_GRADCHECK
+                    run_gradcheck = exclude_tensor_method(
+                        name, test_name) and not is_inplace and name not in EXCLUDE_GRADCHECK
                     run_functional_checks(self, test_name, name, fn,
                                           run_gradcheck, f_args_variable, f_args_tensor)
 
@@ -4270,7 +4269,6 @@ class TestAutogradDeviceType(TestCase):
         _test_cdist_for_size((1, 1), (S, 1))
         _test_euclidean_large_cdist((2000, 5))
 
-
     # NOTE: flaky on ROCm CI
     @skipCUDAIfRocm
     def test_sparse_ctor_getter_backward(self, device):
@@ -4369,7 +4367,6 @@ class TestAutogradDeviceType(TestCase):
             test_nonzero(f, nan, bool(nan))
             test_nonzero(f, inf, bool(inf))
             test_nonzero(f, -inf, bool(-inf))
-
 
         _test_pyscalar_conversions(lambda x: x.to(device), lambda x: int(x))
         if sys.version_info[0] == 2:
@@ -4498,14 +4495,16 @@ class TestAutogradDeviceType(TestCase):
         target_length = 15
         targets = torch.randint(1, num_labels, (batch_size * target_length,),
                                 device='cuda', dtype=torch.long)
-        log_probs = torch.log_softmax(torch.randn(input_length, batch_size, num_labels, device='cuda', dtype=torch.float), 2)
+        log_probs = torch.log_softmax(torch.randn(input_length, batch_size,
+                                                  num_labels, device='cuda', dtype=torch.float), 2)
         log_probs.requires_grad_()
 
         input_lengths = batch_size * [input_length]
         target_lengths = batch_size * [target_length]
         grad_out = torch.randn(batch_size, device='cuda', dtype=torch.float)
         with torch.backends.cudnn.flags(enabled=False):
-            loss_native = torch.nn.functional.ctc_loss(log_probs, targets, input_lengths, target_lengths, reduction='none')
+            loss_native = torch.nn.functional.ctc_loss(
+                log_probs, targets, input_lengths, target_lengths, reduction='none')
             grad_native, = torch.autograd.grad(loss_native, log_probs, grad_out)
         loss_cudnn = torch.nn.functional.ctc_loss(log_probs, targets.to('cpu', torch.int32),
                                                   input_lengths, target_lengths, reduction='none')
