@@ -38,13 +38,13 @@
 namespace detail {
 
 inline at::ScalarType scalar_type(at::ScalarType s) {
-  return s;
+    return s;
 }
 
 C10_DEPRECATED_MESSAGE("passing at::DeprecatedTypeProperties to an AT_DISPATCH macro is deprecated, " \
                        "pass an at::ScalarType instead")
 inline at::ScalarType scalar_type(const at::DeprecatedTypeProperties &t) {
-  return t.scalarType();
+    return t.scalarType();
 }
 
 C10_DEPRECATED_MESSAGE("AT_DISPATCH_ALL_TYPES_AND_HALF is deprecated, " \
@@ -170,7 +170,7 @@ inline void deprecated_AT_DISPATCH_ALL_TYPES_AND_HALF_AND_COMPLEX() {}
     }                                                                                                     \
   }()
 
- #define AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES(TYPE, NAME, ...)                                                 \
+#define AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES(TYPE, NAME, ...)                                                 \
   [&] {                                                                                                          \
     const auto& the_type = TYPE;                                                                                 \
     /* don't use TYPE again in case it is an expensive or side-effect op */                                      \
@@ -185,7 +185,7 @@ inline void deprecated_AT_DISPATCH_ALL_TYPES_AND_HALF_AND_COMPLEX() {}
     }                                                                                                            \
   }()
 
- #define AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND1(SCALARTYPE, TYPE, NAME, ...)                                \
+#define AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND1(SCALARTYPE, TYPE, NAME, ...)                                \
   [&] {                                                                                                          \
     const auto& the_type = TYPE;                                                                                 \
     /* don't use TYPE again in case it is an expensive or side-effect op */                                      \
@@ -201,7 +201,7 @@ inline void deprecated_AT_DISPATCH_ALL_TYPES_AND_HALF_AND_COMPLEX() {}
     }                                                                                                            \
   }()
 
- #define AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(SCALARTYPE1, SCALARTYPE2, TYPE, NAME, ...)                                \
+#define AT_DISPATCH_FLOATING_AND_COMPLEX_TYPES_AND2(SCALARTYPE1, SCALARTYPE2, TYPE, NAME, ...)                                \
   [&] {                                                                                                          \
     const auto& the_type = TYPE;                                                                                 \
     /* don't use TYPE again in case it is an expensive or side-effect op */                                      \

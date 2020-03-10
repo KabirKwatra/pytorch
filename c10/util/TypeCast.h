@@ -34,12 +34,12 @@ namespace c10 {
 
 template <typename T>
 struct inter_copy_type {
-  using type = T;
+    using type = T;
 };
 
 template <>
 struct inter_copy_type<uint8_t> {
-  using type = int64_t;
+    using type = int64_t;
 };
 
 template <typename T>
@@ -47,31 +47,31 @@ using inter_copy_type_t = typename inter_copy_type<T>::type;
 
 template<typename dest_t, typename src_t>
 struct needs_real {
-  constexpr static bool value = (is_complex_t<src_t>::value && !is_complex_t<dest_t>::value);
+    constexpr static bool value = (is_complex_t<src_t>::value && !is_complex_t<dest_t>::value);
 };
 
 template<bool, typename src_t>
 struct maybe_real {
-  C10_HOST_DEVICE static inline src_t apply(src_t src) {
-    return src;
-  }
+    C10_HOST_DEVICE static inline src_t apply(src_t src) {
+        return src;
+    }
 };
 
 template<typename src_t>
 struct maybe_real<true, src_t> {
-  C10_HOST_DEVICE static inline auto apply(src_t src) -> decltype(src.real()) {
-    return src.real();
-  }
+    C10_HOST_DEVICE static inline auto apply(src_t src) -> decltype(src.real()) {
+        return src.real();
+    }
 };
 
 
 template <typename dest_t, typename src_t>
 struct static_cast_with_inter_type {
-  C10_HOST_DEVICE static inline dest_t apply(src_t src) {
-    constexpr bool real = needs_real<dest_t, src_t>::value;
-    return static_cast<dest_t>(
-      static_cast<inter_copy_type_t<dest_t>>(maybe_real<real, src_t>::apply(src)));
-  }
+    C10_HOST_DEVICE static inline dest_t apply(src_t src) {
+        constexpr bool real = needs_real<dest_t, src_t>::value;
+        return static_cast<dest_t>(
+                   static_cast<inter_copy_type_t<dest_t>>(maybe_real<real, src_t>::apply(src)));
+    }
 };
 
 // Dynamic type casting utils:
@@ -130,23 +130,24 @@ struct static_cast_with_inter_type {
 #define FETCH_AND_CAST_CASE(type, scalartype) case ScalarType::scalartype: return static_cast_with_inter_type<dest_t, type>::apply(*(const type *)ptr);
 template<typename dest_t>
 C10_HOST_DEVICE inline dest_t fetch_and_cast(const ScalarType src_type, const void *ptr) {
-  switch (src_type) {
-    AT_FORALL_SCALAR_TYPES_WITH_COMPLEX_EXCEPT_COMPLEX_HALF(FETCH_AND_CAST_CASE)
+    switch (src_type) {
+        AT_FORALL_SCALAR_TYPES_WITH_COMPLEX_EXCEPT_COMPLEX_HALF(FETCH_AND_CAST_CASE)
     default:
-      ERROR_UNSUPPORTED_CAST
-  }
-  return dest_t(0); // just to avoid compiler warning
+        ERROR_UNSUPPORTED_CAST
+    }
+    return dest_t(0); // just to avoid compiler warning
 }
 
 // Cast a value with static type src_t into dynamic dest_type, and store it to ptr.
 #define CAST_AND_STORE_CASE(type, scalartype) case ScalarType::scalartype: *(type *)ptr = static_cast_with_inter_type<type, src_t>::apply(value); return;
 template<typename src_t>
 C10_HOST_DEVICE inline void cast_and_store(const ScalarType dest_type, void *ptr, src_t value) {
-  switch (dest_type) {
-    AT_FORALL_SCALAR_TYPES_WITH_COMPLEX_EXCEPT_COMPLEX_HALF(CAST_AND_STORE_CASE)
-    default:;
-  }
-  ERROR_UNSUPPORTED_CAST
+    switch (dest_type) {
+        AT_FORALL_SCALAR_TYPES_WITH_COMPLEX_EXCEPT_COMPLEX_HALF(CAST_AND_STORE_CASE)
+    default:
+        ;
+    }
+    ERROR_UNSUPPORTED_CAST
 }
 
 #define DEFINE_UNCASTABLE(T, scalartype_)                                                         \
@@ -170,19 +171,19 @@ AT_FORALL_QINT_TYPES(DEFINE_UNCASTABLE)
 
 template <typename To, typename From>
 To convert(From f) {
-  return static_cast_with_inter_type<To, From>::apply(f);
+    return static_cast_with_inter_type<To, From>::apply(f);
 }
 
 template <typename To, typename From>
 To checked_convert(From f, const char* name) {
-  // Converting to bool can't overflow so we exclude this case from checking.
-  if (!std::is_same<To, bool>::value && overflows<To, From>(f)) {
-    std::ostringstream oss;
-    oss << "value cannot be converted to type " << name
-        << " without overflow: " << f;
-    throw std::runtime_error(oss.str());  // rather than domain_error (issue 33562)
-  }
-  return convert<To, From>(f);
+    // Converting to bool can't overflow so we exclude this case from checking.
+    if (!std::is_same<To, bool>::value && overflows<To, From>(f)) {
+        std::ostringstream oss;
+        oss << "value cannot be converted to type " << name
+            << " without overflow: " << f;
+        throw std::runtime_error(oss.str());  // rather than domain_error (issue 33562)
+    }
+    return convert<To, From>(f);
 }
 
 }  // namespace c10
