@@ -737,9 +737,9 @@ class TestNamedTensor(TestCase):
 
         def fn_method_and_inplace(name, *args, **kwargs):
             return (
-                method(name, *args, **kwargs) +
-                method(name + '_', *args, **kwargs) +
-                out_function(name, *args, **kwargs)
+                method(name, *args, **kwargs)
+                + method(name + '_', *args, **kwargs)
+                + out_function(name, *args, **kwargs)
             )
 
         tests = [
@@ -860,9 +860,9 @@ class TestNamedTensor(TestCase):
 
         def fn_method_and_inplace(name, *args, **kwargs):
             return (
-                method(name, *args, **kwargs) +
-                method(name + '_', *args, **kwargs) +
-                out_function(name, *args, **kwargs)
+                method(name, *args, **kwargs)
+                + method(name + '_', *args, **kwargs)
+                + out_function(name, *args, **kwargs)
             )
 
         # All of these operate on 2x2 tensors.
@@ -1303,7 +1303,6 @@ class TestNamedTensor(TestCase):
             Tensor.masked_fill_,
             (create('N:2,None:3'), (create('2,3') > 0).rename('N', 'C'), 3.14),
             maybe_raises_regex="not the same as the computed output names")
-
 
     def test_using_seen_interned_string_doesnt_bump_refcount(self):
         def see_name():

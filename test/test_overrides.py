@@ -18,6 +18,7 @@ Tensor = torch.Tensor
 # fake torch function allows us to verify that the dispatch rules work
 # the same for a torch function implemented in C++ or Python.
 
+
 def foo(a, b, c=None):
     """A function multiple arguments and an optional argument"""
     if any(type(t) is not Tensor for t in (a, b, c)) and has_torch_function((a, b, c)):
@@ -26,11 +27,13 @@ def foo(a, b, c=None):
         return a + b + c
     return a + b
 
+
 def bar(a):
     """A function with one argument"""
     if type(a) is not Tensor and has_torch_function((a,)):
         return handle_torch_function(bar, (a,), a)
     return a
+
 
 def baz(a, b):
     """A function with multiple arguments"""
@@ -38,11 +41,13 @@ def baz(a, b):
         return handle_torch_function(baz, (a, b), a, b)
     return a + b
 
+
 def quux(a):
     """Used to test that errors raised in user implementations get propagated"""
     if type(a) is not Tensor and has_torch_function((a,)):
         return handle_torch_function(quux, (a,), a)
     return a
+
 
 # HANDLED_FUNCTIONS_DIAGONAL is a dispatch table that
 # DiagonalTensor.__torch_function__ uses to determine which override
@@ -53,6 +58,7 @@ def quux(a):
 # implements_diagonal. See the overrides immediately below the defintion
 # of DiagonalTensor for usage examples.
 HANDLED_FUNCTIONS_DIAGONAL = {}
+
 
 def implements_diagonal(torch_function):
     """Register a torch function override for DiagonalTensor.
@@ -69,6 +75,7 @@ def implements_diagonal(torch_function):
         HANDLED_FUNCTIONS_DIAGONAL[torch_function] = func
         return func
     return decorator
+
 
 class DiagonalTensor(object):
     """A class with __torch_function__ and a specific diagonal representation
@@ -139,36 +146,45 @@ class DiagonalTensor(object):
         else:
             return False
 
+
 @implements_diagonal(torch.mean)
 def mean(mat):
     return float(mat._i) / mat._N
+
 
 @implements_diagonal(torch.mm)
 def diagonal_mm(mat1, mat2):
     return 0
 
+
 @implements_diagonal(torch.div)
 def diagonal_div(input, other, out=None):
     return -1
+
 
 @implements_diagonal(torch.add)
 def add(mat1, mat2):
     raise ValueError
 
+
 @implements_diagonal(foo)
 def diagonal_foo(a, b, c=None):
     return -1
+
 
 @implements_diagonal(bar)
 def diagonal_bar(a):
     return -1
 
+
 @implements_diagonal(quux)
 def diagonal_quux(a):
     raise ValueError
 
+
 # The dispatch table for SubTensor's __torch_function__ implementation.
 HANDLED_FUNCTIONS_SUB = {}
+
 
 def implements_sub(torch_function):
     "Register a torch function override for SubTensor"
@@ -177,6 +193,7 @@ def implements_sub(torch_function):
         HANDLED_FUNCTIONS_SUB[torch_function] = func
         return func
     return decorator
+
 
 class SubTensor(torch.Tensor):
     """A subclass of torch.Tensor use for testing __torch_function__ dispatch
@@ -198,6 +215,7 @@ class SubTensor(torch.Tensor):
     This is useful for testing that the semantics for overriding torch
     functions are working correctly.
     """
+
     def __torch_function__(self, func, args=(), kwargs=None):
         if(kwargs is None):
             kwargs = {}
@@ -206,20 +224,25 @@ class SubTensor(torch.Tensor):
             return NotImplemented
         return HANDLED_FUNCTIONS_SUB[func](*args, **kwargs)
 
+
 @implements_sub(torch.mean)
 def sub_mean(mat):
     return 0
+
 
 @implements_sub(torch.mm)
 def sub_mm(mat1, mat2):
     return -1
 
+
 @implements_sub(torch.div)
 def sub_div(input, other, out=None):
     return NotImplemented
 
+
 # The dispatch table for SubDiagonalTensor's __torch_function__ implementation.
 HANDLED_FUNCTIONS_SUB_DIAGONAL = {}
+
 
 def implements_sub_diagonal(torch_function):
     "Register a torch function override for SubDiagonalTensor"
@@ -228,6 +251,7 @@ def implements_sub_diagonal(torch_function):
         HANDLED_FUNCTIONS_SUB_DIAGONAL[torch_function] = func
         return func
     return decorator
+
 
 class SubDiagonalTensor(DiagonalTensor):
     """A subclass of ``DiagonalTensor`` to test custom dispatch
@@ -249,24 +273,30 @@ class SubDiagonalTensor(DiagonalTensor):
 def sub_diagonal_mean(mat):
     return 10 * float(mat._i) / mat._N
 
+
 @implements_sub_diagonal(bar)
 def sub_diagonal_bar(mat):
     return 0
+
 
 @implements_sub_diagonal(torch.mm)
 def sub_diagonal_mm(mat1, mat2):
     return 1
 
+
 @implements_sub_diagonal(torch.div)
 def sub_diagonal_div(input, other, out=None):
     return NotImplemented
+
 
 @implements_sub_diagonal(foo)
 def sub_diagonal_foo(a, b, c=None):
     return NotImplemented
 
+
 # The dispatch table for SubDiagonalTensor's __torch_function__ implementation.
 HANDLED_FUNCTIONS_TENSOR_LIKE = {}
+
 
 def implements_tensor_like(torch_function):
     "Register a torch function override for TensorLike"
@@ -279,6 +309,7 @@ def implements_tensor_like(torch_function):
 # Functions that are publicly available in the torch API but cannot be
 # overrided with __torch_function__ (usually because none of their
 # arguments are tensors or tensor-likes) need an entry in this tuple.
+
 
 IGNORED_TORCH_FUNCTIONS = (
     torch.typename,
@@ -419,7 +450,8 @@ TENSOR_LIKE_TORCH_IMPLEMENTATIONS = (
     (torch.batch_norm_backward_reduce, lambda grad_out, input, mean, invstd, weight, input_g, weight_g, bias_g: -1),
     (torch.batch_norm_elemt, lambda input, weight, bias, mean, invstd, eps: -1),
     (torch.batch_norm_gather_stats, lambda input, mean, invstd, running_mean, running_var, momentum, eps, count: -1),
-    (torch.batch_norm_gather_stats_with_counts, lambda input, mean, invstd, running_mean, running_var, momentum, eps, count: -1),
+    (torch.batch_norm_gather_stats_with_counts, lambda input, mean,
+     invstd, running_mean, running_var, momentum, eps, count: -1),
     (torch.batch_norm_stats, lambda input, eps: -1),
     (torch.batch_norm_update_stats, lambda input, running_mean, running_var, momentum: -1),
     (torch.bernoulli, lambda input, generator=None, out=None: -1),
@@ -455,15 +487,20 @@ TENSOR_LIKE_TORCH_IMPLEMENTATIONS = (
     (torch.conv3d, lambda input, weight, bias=None, stride=1, padding=0, dilation=1, groups=1: -1),
     (torch.convolution, lambda input, weight, bias, stride, padding, dilation, transposed, output_adding, groups: -1),
     (torch.conv_tbc, lambda input, weight, bias, pad=0: -1),
-    (torch.conv_transpose1d, lambda input, weight, bias=None, stride=1, padding=0, output_padding=0, groups=1, dilation=1: -1),
-    (torch.conv_transpose2d, lambda input, weight, bias=None, stride=1, padding=0, output_padding=0, groups=1, dilation=1: -1),
-    (torch.conv_transpose3d, lambda input, weight, bias=None, stride=1, padding=0, output_padding=0, groups=1, dilation=1: -1),
+    (torch.conv_transpose1d, lambda input, weight, bias=None,
+     stride=1, padding=0, output_padding=0, groups=1, dilation=1: -1),
+    (torch.conv_transpose2d, lambda input, weight, bias=None,
+     stride=1, padding=0, output_padding=0, groups=1, dilation=1: -1),
+    (torch.conv_transpose3d, lambda input, weight, bias=None,
+     stride=1, padding=0, output_padding=0, groups=1, dilation=1: -1),
     (torch.cos, lambda input, out=None: -1),
-    (torch.cosine_embedding_loss, lambda input1, input2, target, margin=0, size_average=None, reduce=None, reduction='mean': -1),
+    (torch.cosine_embedding_loss, lambda input1, input2, target,
+     margin=0, size_average=None, reduce=None, reduction='mean': -1),
     (torch.cosh, lambda input, out=None: -1),
     (torch.cosine_similarity, lambda x1, x2, dim=1, eps=1e-8: -1),
     (torch.cross, lambda input, other, dim=-1, out=None: -1),
-    (torch.ctc_loss, lambda log_probs, targets, input_lengths, target_lengths, blank=0, reduction='mean', zero_infinity=False: -1),
+    (torch.ctc_loss, lambda log_probs, targets, input_lengths,
+     target_lengths, blank=0, reduction='mean', zero_infinity=False: -1),
     (torch.cummax, lambda input, dim, out=None: -1),
     (torch.cummin, lambda input, dim, out=None: -1),
     (torch.cumprod, lambda input, dim, out=None, dtype=None: -1),
@@ -517,7 +554,8 @@ TENSOR_LIKE_TORCH_IMPLEMENTATIONS = (
     (torch.floor_divide, lambda input, other: -1),
     (torch.fmod, lambda input, other, out=None: -1),
     (torch.frac, lambda input, out=None: -1),
-    (torch.full_like, lambda input, fill_value, out=None, dtype=None, layout=torch.strided, device=None, requires_grad=False: -1),
+    (torch.full_like, lambda input, fill_value, out=None, dtype=None,
+     layout=torch.strided, device=None, requires_grad=False: -1),
     (torch.functional.lu_unpack, lambda LU_data, LU_pivots, unpack_data=True, unpack_pivots=True: -1),
     (torch.gather, lambda input, dim, index, out=None, sparse_grad=False: -1),
     (torch.ge, lambda input, other, out=None: -1),
@@ -543,7 +581,8 @@ TENSOR_LIKE_TORCH_IMPLEMENTATIONS = (
     (torch.index_fill, lambda input, dim, index, value: -1),
     (torch.isfinite, lambda tensor: -1),
     (torch.isinf, lambda tensor: -1),
-    (torch.instance_norm, lambda input, running_mean, running_var, weight, bias, use_input_stats, momentum, eps, cudnn_enabled: -1),
+    (torch.instance_norm, lambda input, running_mean, running_var,
+     weight, bias, use_input_stats, momentum, eps, cudnn_enabled: -1),
     (torch.int_repr, lambda input: -1),
     (torch.inverse, lambda input, out=None: -1),
     (torch.irfft, lambda input, signal_ndim, normalized=False, onesided=True, signal_sizes=None: -1),
@@ -578,7 +617,8 @@ TENSOR_LIKE_TORCH_IMPLEMENTATIONS = (
     (torch.lt, lambda input, other, out=None: -1),
     (torch.lu, lambda A, pivot=True, get_infos=False, out=None: -1),
     (torch.lu_solve, lambda input, LU_data, LU_pivots, out=None: -1),
-    (torch.margin_ranking_loss, lambda input1, input2, target, margin=0, size_average=None, reduce=None, reduction='mean': -1),
+    (torch.margin_ranking_loss, lambda input1, input2, target,
+     margin=0, size_average=None, reduce=None, reduction='mean': -1),
     (torch.masked_fill, lambda input, mask, value: -1),
     (torch.masked_scatter, lambda input, mask, source: -1),
     (torch.masked_select, lambda input, mask, out=None: -1),
@@ -586,9 +626,12 @@ TENSOR_LIKE_TORCH_IMPLEMENTATIONS = (
     (torch.matrix_power, lambda input, n: -1),
     (torch.matrix_rank, lambda input, tol=None, symmetric=False: -1),
     (torch.max, lambda input, out=None: -1),
-    (torch.max_pool1d, lambda input, kernel_size, stride=None, padding=0, dilation=1, return_indices=False, ceil_mode=False: -1),
-    (torch.max_pool2d, lambda input, kernel_size, stride=None, padding=0, dilation=1, return_indices=False, ceil_mode=False: -1),
-    (torch.max_pool3d, lambda input, kernel_size, stride=None, padding=0, dilation=1, return_indices=False, ceil_mode=False: -1),
+    (torch.max_pool1d, lambda input, kernel_size, stride=None,
+     padding=0, dilation=1, return_indices=False, ceil_mode=False: -1),
+    (torch.max_pool2d, lambda input, kernel_size, stride=None,
+     padding=0, dilation=1, return_indices=False, ceil_mode=False: -1),
+    (torch.max_pool3d, lambda input, kernel_size, stride=None,
+     padding=0, dilation=1, return_indices=False, ceil_mode=False: -1),
     (torch.max_pool1d_with_indices, lambda input, kernel_size, stride=None, padding=0, dilation=1, return_indices=False,
      ceil_mode=False: -1),
     (torch.mean, lambda input: -1),
@@ -863,6 +906,7 @@ TENSOR_LIKE_TORCH_IMPLEMENTATIONS = (
 
 TENSOR_LIKE_OVERRIDES = tuple(t[0] for t in TENSOR_LIKE_TORCH_IMPLEMENTATIONS)
 
+
 def generate_tensor_like_torch_implementations():
     torch_vars = vars(torch)
     untested_funcs = []
@@ -907,7 +951,9 @@ def generate_tensor_like_torch_implementations():
         # decorate the overrides with implements_tensor_like
         implements_tensor_like(func)(override)
 
+
 generate_tensor_like_torch_implementations()
+
 
 class TensorLike(object):
     """A class that overrides the full torch API
@@ -915,6 +961,7 @@ class TensorLike(object):
     This class is used to explicitly test that the full torch.tensor API
     can be overriden with a class that defines __torch_function__.
     """
+
     def __torch_function__(self, func, args=(), kwargs=None):
         if(kwargs is None):
             kwargs = {}
@@ -923,6 +970,7 @@ class TensorLike(object):
             return NotImplemented
         # In this case _torch_function_ should override TensorLike objects
         return HANDLED_FUNCTIONS_TENSOR_LIKE[func](*args, **kwargs)
+
 
 class TestTorchFunctionOverride(TestCase):
     def test_mean(self):
@@ -1064,6 +1112,7 @@ class TestTorchFunctionOverride(TestCase):
         with self.assertRaises(ValueError):
             quux(t1)
 
+
 def generate_tensor_like_override_tests(cls):
     def test_generator(func, override):
         if torch._six.PY3:
@@ -1087,6 +1136,7 @@ def generate_tensor_like_override_tests(cls):
         name = 'test_{}'.format(func.__name__)
         test_method.__name__ = name
         setattr(cls, name, test_method)
+
 
 generate_tensor_like_override_tests(TestTorchFunctionOverride)
 

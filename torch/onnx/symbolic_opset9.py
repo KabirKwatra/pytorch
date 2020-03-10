@@ -65,6 +65,7 @@ def unused(g):
     n.setType(OptionalType.ofTensor())
     return n
 
+
 def _shape_as_tensor(g, input):
     return g.op('Shape', input)
 
@@ -274,6 +275,7 @@ def _reduce_op_symbolic(onnx_op_name, allow_multi_dim_support=True):
             return g.op(onnx_op_name, self, axes_i=dim_list, keepdims_i=keepdim)
     return symbolic
 
+
 def overload_by_arg_count(fn):
     @wraps(fn)
     def wrapper(g, *args):
@@ -285,6 +287,7 @@ def overload_by_arg_count(fn):
                 return overload(g, *args)
         raise NotImplementedError("Unknown aten::{} signature".format(fn.__name__))
     return wrapper
+
 
 def _reduce_with_dtype(onnx_op, name, allow_multi_dim_support=True):
     symbolic = _reduce_op_symbolic(onnx_op, allow_multi_dim_support=allow_multi_dim_support)
@@ -307,9 +310,12 @@ def _reduce_with_dtype(onnx_op, name, allow_multi_dim_support=True):
         return reduce_nodim, reduce_dim
     return reduce
 
+
 sum = _reduce_with_dtype('ReduceSum', 'sum')
 mean = _reduce_with_dtype('ReduceMean', 'mean')
-prod = _reduce_with_dtype('ReduceProd', 'prod', allow_multi_dim_support=False)  # torch.prod does not support multidimensional 'dim'
+# torch.prod does not support multidimensional 'dim'
+prod = _reduce_with_dtype('ReduceProd', 'prod', allow_multi_dim_support=False)
+
 
 @parse_args('v', 'i', 'none')
 def cumsum(g, input, dim, dtype):
@@ -595,6 +601,7 @@ def softmax(g, input, dim, dtype=None):
         softmax = g.op("Cast", softmax, to_i=sym_help.scalar_type_to_onnx[parsed_dtype])
     return softmax
 
+
 @parse_args('v', 't', 'v')
 def softplus(g, self, beta, threshold):
     if beta != 1:
@@ -828,10 +835,11 @@ upsample_bilinear2d = _interpolate('upsample_bilinear2d', 4, "linear")
 upsample_trilinear3d = _interpolate('upsample_trilinear3d', 5, "linear")
 
 
-def __interpolate(g, input, size, scale_factor, mode , align_corners, recompute_scale_factor):
+def __interpolate(g, input, size, scale_factor, mode, align_corners, recompute_scale_factor):
     scales, mode = sym_help._interpolate_get_scales_and_mode(g, input, size, scale_factor,
-                                                             mode , align_corners)
+                                                             mode, align_corners)
     return g.op("Upsample", input, scales, mode_s=mode)
+
 
 @parse_args('v')
 def bitwise_not(g, inp):
@@ -1482,6 +1490,7 @@ def unsqueeze(g, self, dim):
 
     return g.op("Unsqueeze", self, axes_i=[dim])
 
+
 @parse_args('v', 'i', 'i', 'none')
 def sort(g, self, dim, decending, out=None):
     if out is not None:
@@ -1490,6 +1499,7 @@ def sort(g, self, dim, decending, out=None):
         return _unimplemented("Sort", "input size not accessible")
 
     return g.op("TopK", self, k_i=self.type().sizes()[dim], axis_i=dim, outputs=2)
+
 
 @parse_args('v', 'i', 'i', 'i', 'i', 'none')
 def topk(g, self, k, dim, largest, sorted, out=None):
@@ -1851,12 +1861,12 @@ def erf(g, input):
 def flatten(g, input, start_dim, end_dim):
     dim = input.type().dim()
     # TODO: remove this as onnx opset 11 spec allows negative axes
-    if end_dim < 0 :
+    if end_dim < 0:
         end_dim = dim + end_dim
     # use ONNX's Flatten operator for cases where the output shape is 2D
-    if start_dim == 1 and end_dim == dim - 1 :
+    if start_dim == 1 and end_dim == dim - 1:
         return g.op("Flatten", input, axis_i=start_dim)
-    if start_dim == 0 and end_dim == dim - 2 :
+    if start_dim == 0 and end_dim == dim - 2:
         return g.op("Flatten", input, axis_i=end_dim + 1)
     # use Reshape for cases where the output shape is not 2D
     if not input.isCompleteTensor():
@@ -2015,7 +2025,8 @@ def arange(g, *args):
         end = g.op("Unsqueeze", args[1], axes_i=[0])
         start = g.op("Unsqueeze", args[0], axes_i=[0])
         range_tensor = g.op("Sub", end, start)
-        arange_tensor = g.op("Add", g.op("Squeeze", nonzero(g, ones(g, range_tensor, dtype, *(args[3:]))), axes_i=[1]), start)
+        arange_tensor = g.op("Add", g.op("Squeeze", nonzero(
+            g, ones(g, range_tensor, dtype, *(args[3:]))), axes_i=[1]), start)
         return g.op("Cast", arange_tensor, to_i=sym_help.scalar_type_to_onnx[dtype])
     elif len(args) == 7:
         # aten::arange(Scalar start, Scalar end, Scalar step, ScalarType dtype, Layout, Device, bool pin_memory)
@@ -2104,7 +2115,8 @@ def index(g, self, index):
                 g.op("Gather", shape_tensor, g.op("Constant", value_t=torch.LongTensor([dim])), axis_i=0) for dim in range(rank)
             ]
 
-            self = g.op("Transpose", self, perm_i=adv_idx_indices + [i for i in range(rank) if i not in adv_idx_indices])
+            self = g.op("Transpose", self, perm_i=adv_idx_indices +
+                        [i for i in range(rank) if i not in adv_idx_indices])
             self = g.op("Flatten", self, axis_i=adv_idx_count)
 
             # Note that tensor indices will be broadcasted while accumulating. Thus we get the final subarray shape as well.
@@ -2197,6 +2209,7 @@ def remainder(g, input, other):
     quo = g.op("Mul", div, other)
     return g.op("Sub", input, quo)
 
+
 def gelu(g, self):
     _sqrt2 = 1.4142135623730951
     erf = g.op('Erf', div(g, self, torch.tensor(_sqrt2)))
@@ -2262,14 +2275,17 @@ def _weight_norm(g, weight_v, weight_g, dim):
     else:
         return g.op("ATen", weight_v, weight_g, dim_i=dim, operator_s="_weight_norm")
 
+
 def dim(g, self):
     '''Implement the dim functionality available for a pytorch tensor in ONNX'''
     # ONNX does not support dim directly in this opset so we can use 2 ops to get the info
     shape = g.op('Shape', self)
     return g.op('Size', shape)
 
+
 def __getitem_(g, self, i):
     return select(g, self, g.op("Constant", value_t=torch.tensor([0])), i)
+
 
 def take(g, self, index):
     self_flattened = g.op('Reshape', self, g.op("Constant", value_t=torch.tensor([-1], dtype=torch.int64)))

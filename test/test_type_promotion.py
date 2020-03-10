@@ -14,6 +14,8 @@ load_tests = load_tests
 # Not thread-safe decorator that runs the decorated test once with
 # the default dtype being torch.float and again with the default dtype
 # being torch.double.
+
+
 def float_double_default_dtype(fn):
     @wraps(fn)
     def wrapped_fn(*args, **kwargs):
@@ -253,7 +255,7 @@ class TestTypePromotion(TestCase):
         self.assertRaisesRegex(RuntimeError, "Boolean alpha only supported",
                                lambda: torch.add(1, 1, alpha=True))
         self.assertEqual(torch.add(torch.tensor(True, device=device),
-                         torch.tensor(True, device=device), True),
+                                   torch.tensor(True, device=device), True),
                          torch.tensor(True, device=device))
 
     @float_double_default_dtype
@@ -279,11 +281,11 @@ class TestTypePromotion(TestCase):
         self.assertEqual(torch.result_type(1, 1.), torch.get_default_dtype())
         self.assertEqual(torch.result_type(torch.tensor(1, device=device), 1.), torch.get_default_dtype())
         self.assertEqual(torch.result_type(torch.tensor(1, dtype=torch.long, device=device),
-                         torch.tensor([1, 1], dtype=torch.int, device=device)),
+                                           torch.tensor([1, 1], dtype=torch.int, device=device)),
                          torch.int)
         self.assertEqual(torch.result_type(torch.tensor([1., 1.], dtype=torch.float, device=device), 1.), torch.float)
         self.assertEqual(torch.result_type(torch.tensor(1., dtype=torch.float, device=device),
-                         torch.tensor(1, dtype=torch.double, device=device)),
+                                           torch.tensor(1, dtype=torch.double, device=device)),
                          torch.double)
 
     @float_double_default_dtype
