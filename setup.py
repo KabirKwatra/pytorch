@@ -236,7 +236,6 @@ if VERBOSE_SCRIPT:
     def report(*args):
         print(*args)
 
-
 else:
 
     def report(*args):
@@ -262,15 +261,13 @@ if IS_WINDOWS:
     # TODO: Fix for python < 3.3
     if not os.path.exists(cmake_python_library):
         cmake_python_library = "{}/libs/python{}.lib".format(
-            sys.base_prefix, distutils.sysconfig.get_config_var("VERSION")
-        )
+            sys.base_prefix, distutils.sysconfig.get_config_var("VERSION"))
 else:
     cmake_python_library = "{}/{}".format(
         distutils.sysconfig.get_config_var("LIBDIR"),
         distutils.sysconfig.get_config_var("INSTSONAME"),
     )
 cmake_python_include_dir = distutils.sysconfig.get_python_inc()
-
 
 ################################################################################
 # Version, create_version_file, and package_name
@@ -280,11 +277,8 @@ version = open("version.txt", "r").read().strip()
 sha = "Unknown"
 
 try:
-    sha = (
-        subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd)
-        .decode("ascii")
-        .strip()
-    )
+    sha = (subprocess.check_output(["git", "rev-parse", "HEAD"],
+                                   cwd=cwd).decode("ascii").strip())
 except Exception:
     pass
 
@@ -321,15 +315,11 @@ def build_deps():
     check_file(os.path.join(third_party_path, "QNNPACK", "CMakeLists.txt"))
     check_file(os.path.join(third_party_path, "fbgemm", "CMakeLists.txt"))
     check_file(
-        os.path.join(
-            third_party_path, "fbgemm", "third_party", "asmjit", "CMakeLists.txt"
-        )
-    )
+        os.path.join(third_party_path, "fbgemm", "third_party", "asmjit",
+                     "CMakeLists.txt"))
     check_file(
-        os.path.join(
-            third_party_path, "onnx", "third_party", "benchmark", "CMakeLists.txt"
-        )
-    )
+        os.path.join(third_party_path, "onnx", "third_party", "benchmark",
+                     "CMakeLists.txt"))
 
     check_pydep("yaml", "pyyaml")
     check_pydep("typing", "typing")
@@ -350,23 +340,26 @@ def build_deps():
         # library code with DEBUG, but csrc without DEBUG (in which case
         # this would claim to be a release build when it's not.)
         f.write("debug = {}\n".format(repr(build_type.is_debug())))
-        cmake_cache_vars = defaultdict(lambda: None, cmake.get_cmake_cache_variables())
+        cmake_cache_vars = defaultdict(lambda: None,
+                                       cmake.get_cmake_cache_variables())
         f.write("cuda = {}\n".format(repr(cmake_cache_vars["CUDA_VERSION"])))
         f.write("git_version = {}\n".format(repr(sha)))
         f.write("hip = {}\n".format(repr(cmake_cache_vars["HIP_VERSION"])))
 
     if CMAKE_ONLY:
-        report(
-            'Finished running cmake. Run "ccmake build" or '
-            '"cmake-gui build" to adjust build options and '
-            '"python setup.py install" to build.'
-        )
+        report('Finished running cmake. Run "ccmake build" or '
+               '"cmake-gui build" to adjust build options and '
+               '"python setup.py install" to build.')
         sys.exit()
 
     # Use copies instead of symbolic files.
     # Windows has very poor support for them.
-    sym_files = ["tools/shared/cwrap_common.py", "tools/shared/_utils_internal.py"]
-    orig_files = ["aten/src/ATen/common_with_cwrap.py", "torch/_utils_internal.py"]
+    sym_files = [
+        "tools/shared/cwrap_common.py", "tools/shared/_utils_internal.py"
+    ]
+    orig_files = [
+        "aten/src/ATen/common_with_cwrap.py", "torch/_utils_internal.py"
+    ]
     for sym_file, orig_file in zip(sym_files, orig_files):
         same = False
         if os.path.exists(sym_file):
@@ -381,7 +374,6 @@ def build_deps():
 ################################################################################
 # Building dependent libraries
 ################################################################################
-
 
 # the list of runtime dependencies required by this built package
 install_requires = []
@@ -399,14 +391,16 @@ def check_pydep(importname, module):
     try:
         importlib.import_module(importname)
     except ImportError:
-        raise RuntimeError(missing_pydep.format(importname=importname, module=module))
+        raise RuntimeError(
+            missing_pydep.format(importname=importname, module=module))
 
 
 class build_ext(setuptools.command.build_ext.build_ext):
     def run(self):
         # Report build options. This is run after the build completes so # `CMakeCache.txt` exists and we can get an
         # accurate report on what is used and what is not.
-        cmake_cache_vars = defaultdict(lambda: False, cmake.get_cmake_cache_variables())
+        cmake_cache_vars = defaultdict(lambda: False,
+                                       cmake.get_cmake_cache_variables())
         if cmake_cache_vars["USE_NUMPY"]:
             report("-- Building with NumPy bindings")
             global install_requires
@@ -414,16 +408,14 @@ class build_ext(setuptools.command.build_ext.build_ext):
         else:
             report("-- NumPy not found")
         if cmake_cache_vars["USE_CUDNN"]:
-            report(
-                "-- Detected cuDNN at "
-                + cmake_cache_vars["CUDNN_LIBRARY"]
-                + ", "
-                + cmake_cache_vars["CUDNN_INCLUDE_DIR"]
-            )
+            report("-- Detected cuDNN at " +
+                   cmake_cache_vars["CUDNN_LIBRARY"] + ", " +
+                   cmake_cache_vars["CUDNN_INCLUDE_DIR"])
         else:
             report("-- Not using cuDNN")
         if cmake_cache_vars["USE_CUDA"]:
-            report("-- Detected CUDA at " + cmake_cache_vars["CUDA_TOOLKIT_ROOT_DIR"])
+            report("-- Detected CUDA at " +
+                   cmake_cache_vars["CUDA_TOOLKIT_ROOT_DIR"])
         else:
             report("-- Not using CUDA")
         if cmake_cache_vars["USE_MKLDNN"]:
@@ -435,12 +427,10 @@ class build_ext(setuptools.command.build_ext.build_ext):
         else:
             report("-- Not using MKLDNN")
         if cmake_cache_vars["USE_NCCL"] and cmake_cache_vars["USE_SYSTEM_NCCL"]:
-            report(
-                "-- Using system provided NCCL library at {}, {}".format(
-                    cmake_cache_vars["NCCL_LIBRARIES"],
-                    cmake_cache_vars["NCCL_INCLUDE_DIRS"],
-                )
-            )
+            report("-- Using system provided NCCL library at {}, {}".format(
+                cmake_cache_vars["NCCL_LIBRARIES"],
+                cmake_cache_vars["NCCL_INCLUDE_DIRS"],
+            ))
         elif cmake_cache_vars["USE_NCCL"]:
             report("-- Building NCCL library")
         else:
@@ -456,11 +446,8 @@ class build_ext(setuptools.command.build_ext.build_ext):
         # Do not use clang to compile exensions if `-fstack-clash-protection` is defined
         # in system CFLAGS
         system_c_flags = distutils.sysconfig.get_config_var("CFLAGS")
-        if (
-            IS_LINUX
-            and "-fstack-clash-protection" in system_c_flags
-            and "clang" in os.environ.get("CC", "")
-        ):
+        if (IS_LINUX and "-fstack-clash-protection" in system_c_flags
+                and "clang" in os.environ.get("CC", "")):
             os.environ["CC"] = distutils.sysconfig.get_config_var("CC")
 
         # It's an old-style class in Python 2.7...
@@ -473,15 +460,13 @@ class build_ext(setuptools.command.build_ext.build_ext):
             ext_filename = self.get_ext_filename("_C")
             lib_filename = ".".join(ext_filename.split(".")[:-1]) + ".lib"
 
-            export_lib = os.path.join(
-                build_temp, "torch", "csrc", lib_filename
-            ).replace("\\", "/")
+            export_lib = os.path.join(build_temp, "torch", "csrc",
+                                      lib_filename).replace("\\", "/")
 
             build_lib = self.build_lib
 
-            target_lib = os.path.join(build_lib, "torch", "lib", "_C.lib").replace(
-                "\\", "/"
-            )
+            target_lib = os.path.join(build_lib, "torch", "lib",
+                                      "_C.lib").replace("\\", "/")
 
             # Create "torch/lib" directory if not exists.
             # (It is not created yet in "develop" mode.)
@@ -542,7 +527,9 @@ class build_ext(setuptools.command.build_ext.build_ext):
 
         ninja_files = glob.glob("build/*compile_commands.json")
         cmake_files = glob.glob("torch/lib/build/*/compile_commands.json")
-        all_commands = [entry for f in ninja_files + cmake_files for entry in load(f)]
+        all_commands = [
+            entry for f in ninja_files + cmake_files for entry in load(f)
+        ]
 
         # cquery does not like c++ compiles that start with gcc.
         # It forgets to include the c++ header directories.
@@ -601,7 +588,8 @@ def configure_extension_build():
     """
 
     try:
-        cmake_cache_vars = defaultdict(lambda: False, cmake.get_cmake_cache_variables())
+        cmake_cache_vars = defaultdict(lambda: False,
+                                       cmake.get_cmake_cache_variables())
     except FileNotFoundError:
         # CMakeCache.txt does not exist. Probably running "python setup.py clean" over a clean directory.
         cmake_cache_vars = defaultdict(lambda: False)
@@ -645,7 +633,9 @@ def configure_extension_build():
                 report(
                     "The support for PyTorch with Python 2.7 on Windows is very experimental."
                 )
-                report("Please set the flag `FORCE_PY27_BUILD` to 1 to continue build.")
+                report(
+                    "Please set the flag `FORCE_PY27_BUILD` to 1 to continue build."
+                )
                 sys.exit(1)
             # /bigobj increases number of sections in .obj file, which is needed to link
             # against libaries in Python 2.7 under Windows
@@ -721,7 +711,8 @@ def configure_extension_build():
         extra_compile_args=main_compile_args + extra_compile_args,
         include_dirs=[],
         library_dirs=library_dirs,
-        extra_link_args=extra_link_args + main_link_args + [make_relative_rpath("lib")],
+        extra_link_args=extra_link_args + main_link_args +
+        [make_relative_rpath("lib")],
     )
     extensions.append(C)
 
@@ -732,16 +723,16 @@ def configure_extension_build():
     # These extensions are built by cmake and copied manually in build_extensions()
     # inside the build_ext implementaiton
     extensions.append(
-        Extension(name=str("caffe2.python.caffe2_pybind11_state"), sources=[]),
-    )
+        Extension(name=str("caffe2.python.caffe2_pybind11_state"),
+                  sources=[]), )
     if cmake_cache_vars["USE_CUDA"]:
         extensions.append(
-            Extension(name=str("caffe2.python.caffe2_pybind11_state_gpu"), sources=[]),
-        )
+            Extension(name=str("caffe2.python.caffe2_pybind11_state_gpu"),
+                      sources=[]), )
     if cmake_cache_vars["USE_ROCM"]:
         extensions.append(
-            Extension(name=str("caffe2.python.caffe2_pybind11_state_hip"), sources=[]),
-        )
+            Extension(name=str("caffe2.python.caffe2_pybind11_state_hip"),
+                      sources=[]), )
 
     cmdclass = {
         "build_ext": build_ext,
@@ -790,7 +781,8 @@ if __name__ == "__main__":
     try:
         ok = dist.parse_command_line()
     except DistutilsArgError as msg:
-        raise SystemExit(core.gen_usage(dist.script_name) + "\nerror: %s" % msg)
+        raise SystemExit(
+            core.gen_usage(dist.script_name) + "\nerror: %s" % msg)
     if not ok:
         sys.exit()
 
@@ -802,10 +794,8 @@ if __name__ == "__main__":
     setup(
         name=package_name,
         version=version,
-        description=(
-            "Tensors and Dynamic neural networks in "
-            "Python with strong GPU acceleration"
-        ),
+        description=("Tensors and Dynamic neural networks in "
+                     "Python with strong GPU acceleration"),
         ext_modules=extensions,
         cmdclass=cmdclass,
         packages=packages,
@@ -924,7 +914,9 @@ if __name__ == "__main__":
                 "share/cmake/Gloo/*.cmake",
                 "share/cmake/Torch/*.cmake",
             ],
-            "caffe2": ["python/serialized_test/data/operator_test/*.zip",],
+            "caffe2": [
+                "python/serialized_test/data/operator_test/*.zip",
+            ],
         },
         url="https://pytorch.org/",
         download_url="https://github.com/pytorch/pytorch/tags",
