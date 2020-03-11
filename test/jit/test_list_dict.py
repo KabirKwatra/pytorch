@@ -1,3 +1,4 @@
+from torch.testing._internal.jit_utils import JitTestCase
 import os
 import sys
 import unittest
@@ -13,12 +14,12 @@ from torch._six import PY2
 # Make the helper files in test/ importable
 pytorch_test_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 sys.path.append(pytorch_test_dir)
-from torch.testing._internal.jit_utils import JitTestCase
 
 if __name__ == '__main__':
     raise RuntimeError("This test file is not meant to be run directly, use:\n\n"
                        "\tpython test/test_jit.py TESTNAME\n\n"
                        "instead.")
+
 
 class TestList(JitTestCase):
     def test_in_check(self):
@@ -871,7 +872,6 @@ class TestList(JitTestCase):
             # type: (List[float]) -> float
             return max(li)
 
-
         int_lists = [1], [2, 1, 2], [-3, 4, 2], [-2, -7, 1, 4], [2, 1, 0, 4], []
 
         def check_list(fn, li):
@@ -1066,7 +1066,6 @@ class TestList(JitTestCase):
                 (torch.ones(5, dtype=torch.long),),
             )
 
-
     def test_to_list_gpu(self):
         """GPU tests for Tensor.tolist() function."""
         if not torch.cuda.is_available() or torch.cuda.device_count() == 0:
@@ -1192,7 +1191,6 @@ class TestDict(JitTestCase):
 
         with self.assertRaisesRegex(RuntimeError, "KeyError"):
             torch.jit.script(pop)(self.dict(), 'x')
-
 
         def default_pop(x, key, default):
             # type: (Dict[str, Tensor], str, Tensor) -> Tuple[Tensor, Dict[str, Tensor]]
