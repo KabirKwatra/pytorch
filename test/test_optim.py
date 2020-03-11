@@ -35,18 +35,20 @@ load_tests = load_tests
 
 def rosenbrock(tensor):
     x, y = tensor
-    return (1 - x) ** 2 + 100 * (y - x ** 2) ** 2
+    return (1 - x)**2 + 100 * (y - x**2)**2
 
 
 def drosenbrock(tensor):
     x, y = tensor
-    return torch.Tensor((-400 * x * (y - x ** 2) - 2 * (1 - x), 200 * (y - x ** 2)))
+    return torch.Tensor(
+        (-400 * x * (y - x**2) - 2 * (1 - x), 200 * (y - x**2)))
 
 
 class TestOptim(TestCase):
-    def _test_rosenbrock_sparse(
-        self, constructor, scheduler_constructors=None, sparse_only=False
-    ):
+    def _test_rosenbrock_sparse(self,
+                                constructor,
+                                scheduler_constructors=None,
+                                sparse_only=False):
         if scheduler_constructors is None:
             scheduler_constructors = []
         params_t = torch.Tensor([1.5, 1.5])
@@ -103,9 +105,8 @@ class TestOptim(TestCase):
 
         self.assertLessEqual(params.data.dist(solution), initial_dist)
 
-    def _test_basic_cases_template(
-        self, weight, bias, input, constructor, scheduler_constructors
-    ):
+    def _test_basic_cases_template(self, weight, bias, input, constructor,
+                                   scheduler_constructors):
         weight = Variable(weight, requires_grad=True)
         bias = Variable(bias, requires_grad=True)
         input = Variable(input)
@@ -120,7 +121,8 @@ class TestOptim(TestCase):
         def fn():
             optimizer.zero_grad()
             y = weight.mv(input)
-            if y.is_cuda and bias.is_cuda and y.get_device() != bias.get_device():
+            if y.is_cuda and bias.is_cuda and y.get_device(
+            ) != bias.get_device():
                 y = y.cuda(bias.get_device())
             loss = (y + bias).pow(2).sum()
             loss.backward()
@@ -182,7 +184,8 @@ class TestOptim(TestCase):
         weight_cuda = Variable(weight.data.float().cuda(), requires_grad=True)
         bias_cuda = Variable(bias.data.float().cuda(), requires_grad=True)
         optimizer_cuda = constructor(weight_cuda, bias_cuda)
-        fn_cuda = functools.partial(fn_base, optimizer_cuda, weight_cuda, bias_cuda)
+        fn_cuda = functools.partial(fn_base, optimizer_cuda, weight_cuda,
+                                    bias_cuda)
 
         state_dict = deepcopy(optimizer.state_dict())
         state_dict_c = deepcopy(optimizer.state_dict())
@@ -201,16 +204,17 @@ class TestOptim(TestCase):
         def getPublicAttr(obj):
             return set(k for k in obj.__dict__ if not k.startswith("_"))
 
-        self.assertEqual(getPublicAttr(optimizer), getPublicAttr(deepcopy(optimizer)))
+        self.assertEqual(getPublicAttr(optimizer),
+                         getPublicAttr(deepcopy(optimizer)))
 
-    def _test_basic_cases(
-        self, constructor, scheduler_constructors=None, ignore_multidevice=False
-    ):
+    def _test_basic_cases(self,
+                          constructor,
+                          scheduler_constructors=None,
+                          ignore_multidevice=False):
         if scheduler_constructors is None:
             scheduler_constructors = []
-        self._test_state_dict(
-            torch.randn(10, 5), torch.randn(10), torch.randn(5), constructor
-        )
+        self._test_state_dict(torch.randn(10, 5), torch.randn(10),
+                              torch.randn(5), constructor)
         self._test_basic_cases_template(
             torch.randn(10, 5),
             torch.randn(10),
@@ -254,22 +258,14 @@ class TestOptim(TestCase):
         return [dict(params=bias, **kwargs)]
 
     def test_sgd(self):
-        self._test_basic_cases(lambda weight, bias: optim.SGD([weight, bias], lr=1e-3))
-        self._test_basic_cases(
-            lambda weight, bias: optim.SGD(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3
-            )
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.SGD(
-                self._build_params_dict_single(weight, bias, lr=1e-2), lr=1e-3
-            )
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.SGD(
-                self._build_params_dict_single(weight, bias, lr=1e-2)
-            )
-        )
+        self._test_basic_cases(lambda weight, bias: optim.SGD([weight, bias],
+                                                              lr=1e-3))
+        self._test_basic_cases(lambda weight, bias: optim.SGD(
+            self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3))
+        self._test_basic_cases(lambda weight, bias: optim.SGD(
+            self._build_params_dict_single(weight, bias, lr=1e-2), lr=1e-3))
+        self._test_basic_cases(lambda weight, bias: optim.SGD(
+            self._build_params_dict_single(weight, bias, lr=1e-2)))
         self._test_basic_cases(
             lambda weight, bias: optim.SGD([weight, bias], lr=1e-3),
             [lambda opt: StepLR(opt, gamma=0.9, step_size=10)],
@@ -289,7 +285,8 @@ class TestOptim(TestCase):
                 lambda opt: ReduceLROnPlateau(opt),
             ],
         )
-        with self.assertRaisesRegex(ValueError, "Invalid momentum value: -0.5"):
+        with self.assertRaisesRegex(ValueError,
+                                    "Invalid momentum value: -0.5"):
             optim.SGD(None, lr=1e-2, momentum=-0.5)
 
     def test_sgd_sparse(self):
@@ -300,85 +297,74 @@ class TestOptim(TestCase):
         )
 
     def test_adam(self):
-        self._test_basic_cases(lambda weight, bias: optim.Adam([weight, bias], lr=1e-3))
+        self._test_basic_cases(lambda weight, bias: optim.Adam([weight, bias],
+                                                               lr=1e-3))
+        self._test_basic_cases(lambda weight, bias: optim.Adam(
+            self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3))
+        self._test_basic_cases(lambda weight, bias: optim.Adam(
+            [weight, bias], lr=1e-3, amsgrad=True))
+        self._test_basic_cases(lambda weight, bias: optim.Adam(
+            self._build_params_dict(weight, bias, lr=1e-2),
+            lr=1e-3,
+            amsgrad=True))
         self._test_basic_cases(
             lambda weight, bias: optim.Adam(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3
-            )
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.Adam([weight, bias], lr=1e-3, amsgrad=True)
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.Adam(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3, amsgrad=True
-            )
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.Adam(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3
-            ),
+                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3),
             [lambda opt: ExponentialLR(opt, gamma=0.9)],
         )
         self._test_basic_cases(
-            lambda weight, bias: optim.Adam([weight, bias], lr=1e-3, amsgrad=True),
+            lambda weight, bias: optim.Adam(
+                [weight, bias], lr=1e-3, amsgrad=True),
             [
                 lambda opt: ExponentialLR(opt, gamma=0.9),
                 lambda opt: ReduceLROnPlateau(opt),
             ],
         )
         self._test_basic_cases(
-            lambda weight, bias: optim.Adam(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3, amsgrad=True
-            ),
+            lambda weight, bias: optim.Adam(self._build_params_dict(
+                weight, bias, lr=1e-2),
+                                            lr=1e-3,
+                                            amsgrad=True),
             [
                 lambda opt: StepLR(opt, gamma=0.9, step_size=10),
                 lambda opt: ReduceLROnPlateau(opt),
             ],
         )
-        with self.assertRaisesRegex(
-            ValueError, "Invalid beta parameter at index 0: 1.0"
-        ):
+        with self.assertRaisesRegex(ValueError,
+                                    "Invalid beta parameter at index 0: 1.0"):
             optim.Adam(None, lr=1e-2, betas=(1.0, 0.0))
 
-        with self.assertRaisesRegex(ValueError, "Invalid weight_decay value: -1"):
+        with self.assertRaisesRegex(ValueError,
+                                    "Invalid weight_decay value: -1"):
             optim.Adam(None, lr=1e-2, weight_decay=-1)
 
     def test_adamw(self):
-        self._test_basic_cases(
-            lambda weight, bias: optim.AdamW([weight, bias], lr=1e-3)
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.AdamW(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3
-            )
-        )
+        self._test_basic_cases(lambda weight, bias: optim.AdamW([weight, bias],
+                                                                lr=1e-3))
+        self._test_basic_cases(lambda weight, bias: optim.AdamW(
+            self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3))
 
-        with self.assertRaisesRegex(ValueError, "Invalid weight_decay value: -1"):
+        with self.assertRaisesRegex(ValueError,
+                                    "Invalid weight_decay value: -1"):
             optim.AdamW(None, lr=1e-2, weight_decay=-1)
 
     def test_sparse_adam(self):
         self._test_rosenbrock_sparse(
-            lambda params: optim.SparseAdam(params, lr=4e-2), [], True
-        )
-        with self.assertRaisesRegex(
-            ValueError, "Invalid beta parameter at index 0: 1.0"
-        ):
+            lambda params: optim.SparseAdam(params, lr=4e-2), [], True)
+        with self.assertRaisesRegex(ValueError,
+                                    "Invalid beta parameter at index 0: 1.0"):
             optim.SparseAdam(None, lr=1e-2, betas=(1.0, 0.0))
 
     # ROCm precision is too low to pass this test
     @skipIfRocm
     def test_adadelta(self):
-        self._test_basic_cases(lambda weight, bias: optim.Adadelta([weight, bias]))
+        self._test_basic_cases(lambda weight, bias: optim.Adadelta(
+            [weight, bias]))
+        self._test_basic_cases(lambda weight, bias: optim.Adadelta(
+            self._build_params_dict(weight, bias, rho=0.95)))
         self._test_basic_cases(
             lambda weight, bias: optim.Adadelta(
-                self._build_params_dict(weight, bias, rho=0.95)
-            )
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.Adadelta(
-                self._build_params_dict(weight, bias, rho=0.95)
-            ),
+                self._build_params_dict(weight, bias, rho=0.95)),
             [
                 lambda opt: StepLR(opt, gamma=0.9, step_size=10),
                 lambda opt: ReduceLROnPlateau(opt),
@@ -388,39 +374,32 @@ class TestOptim(TestCase):
             optim.Adadelta(None, lr=1e-2, rho=1.1)
 
     def test_adagrad(self):
-        self._test_basic_cases(
-            lambda weight, bias: optim.Adagrad([weight, bias], lr=1e-1)
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.Adagrad(
-                [weight, bias], lr=1e-1, initial_accumulator_value=0.1
-            )
-        )
+        self._test_basic_cases(lambda weight, bias: optim.Adagrad(
+            [weight, bias], lr=1e-1))
+        self._test_basic_cases(lambda weight, bias: optim.Adagrad(
+            [weight, bias], lr=1e-1, initial_accumulator_value=0.1))
+        self._test_basic_cases(lambda weight, bias: optim.Adagrad(
+            self._build_params_dict(weight, bias, lr=1e-2), lr=1e-1))
         self._test_basic_cases(
             lambda weight, bias: optim.Adagrad(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-1
-            )
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.Adagrad(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-1
-            ),
+                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-1),
             [lambda opt: ReduceLROnPlateau(opt)],
         )
         self._test_basic_cases(
             lambda weight, bias: optim.Adagrad(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-1
-            ),
+                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-1),
             [
                 lambda opt: ReduceLROnPlateau(opt),
                 lambda opt: ExponentialLR(opt, gamma=0.99),
             ],
         )
-        with self.assertRaisesRegex(ValueError, "Invalid lr_decay value: -0.5"):
+        with self.assertRaisesRegex(ValueError,
+                                    "Invalid lr_decay value: -0.5"):
             optim.Adagrad(None, lr=1e-2, lr_decay=-0.5)
 
     def test_adagrad_sparse(self):
-        self._test_rosenbrock_sparse(lambda params: optim.Adagrad(params, lr=1e-1))
+        self._test_rosenbrock_sparse(lambda params: optim.Adagrad(params,
+                                                                  lr=1e-1))
         self._test_rosenbrock_sparse(
             lambda params: optim.Adagrad(params, lr=0.1),
             [
@@ -430,63 +409,48 @@ class TestOptim(TestCase):
         )
 
     def test_adamax(self):
-        self._test_basic_cases(
-            lambda weight, bias: optim.Adamax([weight, bias], lr=1e-1)
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.Adamax(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-1
-            )
-        )
-        with self.assertRaisesRegex(
-            ValueError, "Invalid beta parameter at index 1: 1.0"
-        ):
+        self._test_basic_cases(lambda weight, bias: optim.Adamax(
+            [weight, bias], lr=1e-1))
+        self._test_basic_cases(lambda weight, bias: optim.Adamax(
+            self._build_params_dict(weight, bias, lr=1e-2), lr=1e-1))
+        with self.assertRaisesRegex(ValueError,
+                                    "Invalid beta parameter at index 1: 1.0"):
             optim.Adamax(None, lr=1e-2, betas=(0.0, 1.0))
 
     def test_rmsprop(self):
-        self._test_basic_cases(
-            lambda weight, bias: optim.RMSprop([weight, bias], lr=1e-2)
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.RMSprop(
-                self._build_params_dict(weight, bias, lr=1e-3), lr=1e-2
-            )
-        )
-        with self.assertRaisesRegex(ValueError, "Invalid momentum value: -1.0"):
+        self._test_basic_cases(lambda weight, bias: optim.RMSprop(
+            [weight, bias], lr=1e-2))
+        self._test_basic_cases(lambda weight, bias: optim.RMSprop(
+            self._build_params_dict(weight, bias, lr=1e-3), lr=1e-2))
+        with self.assertRaisesRegex(ValueError,
+                                    "Invalid momentum value: -1.0"):
             optim.RMSprop(None, lr=1e-2, momentum=-1.0)
 
     def test_asgd(self):
-        self._test_basic_cases(
-            lambda weight, bias: optim.ASGD([weight, bias], lr=1e-3, t0=100)
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.ASGD(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3, t0=100
-            )
-        )
-        with self.assertRaisesRegex(ValueError, "Invalid weight_decay value: -0.5"):
+        self._test_basic_cases(lambda weight, bias: optim.ASGD(
+            [weight, bias], lr=1e-3, t0=100))
+        self._test_basic_cases(lambda weight, bias: optim.ASGD(
+            self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3, t0=100))
+        with self.assertRaisesRegex(ValueError,
+                                    "Invalid weight_decay value: -0.5"):
             optim.ASGD(None, lr=1e-2, weight_decay=-0.5)
 
     def test_rprop(self):
-        self._test_basic_cases(
-            lambda weight, bias: optim.Rprop([weight, bias], lr=1e-3)
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.Rprop(
-                self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3
-            )
-        )
-        with self.assertRaisesRegex(ValueError, "Invalid eta values: 1.0, 0.5"):
+        self._test_basic_cases(lambda weight, bias: optim.Rprop([weight, bias],
+                                                                lr=1e-3))
+        self._test_basic_cases(lambda weight, bias: optim.Rprop(
+            self._build_params_dict(weight, bias, lr=1e-2), lr=1e-3))
+        with self.assertRaisesRegex(ValueError,
+                                    "Invalid eta values: 1.0, 0.5"):
             optim.Rprop(None, lr=1e-2, etas=(1.0, 0.5))
 
     def test_lbfgs(self):
+        self._test_basic_cases(lambda weight, bias: optim.LBFGS([weight, bias]
+                                                                ),
+                               ignore_multidevice=True)
         self._test_basic_cases(
-            lambda weight, bias: optim.LBFGS([weight, bias]), ignore_multidevice=True
-        )
-        self._test_basic_cases(
-            lambda weight, bias: optim.LBFGS(
-                [weight, bias], line_search_fn="strong_wolfe"
-            ),
+            lambda weight, bias: optim.LBFGS([weight, bias],
+                                             line_search_fn="strong_wolfe"),
             ignore_multidevice=True,
         )
 
@@ -538,8 +502,13 @@ class TestLRScheduler(TestCase):
         self.net = SchedulerTestNet()
         self.opt = SGD(
             [
-                {"params": self.net.conv1.parameters()},
-                {"params": self.net.conv2.parameters(), "lr": 0.5},
+                {
+                    "params": self.net.conv1.parameters()
+                },
+                {
+                    "params": self.net.conv2.parameters(),
+                    "lr": 0.5
+                },
             ],
             lr=0.05,
         )
@@ -547,19 +516,22 @@ class TestLRScheduler(TestCase):
     def test_error_when_getlr_has_epoch(self):
         class MultiStepLR(torch.optim.lr_scheduler._LRScheduler):
             def __init__(self, optimizer, gamma, milestones, last_epoch=-1):
-                self.init_lr = [group["lr"] for group in optimizer.param_groups]
+                self.init_lr = [
+                    group["lr"] for group in optimizer.param_groups
+                ]
                 self.gamma = gamma
                 self.milestones = milestones
                 super().__init__(optimizer, last_epoch)
 
             def get_lr(self, step):
                 global_step = self.last_epoch
-                gamma_power = (
-                    [0]
-                    + [i + 1 for i, m in enumerate(self.milestones) if global_step >= m]
-                )[-1]
+                gamma_power = ([0] + [
+                    i + 1
+                    for i, m in enumerate(self.milestones) if global_step >= m
+                ])[-1]
                 return [
-                    init_lr * (self.gamma ** gamma_power) for init_lr in self.init_lr
+                    init_lr * (self.gamma**gamma_power)
+                    for init_lr in self.init_lr
                 ]
 
         optimizer = torch.optim.SGD([torch.rand(1)], lr=1)
@@ -595,9 +567,8 @@ class TestLRScheduler(TestCase):
 
         gc.collect()
         del optim
-        self.assertEqual(
-            gc.collect(), 0, "Optimizer should be garbage-collected on __del__"
-        )
+        self.assertEqual(gc.collect(), 0,
+                         "Optimizer should be garbage-collected on __del__")
 
     def test_old_pattern_warning(self):
         epochs = 35
@@ -740,7 +711,8 @@ class TestLRScheduler(TestCase):
                 self.opt.step()
                 scheduler.step()
 
-        self.assertWarnsRegex(new_pattern, r"`optimizer.step\(\)` has been overridden")
+        self.assertWarnsRegex(new_pattern,
+                              r"`optimizer.step\(\)` has been overridden")
 
     def _test_lr_is_constant_for_constant_epoch(self, scheduler):
         l = []
@@ -763,8 +735,12 @@ class TestLRScheduler(TestCase):
         # lr = 0.005    if 30 <= epoch < 6
         # lr = 0.0005   if epoch >= 9
         epochs = 10
-        single_targets = [0.05] * 3 + [0.005] * 3 + [0.0005] * 3 + [0.00005] * 3
-        targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
+        single_targets = [0.05] * 3 + [0.005] * 3 + [0.0005] * 3 + [0.00005
+                                                                    ] * 3
+        targets = [
+            single_targets,
+            list(map(lambda x: x * epochs, single_targets))
+        ]
         scheduler = StepLR(self.opt, gamma=0.1, step_size=3)
         self._test(scheduler, targets, epochs)
 
@@ -773,8 +749,7 @@ class TestLRScheduler(TestCase):
 
         epochs = 10
         optimizer = torch.optim.SGD(
-            [Parameter(torch.randn(2, 2, requires_grad=True))], 0.1
-        )
+            [Parameter(torch.randn(2, 2, requires_grad=True))], 0.1)
         targets = [[0.1] * 3 + [0.01] * 3 + [0.001] * 3 + [0.0001]]
         scheduler = torch.optim.lr_scheduler.StepLR(optimizer, 3, gamma=0.1)
         self._test_get_last_lr(scheduler, targets, epochs)
@@ -785,8 +760,12 @@ class TestLRScheduler(TestCase):
         # lr = 0.0005   if 5 <= epoch < 9
         # lr = 0.00005   if 9 <= epoch
         epochs = 10
-        single_targets = [0.05] * 2 + [0.005] * 3 + [0.0005] * 4 + [0.00005] * 1
-        targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
+        single_targets = [0.05] * 2 + [0.005] * 3 + [0.0005] * 4 + [0.00005
+                                                                    ] * 1
+        targets = [
+            single_targets,
+            list(map(lambda x: x * epochs, single_targets))
+        ]
         scheduler = MultiStepLR(self.opt, gamma=0.1, milestones=[2, 5, 9])
         self._test_get_last_lr(scheduler, targets, epochs)
 
@@ -796,8 +775,12 @@ class TestLRScheduler(TestCase):
         # lr = 0.0005   if epoch < 9
         # lr = 0.00005   if epoch >= 9
         epochs = 10
-        single_targets = [0.05] * 2 + [0.005] * 3 + [0.0005] * 4 + [0.00005] * 3
-        targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
+        single_targets = [0.05] * 2 + [0.005] * 3 + [0.0005] * 4 + [0.00005
+                                                                    ] * 3
+        targets = [
+            single_targets,
+            list(map(lambda x: x * epochs, single_targets))
+        ]
         scheduler = MultiStepLR(self.opt, gamma=0.1, milestones=[2, 5, 9])
         self._test(scheduler, targets, epochs)
 
@@ -807,15 +790,22 @@ class TestLRScheduler(TestCase):
         # lr = 0.0005   if epoch < 9
         # lr = 0.00005   if epoch >= 9
         epochs = 10
-        single_targets = [0.05] * 2 + [0.005] * 3 + [0.0005] * 4 + [0.00005] * 3
-        targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
+        single_targets = [0.05] * 2 + [0.005] * 3 + [0.0005] * 4 + [0.00005
+                                                                    ] * 3
+        targets = [
+            single_targets,
+            list(map(lambda x: x * epochs, single_targets))
+        ]
         scheduler = MultiStepLR(self.opt, gamma=0.1, milestones=[2, 5, 9])
         self._test_with_epoch(scheduler, targets, epochs)
 
     def test_exp_lr(self):
         epochs = 10
-        single_targets = [0.05 * (0.9 ** x) for x in range(epochs)]
-        targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
+        single_targets = [0.05 * (0.9**x) for x in range(epochs)]
+        targets = [
+            single_targets,
+            list(map(lambda x: x * epochs, single_targets))
+        ]
         scheduler = ExponentialLR(self.opt, gamma=0.9)
         self._test(scheduler, targets, epochs)
 
@@ -823,10 +813,13 @@ class TestLRScheduler(TestCase):
         epochs = 10
         eta_min = 1e-10
         single_targets = [
-            eta_min + (0.05 - eta_min) * (1 + math.cos(math.pi * x / epochs)) / 2
-            for x in range(epochs)
+            eta_min + (0.05 - eta_min) *
+            (1 + math.cos(math.pi * x / epochs)) / 2 for x in range(epochs)
         ]
-        targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
+        targets = [
+            single_targets,
+            list(map(lambda x: x * epochs, single_targets))
+        ]
         scheduler = CosineAnnealingLR(self.opt, T_max=epochs, eta_min=eta_min)
         self._test(scheduler, targets, epochs)
 
@@ -837,7 +830,9 @@ class TestLRScheduler(TestCase):
 
     def test_closed_form_multi_step_lr(self):
         scheduler = MultiStepLR(self.opt, gamma=0.1, milestones=[2, 5, 9])
-        closed_form_scheduler = MultiStepLR(self.opt, gamma=0.1, milestones=[2, 5, 9])
+        closed_form_scheduler = MultiStepLR(self.opt,
+                                            gamma=0.1,
+                                            milestones=[2, 5, 9])
         self._test_against_closed_form(scheduler, closed_form_scheduler, 20)
 
     def test_closed_form_exp_lr(self):
@@ -850,10 +845,11 @@ class TestLRScheduler(TestCase):
         epochs = 20
         T_max = 5
         scheduler = CosineAnnealingLR(self.opt, T_max=T_max, eta_min=eta_min)
-        closed_form_scheduler = CosineAnnealingLR(
-            self.opt, T_max=T_max, eta_min=eta_min
-        )
-        self._test_against_closed_form(scheduler, closed_form_scheduler, epochs)
+        closed_form_scheduler = CosineAnnealingLR(self.opt,
+                                                  T_max=T_max,
+                                                  eta_min=eta_min)
+        self._test_against_closed_form(scheduler, closed_form_scheduler,
+                                       epochs)
 
     def test_reduce_lr_on_plateau1(self):
         epochs = 10
@@ -893,9 +889,11 @@ class TestLRScheduler(TestCase):
             param_group["lr"] = 0.5
         targets = [[0.5] * (2 + 6) + [0.05] * (5 + 6) + [0.005] * 4]
         metrics = [-0.8] * 2 + [-0.234] * 20
-        scheduler = ReduceLROnPlateau(
-            self.opt, mode="max", patience=5, cooldown=5, threshold_mode="abs"
-        )
+        scheduler = ReduceLROnPlateau(self.opt,
+                                      mode="max",
+                                      patience=5,
+                                      cooldown=5,
+                                      threshold_mode="abs")
         self._test_reduce_lr_on_plateau(scheduler, targets, metrics, epochs)
 
     def test_reduce_lr_on_plateau4(self):
@@ -903,10 +901,12 @@ class TestLRScheduler(TestCase):
         for param_group in self.opt.param_groups:
             param_group["lr"] = 0.5
         targets = [[0.5] * 20]
-        metrics = [1.5 * (1.025 ** i) for i in range(20)]  # 1.025 > 1.1**0.25
-        scheduler = ReduceLROnPlateau(
-            self.opt, mode="max", patience=3, threshold_mode="rel", threshold=0.1
-        )
+        metrics = [1.5 * (1.025**i) for i in range(20)]  # 1.025 > 1.1**0.25
+        scheduler = ReduceLROnPlateau(self.opt,
+                                      mode="max",
+                                      patience=3,
+                                      threshold_mode="rel",
+                                      threshold=0.1)
         self._test_reduce_lr_on_plateau(scheduler, targets, metrics, epochs)
 
     def test_reduce_lr_on_plateau5(self):
@@ -914,7 +914,7 @@ class TestLRScheduler(TestCase):
         for param_group in self.opt.param_groups:
             param_group["lr"] = 0.5
         targets = [[0.5] * 6 + [0.05] * (5 + 6) + [0.005] * 4]
-        metrics = [1.5 * (1.005 ** i) for i in range(20)]
+        metrics = [1.5 * (1.005**i) for i in range(20)]
         scheduler = ReduceLROnPlateau(
             self.opt,
             mode="max",
@@ -930,10 +930,11 @@ class TestLRScheduler(TestCase):
         for param_group in self.opt.param_groups:
             param_group["lr"] = 0.5
         targets = [[0.5] * 20]
-        metrics = [1.5 * (0.85 ** i) for i in range(20)]
-        scheduler = ReduceLROnPlateau(
-            self.opt, mode="min", threshold_mode="rel", threshold=0.1
-        )
+        metrics = [1.5 * (0.85**i) for i in range(20)]
+        scheduler = ReduceLROnPlateau(self.opt,
+                                      mode="min",
+                                      threshold_mode="rel",
+                                      threshold=0.1)
         self._test_reduce_lr_on_plateau(scheduler, targets, metrics, epochs)
 
     def test_reduce_lr_on_plateau7(self):
@@ -957,7 +958,7 @@ class TestLRScheduler(TestCase):
         for param_group in self.opt.param_groups:
             param_group["lr"] = 0.5
         targets = [[0.5] * 6 + [0.4] * 14, [0.5] * 6 + [0.3] * 14]
-        metrics = [1.5 * (1.005 ** i) for i in range(20)]
+        metrics = [1.5 * (1.005**i) for i in range(20)]
         scheduler = ReduceLROnPlateau(
             self.opt,
             mode="max",
@@ -974,17 +975,21 @@ class TestLRScheduler(TestCase):
         schedulers = [None] * 2
         schedulers[0] = StepLR(self.opt, gamma=0.1, step_size=3)
         schedulers[1] = MultiStepLR(self.opt, gamma=0.1, milestones=[2, 5, 9])
-        targets = [[0.05] * 2 + [0.005] * 1 + [5e-4] * 2 + [5e-5] + [5e-6] * 3 + [5e-8]]
+        targets = [[0.05] * 2 + [0.005] * 1 + [5e-4] * 2 + [5e-5] +
+                   [5e-6] * 3 + [5e-8]]
         self._test(schedulers, targets, epochs)
 
     def test_compound_step_and_exp_lr(self):
         epochs = 10
         schedulers = [None] * 2
-        single_targets = [0.05 * (0.9 ** x) for x in range(3)]
-        single_targets += [0.005 * (0.9 ** x) for x in range(3, 6)]
-        single_targets += [0.0005 * (0.9 ** x) for x in range(6, 9)]
-        single_targets += [0.00005 * (0.9 ** x) for x in range(9, 12)]
-        targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
+        single_targets = [0.05 * (0.9**x) for x in range(3)]
+        single_targets += [0.005 * (0.9**x) for x in range(3, 6)]
+        single_targets += [0.0005 * (0.9**x) for x in range(6, 9)]
+        single_targets += [0.00005 * (0.9**x) for x in range(9, 12)]
+        targets = [
+            single_targets,
+            list(map(lambda x: x * epochs, single_targets))
+        ]
         schedulers[0] = StepLR(self.opt, gamma=0.1, step_size=3)
         schedulers[1] = ExponentialLR(self.opt, gamma=0.9)
         self._test(schedulers, targets, epochs)
@@ -992,11 +997,14 @@ class TestLRScheduler(TestCase):
     def test_compound_exp_and_multistep_lr(self):
         epochs = 10
         schedulers = [None] * 2
-        single_targets = [0.05 * (0.9 ** x) for x in range(2)]
-        single_targets += [0.005 * (0.9 ** x) for x in range(2, 5)]
-        single_targets += [0.0005 * (0.9 ** x) for x in range(5, 9)]
-        single_targets += [0.00005 * (0.9 ** x) for x in range(9, 11)]
-        targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
+        single_targets = [0.05 * (0.9**x) for x in range(2)]
+        single_targets += [0.005 * (0.9**x) for x in range(2, 5)]
+        single_targets += [0.0005 * (0.9**x) for x in range(5, 9)]
+        single_targets += [0.00005 * (0.9**x) for x in range(9, 11)]
+        targets = [
+            single_targets,
+            list(map(lambda x: x * epochs, single_targets))
+        ]
         schedulers[0] = MultiStepLR(self.opt, gamma=0.1, milestones=[2, 5, 9])
         schedulers[1] = ExponentialLR(self.opt, gamma=0.9)
         self._test(schedulers, targets, epochs)
@@ -1005,13 +1013,20 @@ class TestLRScheduler(TestCase):
         epochs = 10
         eta_min = 1e-10
         single_targets = [
-            eta_min + (0.05 - eta_min) * (1 + math.cos(math.pi * x / epochs)) / 2
-            for x in range(epochs)
+            eta_min + (0.05 - eta_min) *
+            (1 + math.cos(math.pi * x / epochs)) / 2 for x in range(epochs)
         ]
-        single_targets = [x * 0.1 ** (i // 3) for i, x in enumerate(single_targets)]
-        targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
+        single_targets = [
+            x * 0.1**(i // 3) for i, x in enumerate(single_targets)
+        ]
+        targets = [
+            single_targets,
+            list(map(lambda x: x * epochs, single_targets))
+        ]
         schedulers = [None] * 2
-        schedulers[0] = CosineAnnealingLR(self.opt, T_max=epochs, eta_min=eta_min)
+        schedulers[0] = CosineAnnealingLR(self.opt,
+                                          T_max=epochs,
+                                          eta_min=eta_min)
         schedulers[1] = StepLR(self.opt, gamma=0.1, step_size=3)
         self._test(schedulers, targets, epochs)
 
@@ -1019,14 +1034,19 @@ class TestLRScheduler(TestCase):
         epochs = 10
         eta_min = 1e-10
         single_targets = [
-            eta_min + (0.05 - eta_min) * (1 + math.cos(math.pi * x / epochs)) / 2
-            for x in range(epochs)
+            eta_min + (0.05 - eta_min) *
+            (1 + math.cos(math.pi * x / epochs)) / 2 for x in range(epochs)
         ]
         multipliers = [1] * 2 + [0.1] * 3 + [0.01] * 4 + [0.001]
         single_targets = [x * y for x, y in zip(single_targets, multipliers)]
-        targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
+        targets = [
+            single_targets,
+            list(map(lambda x: x * epochs, single_targets))
+        ]
         schedulers = [None] * 2
-        schedulers[0] = CosineAnnealingLR(self.opt, T_max=epochs, eta_min=eta_min)
+        schedulers[0] = CosineAnnealingLR(self.opt,
+                                          T_max=epochs,
+                                          eta_min=eta_min)
         schedulers[1] = MultiStepLR(self.opt, gamma=0.1, milestones=[2, 5, 9])
         self._test(schedulers, targets, epochs)
 
@@ -1034,14 +1054,19 @@ class TestLRScheduler(TestCase):
         epochs = 10
         eta_min = 1e-10
         single_targets = [
-            eta_min + (0.05 - eta_min) * (1 + math.cos(math.pi * x / epochs)) / 2
-            for x in range(epochs)
+            eta_min + (0.05 - eta_min) *
+            (1 + math.cos(math.pi * x / epochs)) / 2 for x in range(epochs)
         ]
-        multipliers = [0.1 ** i for i in range(epochs)]
+        multipliers = [0.1**i for i in range(epochs)]
         single_targets = [x * y for x, y in zip(single_targets, multipliers)]
-        targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
+        targets = [
+            single_targets,
+            list(map(lambda x: x * epochs, single_targets))
+        ]
         schedulers = [None] * 2
-        schedulers[0] = CosineAnnealingLR(self.opt, T_max=epochs, eta_min=eta_min)
+        schedulers[0] = CosineAnnealingLR(self.opt,
+                                          T_max=epochs,
+                                          eta_min=eta_min)
         schedulers[1] = ExponentialLR(self.opt, gamma=0.1)
         self._test(schedulers, targets, epochs)
 
@@ -1050,7 +1075,7 @@ class TestLRScheduler(TestCase):
         for param_group in self.opt.param_groups:
             param_group["lr"] = 0.5
         single_targets = [0.5] * 20
-        multipliers = [0.1 ** (i // 3) for i in range(20)]
+        multipliers = [0.1**(i // 3) for i in range(20)]
         single_targets = [x * y for x, y in zip(multipliers, single_targets)]
         targets = [single_targets]
         targets = targets[1:]  # test runs step before checking lr
@@ -1094,15 +1119,17 @@ class TestLRScheduler(TestCase):
         for param_group in self.opt.param_groups:
             param_group["lr"] = 0.5
         single_targets = [0.5] * (2 + 6) + [0.05] * (5 + 6) + [0.005] * 4
-        multipliers = [0.1 ** i for i in range(epochs)]
+        multipliers = [0.1**i for i in range(epochs)]
         single_targets = [x * y for x, y in zip(multipliers, single_targets)]
         targets = [single_targets]
         targets = targets[1:]  # test runs step before checking lr
         metrics = [-0.8] * 2 + [-0.234] * 20
         schedulers = [None, None]
-        schedulers[0] = ReduceLROnPlateau(
-            self.opt, mode="max", patience=5, cooldown=5, threshold_mode="abs"
-        )
+        schedulers[0] = ReduceLROnPlateau(self.opt,
+                                          mode="max",
+                                          patience=5,
+                                          cooldown=5,
+                                          threshold_mode="abs")
         schedulers[1] = ExponentialLR(self.opt, gamma=0.1)
         self._test_reduce_lr_on_plateau(schedulers, targets, metrics, epochs)
 
@@ -1113,16 +1140,18 @@ class TestLRScheduler(TestCase):
         epochs = 10
         eta_min = 1e-10
         single_targets = [
-            eta_min + (0.05 - eta_min) * (1 + math.cos(math.pi * x / epochs)) / 2
-            for x in range(epochs)
+            eta_min + (0.05 - eta_min) *
+            (1 + math.cos(math.pi * x / epochs)) / 2 for x in range(epochs)
         ]
         targets = [single_targets]
         targets = targets[1:]  # test runs step before checking lr
-        metrics = [1.5 * (1.025 ** i) for i in range(20)]  # 1.025 > 1.1**0.25
+        metrics = [1.5 * (1.025**i) for i in range(20)]  # 1.025 > 1.1**0.25
         schedulers = [None, None]
-        schedulers[0] = ReduceLROnPlateau(
-            self.opt, mode="max", patience=3, threshold_mode="rel", threshold=0.1
-        )
+        schedulers[0] = ReduceLROnPlateau(self.opt,
+                                          mode="max",
+                                          patience=3,
+                                          threshold_mode="rel",
+                                          threshold=0.1)
         schedulers[1] = CosineAnnealingLR(self.opt, epochs, eta_min)
         self._test_reduce_lr_on_plateau(schedulers, targets, metrics, epochs)
 
@@ -1145,7 +1174,8 @@ class TestLRScheduler(TestCase):
             max_momentum=5,
             mode="triangular",
         )
-        self._test_cycle_lr(scheduler, lr_targets, momentum_targets, len(lr_target))
+        self._test_cycle_lr(scheduler, lr_targets, momentum_targets,
+                            len(lr_target))
 
     def test_cycle_lr_triangular_mode_one_lr_no_momentum(self):
         lr_target = [1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3]
@@ -1160,7 +1190,8 @@ class TestLRScheduler(TestCase):
             cycle_momentum=False,
             mode="triangular",
         )
-        self._test_cycle_lr(scheduler, lr_targets, momentum_targets, len(lr_target))
+        self._test_cycle_lr(scheduler, lr_targets, momentum_targets,
+                            len(lr_target))
 
     def test_cycle_lr_triangular2_mode_one_lr(self):
         lr_target = [
@@ -1223,7 +1254,8 @@ class TestLRScheduler(TestCase):
             max_momentum=5,
             mode="triangular2",
         )
-        self._test_cycle_lr(scheduler, lr_targets, momentum_targets, len(lr_target))
+        self._test_cycle_lr(scheduler, lr_targets, momentum_targets,
+                            len(lr_target))
 
     def test_cycle_lr_exp_range_mode_one_lr(self):
         base_lr, max_lr = 1, 5
@@ -1231,11 +1263,11 @@ class TestLRScheduler(TestCase):
         gamma = 0.9
         xs = [0, 0.25, 0.5, 0.75, 1, 0.75, 0.50, 0.25, 0, 0.25, 0.5, 0.75, 1]
         lr_target = list(
-            map(lambda x: base_lr + x[1] * diff_lr * gamma ** x[0], enumerate(xs))
-        )
+            map(lambda x: base_lr + x[1] * diff_lr * gamma**x[0],
+                enumerate(xs)))
         momentum_target = list(
-            map(lambda x: max_lr - x[1] * diff_lr * gamma ** x[0], enumerate(xs))
-        )
+            map(lambda x: max_lr - x[1] * diff_lr * gamma**x[0],
+                enumerate(xs)))
         lr_targets = [lr_target, lr_target]
         momentum_targets = [momentum_target, momentum_target]
         scheduler = CyclicLR(
@@ -1249,7 +1281,8 @@ class TestLRScheduler(TestCase):
             mode="exp_range",
             gamma=gamma,
         )
-        self._test_cycle_lr(scheduler, lr_targets, momentum_targets, len(lr_target))
+        self._test_cycle_lr(scheduler, lr_targets, momentum_targets,
+                            len(lr_target))
 
     def test_cycle_lr_triangular_mode(self):
         lr_target_1 = [1, 2, 3, 4, 5, 4, 3, 2, 1, 2, 3]
@@ -1268,7 +1301,8 @@ class TestLRScheduler(TestCase):
             max_momentum=[5, 6],
             mode="triangular",
         )
-        self._test_cycle_lr(scheduler, lr_targets, momentum_targets, len(lr_target_1))
+        self._test_cycle_lr(scheduler, lr_targets, momentum_targets,
+                            len(lr_target_1))
 
     def test_cycle_lr_triangular2_mode(self):
         lr_target_1 = [
@@ -1333,7 +1367,8 @@ class TestLRScheduler(TestCase):
             max_momentum=[5, 7],
             mode="triangular2",
         )
-        self._test_cycle_lr(scheduler, lr_targets, momentum_targets, len(lr_target_1))
+        self._test_cycle_lr(scheduler, lr_targets, momentum_targets,
+                            len(lr_target_1))
 
     def test_cycle_lr_exp_range_mode(self):
         base_lr_1, max_lr_1 = 1, 5
@@ -1345,18 +1380,18 @@ class TestLRScheduler(TestCase):
         gamma = 0.9
         xs = [0, 0.25, 0.5, 0.75, 1, 0.75, 0.50, 0.25, 0, 0.25, 0.5, 0.75, 1]
         lr_target_1 = list(
-            map(lambda x: base_lr_1 + x[1] * diff_lr_1 * gamma ** x[0], enumerate(xs))
-        )
+            map(lambda x: base_lr_1 + x[1] * diff_lr_1 * gamma**x[0],
+                enumerate(xs)))
         lr_target_2 = list(
-            map(lambda x: base_lr_2 + x[1] * diff_lr_2 * gamma ** x[0], enumerate(xs))
-        )
+            map(lambda x: base_lr_2 + x[1] * diff_lr_2 * gamma**x[0],
+                enumerate(xs)))
         lr_targets = [lr_target_1, lr_target_2]
         momentum_target_1 = list(
-            map(lambda x: max_lr_1 - x[1] * diff_lr_1 * gamma ** x[0], enumerate(xs))
-        )
+            map(lambda x: max_lr_1 - x[1] * diff_lr_1 * gamma**x[0],
+                enumerate(xs)))
         momentum_target_2 = list(
-            map(lambda x: max_lr_2 - x[1] * diff_lr_2 * gamma ** x[0], enumerate(xs))
-        )
+            map(lambda x: max_lr_2 - x[1] * diff_lr_2 * gamma**x[0],
+                enumerate(xs)))
         momentum_targets = [momentum_target_1, momentum_target_2]
         scheduler = CyclicLR(
             self.opt,
@@ -1369,7 +1404,8 @@ class TestLRScheduler(TestCase):
             mode="exp_range",
             gamma=gamma,
         )
-        self._test_cycle_lr(scheduler, lr_targets, momentum_targets, len(lr_target_1))
+        self._test_cycle_lr(scheduler, lr_targets, momentum_targets,
+                            len(lr_target_1))
 
     def test_cycle_lr_triangular_mode_step_size_up_down(self):
         lr_target = [
@@ -1412,7 +1448,8 @@ class TestLRScheduler(TestCase):
             max_momentum=5,
             mode="triangular",
         )
-        self._test_cycle_lr(scheduler, lr_targets, momentum_targets, len(lr_target))
+        self._test_cycle_lr(scheduler, lr_targets, momentum_targets,
+                            len(lr_target))
 
     def test_cycle_lr_triangular2_mode_step_size_up_down(self):
         lr_base_target = [
@@ -1471,9 +1508,8 @@ class TestLRScheduler(TestCase):
         base_lrs = [1 + delta for delta in deltas]
         max_lrs = [5 + delta for delta in deltas]
         lr_targets = [[x + delta for x in lr_base_target] for delta in deltas]
-        momentum_targets = [
-            [x + delta for x in momentum_base_target] for delta in deltas
-        ]
+        momentum_targets = [[x + delta for x in momentum_base_target]
+                            for delta in deltas]
         scheduler = CyclicLR(
             self.opt,
             base_lr=base_lrs,
@@ -1485,9 +1521,8 @@ class TestLRScheduler(TestCase):
             max_momentum=max_lrs,
             mode="triangular2",
         )
-        self._test_cycle_lr(
-            scheduler, lr_targets, momentum_targets, len(lr_base_target)
-        )
+        self._test_cycle_lr(scheduler, lr_targets, momentum_targets,
+                            len(lr_base_target))
 
     def test_cycle_lr_exp_range_mode_step_size_up_down(self):
         base_lr, max_lr = 1, 5
@@ -1508,9 +1543,13 @@ class TestLRScheduler(TestCase):
             5.0 / 6,
             4.0 / 6,
         ]
-        lr_target = [base_lr + x * diff_lr * gamma ** i for i, x in enumerate(xs)]
+        lr_target = [
+            base_lr + x * diff_lr * gamma**i for i, x in enumerate(xs)
+        ]
         lr_targets = [lr_target, lr_target]
-        momentum_target = [max_lr - x * diff_lr * gamma ** i for i, x in enumerate(xs)]
+        momentum_target = [
+            max_lr - x * diff_lr * gamma**i for i, x in enumerate(xs)
+        ]
         momentum_targets = [momentum_target, momentum_target]
         scheduler = CyclicLR(
             self.opt,
@@ -1524,7 +1563,8 @@ class TestLRScheduler(TestCase):
             mode="exp_range",
             gamma=gamma,
         )
-        self._test_cycle_lr(scheduler, lr_targets, momentum_targets, len(lr_target))
+        self._test_cycle_lr(scheduler, lr_targets, momentum_targets,
+                            len(lr_target))
 
     def test_cycle_lr_with_momentumless_optimizer(self):
         # Note [Temporarily set optimizer to Adam]
@@ -1537,8 +1577,13 @@ class TestLRScheduler(TestCase):
         old_opt = self.opt
         self.opt = optim.Adam(
             [
-                {"params": self.net.conv1.parameters()},
-                {"params": self.net.conv2.parameters(), "lr": 0.5},
+                {
+                    "params": self.net.conv1.parameters()
+                },
+                {
+                    "params": self.net.conv2.parameters(),
+                    "lr": 0.5
+                },
             ],
             lr=0.05,
         )
@@ -1555,24 +1600,32 @@ class TestLRScheduler(TestCase):
             cycle_momentum=False,
             mode="triangular",
         )
-        self._test_cycle_lr(scheduler, lr_targets, momentum_targets, len(lr_target))
+        self._test_cycle_lr(scheduler, lr_targets, momentum_targets,
+                            len(lr_target))
 
         self.opt = old_opt  # set optimizer back to SGD
 
     def test_cycle_lr_cycle_momentum_fail_with_momentumless_optimizer(self):
         with self.assertRaises(ValueError):
             adam_opt = optim.Adam(self.net.parameters())
-            scheduler = CyclicLR(adam_opt, base_lr=1, max_lr=5, cycle_momentum=True)
+            scheduler = CyclicLR(adam_opt,
+                                 base_lr=1,
+                                 max_lr=5,
+                                 cycle_momentum=True)
 
     def test_onecycle_lr_invalid_anneal_strategy(self):
         with self.assertRaises(ValueError):
-            scheduler = OneCycleLR(
-                self.opt, max_lr=1e-3, total_steps=10, anneal_strategy="CATS"
-            )
+            scheduler = OneCycleLR(self.opt,
+                                   max_lr=1e-3,
+                                   total_steps=10,
+                                   anneal_strategy="CATS")
 
     def test_onecycle_lr_invalid_pct_start(self):
         with self.assertRaises(ValueError):
-            scheduler = OneCycleLR(self.opt, max_lr=1e-3, total_steps=10, pct_start=1.1)
+            scheduler = OneCycleLR(self.opt,
+                                   max_lr=1e-3,
+                                   total_steps=10,
+                                   pct_start=1.1)
 
     def test_onecycle_lr_cannot_calculate_total_steps(self):
         with self.assertRaises(ValueError):
@@ -1639,8 +1692,13 @@ class TestLRScheduler(TestCase):
         old_opt = self.opt
         self.opt = optim.Adam(
             [
-                {"params": self.net.conv1.parameters()},
-                {"params": self.net.conv2.parameters(), "lr": 0.5},
+                {
+                    "params": self.net.conv1.parameters()
+                },
+                {
+                    "params": self.net.conv2.parameters(),
+                    "lr": 0.5
+                },
             ],
             lr=0.05,
         )
@@ -1658,7 +1716,11 @@ class TestLRScheduler(TestCase):
             total_steps=10,
             anneal_strategy="linear",
         )
-        self._test_cycle_lr(scheduler, lr_targets, momentum_targets, 10, use_beta1=True)
+        self._test_cycle_lr(scheduler,
+                            lr_targets,
+                            momentum_targets,
+                            10,
+                            use_beta1=True)
         self.opt = old_opt  # set optimizer back to SGD
 
     def test_lambda_lr(self):
@@ -1666,12 +1728,11 @@ class TestLRScheduler(TestCase):
         self.opt.param_groups[0]["lr"] = 0.05
         self.opt.param_groups[1]["lr"] = 0.4
         targets = [
-            [0.05 * (0.9 ** x) for x in range(epochs)],
-            [0.4 * (0.8 ** x) for x in range(epochs)],
+            [0.05 * (0.9**x) for x in range(epochs)],
+            [0.4 * (0.8**x) for x in range(epochs)],
         ]
         scheduler = LambdaLR(
-            self.opt, lr_lambda=[lambda x1: 0.9 ** x1, lambda x2: 0.8 ** x2]
-        )
+            self.opt, lr_lambda=[lambda x1: 0.9**x1, lambda x2: 0.8**x2])
         self._test(scheduler, targets, epochs)
 
     def test_multiplicative_lr(self):
@@ -1679,12 +1740,11 @@ class TestLRScheduler(TestCase):
         self.opt.param_groups[0]["lr"] = 0.05
         self.opt.param_groups[1]["lr"] = 0.4
         targets = [
-            [0.05 * (0.9 ** x) for x in range(epochs)],
-            [0.4 * (0.8 ** x) for x in range(epochs)],
+            [0.05 * (0.9**x) for x in range(epochs)],
+            [0.4 * (0.8**x) for x in range(epochs)],
         ]
         scheduler = MultiplicativeLR(
-            self.opt, lr_lambda=[lambda x1: 0.9, lambda x2: 0.8]
-        )
+            self.opt, lr_lambda=[lambda x1: 0.9, lambda x2: 0.8])
         self._test(scheduler, targets, epochs)
 
     def test_CosineAnnealingWarmRestarts_lr1(self):
@@ -1695,21 +1755,22 @@ class TestLRScheduler(TestCase):
             T_i = 10
             T_cur = 0
             targets = [[0.05], [0.5]]
-            scheduler = CosineAnnealingWarmRestarts(
-                self.opt, T_0=T_i, T_mult=T_mult, eta_min=eta_min
-            )
+            scheduler = CosineAnnealingWarmRestarts(self.opt,
+                                                    T_0=T_i,
+                                                    T_mult=T_mult,
+                                                    eta_min=eta_min)
             for _ in range(1, iters, 1):
                 T_cur += 1
                 if T_cur >= T_i:
                     T_cur = T_cur - T_i
                     T_i = int(T_mult) * T_i
                 targets[0] += [
-                    eta_min
-                    + (0.05 - eta_min) * (1 + math.cos(math.pi * T_cur / T_i)) / 2
+                    eta_min + (0.05 - eta_min) *
+                    (1 + math.cos(math.pi * T_cur / T_i)) / 2
                 ]
                 targets[1] += [
-                    eta_min
-                    + (0.5 - eta_min) * (1 + math.cos(math.pi * T_cur / T_i)) / 2
+                    eta_min + (0.5 - eta_min) *
+                    (1 + math.cos(math.pi * T_cur / T_i)) / 2
                 ]
             self._test(scheduler, targets, iters)
 
@@ -1721,21 +1782,22 @@ class TestLRScheduler(TestCase):
             T_i = 10
             T_cur = 0
             targets = [[0.05], [0.5]]
-            scheduler = CosineAnnealingWarmRestarts(
-                self.opt, T_0=T_i, T_mult=T_mult, eta_min=eta_min
-            )
+            scheduler = CosineAnnealingWarmRestarts(self.opt,
+                                                    T_0=T_i,
+                                                    T_mult=T_mult,
+                                                    eta_min=eta_min)
             for _ in torch.arange(0.1, iters, 0.1):
                 T_cur = round(T_cur + 0.1, 1)
                 if T_cur >= T_i:
                     T_cur = T_cur - T_i
                     T_i = int(T_mult) * T_i
                 targets[0] += [
-                    eta_min
-                    + (0.05 - eta_min) * (1 + math.cos(math.pi * T_cur / T_i)) / 2
+                    eta_min + (0.05 - eta_min) *
+                    (1 + math.cos(math.pi * T_cur / T_i)) / 2
                 ]
                 targets[1] += [
-                    eta_min
-                    + (0.5 - eta_min) * (1 + math.cos(math.pi * T_cur / T_i)) / 2
+                    eta_min + (0.5 - eta_min) *
+                    (1 + math.cos(math.pi * T_cur / T_i)) / 2
                 ]
             self._test_CosineAnnealingWarmRestarts(scheduler, targets, iters)
 
@@ -1743,7 +1805,10 @@ class TestLRScheduler(TestCase):
         epochs_for_T_mults = [
             [0, 1, 2, 3, 4, 5, 12, 27, 3, 4, 5, 6, 13],
             [0, 1, 2, 3, 4, 5, 25, 32, 33, 34, 80, 81, 3],
-            [0, 0.1, 0.2, 0.3, 1.3, 2.3, 17.5, 18.5, 19.5, 29.5, 30.5, 31.5, 50],
+            [
+                0, 0.1, 0.2, 0.3, 1.3, 2.3, 17.5, 18.5, 19.5, 29.5, 30.5, 31.5,
+                50
+            ],
         ]
         T_curs_for_T_mults = [
             [1, 2, 3, 4, 5, 2, 7, 3, 4, 5, 6, 3],
@@ -1757,25 +1822,25 @@ class TestLRScheduler(TestCase):
         ]
         eta_min = 1e-10
         T_mults = [1, 2, 3]
-        for epochs, T_mult, T_curs, T_is in zip(
-            epochs_for_T_mults, T_mults, T_curs_for_T_mults, T_is_for_T_mults
-        ):
+        for epochs, T_mult, T_curs, T_is in zip(epochs_for_T_mults, T_mults,
+                                                T_curs_for_T_mults,
+                                                T_is_for_T_mults):
             targets = [[0.05], [0.5]]
-            scheduler = CosineAnnealingWarmRestarts(
-                self.opt, T_0=10, T_mult=T_mult, eta_min=eta_min
-            )
+            scheduler = CosineAnnealingWarmRestarts(self.opt,
+                                                    T_0=10,
+                                                    T_mult=T_mult,
+                                                    eta_min=eta_min)
             for T_cur, T_i in zip(T_curs, T_is):
                 targets[0] += [
-                    eta_min
-                    + (0.05 - eta_min) * (1 + math.cos(math.pi * T_cur / T_i)) / 2
+                    eta_min + (0.05 - eta_min) *
+                    (1 + math.cos(math.pi * T_cur / T_i)) / 2
                 ]
                 targets[1] += [
-                    eta_min
-                    + (0.5 - eta_min) * (1 + math.cos(math.pi * T_cur / T_i)) / 2
+                    eta_min + (0.5 - eta_min) *
+                    (1 + math.cos(math.pi * T_cur / T_i)) / 2
                 ]
             self._test_interleaved_CosineAnnealingWarmRestarts(
-                scheduler, targets, epochs
-            )
+                scheduler, targets, epochs)
 
     def test_step_lr_state_dict(self):
         self._check_scheduler_state_dict(
@@ -1800,17 +1865,22 @@ class TestLRScheduler(TestCase):
         eta_min = 1e-10
         self._check_scheduler_state_dict(
             lambda: CosineAnnealingLR(self.opt, T_max=epochs, eta_min=eta_min),
-            lambda: CosineAnnealingLR(self.opt, T_max=epochs // 2, eta_min=eta_min / 2),
+            lambda: CosineAnnealingLR(
+                self.opt, T_max=epochs // 2, eta_min=eta_min / 2),
             epochs=epochs,
         )
 
     def test_reduce_lr_on_plateau_state_dict(self):
-        scheduler = ReduceLROnPlateau(self.opt, mode="min", factor=0.1, patience=2)
+        scheduler = ReduceLROnPlateau(self.opt,
+                                      mode="min",
+                                      factor=0.1,
+                                      patience=2)
         for score in [1.0, 2.0, 3.0, 4.0, 3.0, 4.0, 5.0, 3.0, 2.0, 1.0]:
             scheduler.step(score)
-        scheduler_copy = ReduceLROnPlateau(
-            self.opt, mode="max", factor=0.5, patience=10
-        )
+        scheduler_copy = ReduceLROnPlateau(self.opt,
+                                           mode="max",
+                                           factor=0.5,
+                                           patience=10)
         scheduler_copy.load_state_dict(scheduler.state_dict())
         for key in scheduler.__dict__.keys():
             if key not in {"optimizer", "is_better"}:
@@ -1864,10 +1934,10 @@ class TestLRScheduler(TestCase):
         scheduler_copy.load_state_dict(scheduler.state_dict())
         for key in scheduler.__dict__.keys():
             if key != "optimizer":
-                self.assertAlmostEqual(
-                    scheduler.__dict__[key], scheduler_copy.__dict__[key]
-                )
-        self.assertAlmostEqual(scheduler.get_last_lr(), scheduler_copy.get_last_lr())
+                self.assertAlmostEqual(scheduler.__dict__[key],
+                                       scheduler_copy.__dict__[key])
+        self.assertAlmostEqual(scheduler.get_last_lr(),
+                               scheduler_copy.get_last_lr())
 
     def _test_get_last_lr(self, schedulers, targets, epochs=10):
         if isinstance(schedulers, _LRScheduler):
@@ -1882,8 +1952,7 @@ class TestLRScheduler(TestCase):
                     target,
                     result,
                     msg="LR is wrong in epoch {}: expected {}, got {}".format(
-                        epoch, t, r
-                    ),
+                        epoch, t, r),
                     delta=1e-5,
                 )
 
@@ -1891,16 +1960,14 @@ class TestLRScheduler(TestCase):
         if isinstance(schedulers, _LRScheduler):
             schedulers = [schedulers]
         for epoch in range(epochs):
-            [
-                scheduler.step(epoch) for scheduler in schedulers
-            ]  # step before assert: skip initial lr
+            [scheduler.step(epoch) for scheduler in schedulers
+             ]  # step before assert: skip initial lr
             for param_group, target in zip(self.opt.param_groups, targets):
                 self.assertAlmostEqual(
                     target[epoch],
                     param_group["lr"],
                     msg="LR is wrong in epoch {}: expected {}, got {}".format(
-                        epoch, target[epoch], param_group["lr"]
-                    ),
+                        epoch, target[epoch], param_group["lr"]),
                     delta=1e-5,
                 )
 
@@ -1913,8 +1980,7 @@ class TestLRScheduler(TestCase):
                     target[epoch],
                     param_group["lr"],
                     msg="LR is wrong in epoch {}: expected {}, got {}".format(
-                        epoch, target[epoch], param_group["lr"]
-                    ),
+                        epoch, target[epoch], param_group["lr"]),
                     delta=1e-5,
                 )
             [scheduler.step() for scheduler in schedulers]
@@ -1928,12 +1994,12 @@ class TestLRScheduler(TestCase):
                     target[index],
                     param_group["lr"],
                     msg="LR is wrong in epoch {}: expected {}, got {}".format(
-                        epoch, target[index], param_group["lr"]
-                    ),
+                        epoch, target[index], param_group["lr"]),
                     delta=1e-5,
                 )
 
-    def _test_interleaved_CosineAnnealingWarmRestarts(self, scheduler, targets, epochs):
+    def _test_interleaved_CosineAnnealingWarmRestarts(self, scheduler, targets,
+                                                      epochs):
         for index, epoch in enumerate(epochs):
             scheduler.step(epoch)
             for param_group, target in zip(self.opt.param_groups, targets):
@@ -1941,12 +2007,14 @@ class TestLRScheduler(TestCase):
                     target[index],
                     param_group["lr"],
                     msg="LR is wrong in epoch {}: expected {}, got {}".format(
-                        epoch, target[index], param_group["lr"]
-                    ),
+                        epoch, target[index], param_group["lr"]),
                     delta=1e-5,
                 )
 
-    def _test_against_closed_form(self, scheduler, closed_form_scheduler, epochs=10):
+    def _test_against_closed_form(self,
+                                  scheduler,
+                                  closed_form_scheduler,
+                                  epochs=10):
         self.setUp()
         targets = []
         for epoch in range(epochs):
@@ -1960,17 +2028,18 @@ class TestLRScheduler(TestCase):
                     targets[epoch][i],
                     param_group["lr"],
                     msg="LR is wrong in epoch {}: expected {}, got {}".format(
-                        epoch, targets[epoch][i], param_group["lr"]
-                    ),
+                        epoch, targets[epoch][i], param_group["lr"]),
                     delta=1e-5,
                 )
 
-    def _test_reduce_lr_on_plateau(
-        self, schedulers, targets, metrics, epochs=10, verbose=False
-    ):
+    def _test_reduce_lr_on_plateau(self,
+                                   schedulers,
+                                   targets,
+                                   metrics,
+                                   epochs=10,
+                                   verbose=False):
         if isinstance(schedulers, _LRScheduler) or isinstance(
-            schedulers, ReduceLROnPlateau
-        ):
+                schedulers, ReduceLROnPlateau):
             schedulers = [schedulers]
         for epoch in range(epochs):
             for scheduler in schedulers:
@@ -1979,60 +2048,51 @@ class TestLRScheduler(TestCase):
                 else:
                     scheduler.step()
             if verbose:
-                print("epoch{}:\tlr={}".format(epoch, self.opt.param_groups[0]["lr"]))
+                print("epoch{}:\tlr={}".format(epoch,
+                                               self.opt.param_groups[0]["lr"]))
             for param_group, target in zip(self.opt.param_groups, targets):
                 self.assertAlmostEqual(
                     target[epoch],
                     param_group["lr"],
                     msg="LR is wrong in epoch {}: expected {}, got {}".format(
-                        epoch, target[epoch], param_group["lr"]
-                    ),
+                        epoch, target[epoch], param_group["lr"]),
                     delta=1e-5,
                 )
 
     def _test_cycle_lr(
-        self,
-        scheduler,
-        lr_targets,
-        momentum_targets,
-        batch_iterations,
-        verbose=False,
-        use_beta1=False,
+            self,
+            scheduler,
+            lr_targets,
+            momentum_targets,
+            batch_iterations,
+            verbose=False,
+            use_beta1=False,
     ):
         for batch_num in range(batch_iterations):
             if verbose:
                 if "momentum" in self.opt.param_groups[0].keys():
-                    print(
-                        "batch{}:\tlr={},momentum={}".format(
-                            batch_num,
-                            self.opt.param_groups[0]["lr"],
-                            self.opt.param_groups[0]["momentum"],
-                        )
-                    )
+                    print("batch{}:\tlr={},momentum={}".format(
+                        batch_num,
+                        self.opt.param_groups[0]["lr"],
+                        self.opt.param_groups[0]["momentum"],
+                    ))
                 elif use_beta1 and "betas" in self.opt.param_groups[0].keys():
-                    print(
-                        "batch{}:\tlr={},beta1={}".format(
-                            batch_num,
-                            self.opt.param_groups[0]["lr"],
-                            self.opt.param_groups[0]["betas"][0],
-                        )
-                    )
+                    print("batch{}:\tlr={},beta1={}".format(
+                        batch_num,
+                        self.opt.param_groups[0]["lr"],
+                        self.opt.param_groups[0]["betas"][0],
+                    ))
                 else:
-                    print(
-                        "batch{}:\tlr={}".format(
-                            batch_num, self.opt.param_groups[0]["lr"]
-                        )
-                    )
+                    print("batch{}:\tlr={}".format(
+                        batch_num, self.opt.param_groups[0]["lr"]))
 
             for param_group, lr_target, momentum_target in zip(
-                self.opt.param_groups, lr_targets, momentum_targets
-            ):
+                    self.opt.param_groups, lr_targets, momentum_targets):
                 self.assertAlmostEqual(
                     lr_target[batch_num],
                     param_group["lr"],
-                    msg="LR is wrong in batch_num {}: expected {}, got {}".format(
-                        batch_num, lr_target[batch_num], param_group["lr"]
-                    ),
+                    msg="LR is wrong in batch_num {}: expected {}, got {}".
+                    format(batch_num, lr_target[batch_num], param_group["lr"]),
                     delta=1e-5,
                 )
 
@@ -2040,7 +2100,8 @@ class TestLRScheduler(TestCase):
                     self.assertAlmostEqual(
                         momentum_target[batch_num],
                         param_group["betas"][0],
-                        msg="Beta1 is wrong in batch_num {}: expected {}, got {}".format(
+                        msg="Beta1 is wrong in batch_num {}: expected {}, got {}"
+                        .format(
                             batch_num,
                             momentum_target[batch_num],
                             param_group["betas"][0],
@@ -2051,7 +2112,9 @@ class TestLRScheduler(TestCase):
                     self.assertAlmostEqual(
                         momentum_target[batch_num],
                         param_group["momentum"],
-                        msg="Momentum is wrong in batch_num {}: expected {}, got {}".format(
+                        msg=
+                        "Momentum is wrong in batch_num {}: expected {}, got {}"
+                        .format(
                             batch_num,
                             momentum_target[batch_num],
                             param_group["momentum"],
@@ -2070,11 +2133,12 @@ class TestLRScheduler(TestCase):
         model = torch.nn.Linear(2, 1)
         optimizer = torch.optim.SGD(model.parameters(), lr=optim_lr)
         lr_scheduler_1 = torch.optim.lr_scheduler.CosineAnnealingLR(
-            optimizer, T_max=20, eta_min=0.1
-        )
-        lr_scheduler_2 = torch.optim.lr_scheduler.CyclicLR(
-            optimizer, base_lr=base_lr, max_lr=max_lr, step_size_up=1, step_size_down=3
-        )
+            optimizer, T_max=20, eta_min=0.1)
+        lr_scheduler_2 = torch.optim.lr_scheduler.CyclicLR(optimizer,
+                                                           base_lr=base_lr,
+                                                           max_lr=max_lr,
+                                                           step_size_up=1,
+                                                           step_size_down=3)
 
         for i in range(40):
             if i <= lr_scheduler_1.T_max:
