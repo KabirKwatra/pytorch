@@ -14,7 +14,7 @@
 #include "caffe2/serialize/read_adapter_interface.h"
 
 extern "C" {
-typedef struct mz_zip_archive mz_zip_archive;
+    typedef struct mz_zip_archive mz_zip_archive;
 }
 
 // PyTorch containers are a special zip archive with the following layout
@@ -98,77 +98,77 @@ constexpr uint64_t kProducedFileFormatVersion = 0x2L;
 constexpr uint64_t kFieldAlignment = 64;
 
 class CAFFE2_API PyTorchStreamReader final {
- public:
-  explicit PyTorchStreamReader(const std::string& file_name);
-  explicit PyTorchStreamReader(std::istream* in);
-  explicit PyTorchStreamReader(std::unique_ptr<ReadAdapterInterface> in);
+public:
+    explicit PyTorchStreamReader(const std::string& file_name);
+    explicit PyTorchStreamReader(std::istream* in);
+    explicit PyTorchStreamReader(std::unique_ptr<ReadAdapterInterface> in);
 
-  // return dataptr, size
-  std::tuple<at::DataPtr, size_t> getRecord(const std::string& name);
-  size_t getRecordOffset(const std::string& name);
-  bool hasRecord(const std::string& name);
-  std::vector<std::string> getAllRecords();
+    // return dataptr, size
+    std::tuple<at::DataPtr, size_t> getRecord(const std::string& name);
+    size_t getRecordOffset(const std::string& name);
+    bool hasRecord(const std::string& name);
+    std::vector<std::string> getAllRecords();
 
-  ~PyTorchStreamReader();
-  uint64_t version() const {
-    return version_;
-  }
+    ~PyTorchStreamReader();
+    uint64_t version() const {
+        return version_;
+    }
 
- private:
-  void init();
-  size_t read(uint64_t pos, char* buf, size_t n);
-  void valid(const char* what, const char* info = "");
-  size_t getRecordID(const std::string& name);
+private:
+    void init();
+    size_t read(uint64_t pos, char* buf, size_t n);
+    void valid(const char* what, const char* info = "");
+    size_t getRecordID(const std::string& name);
 
-  friend size_t
-  istream_read_func(void* pOpaque, uint64_t file_ofs, void* pBuf, size_t n);
-  std::unique_ptr<mz_zip_archive> ar_;
-  std::string archive_name_;
-  std::string archive_name_plus_slash_;
-  std::unique_ptr<ReadAdapterInterface> in_;
-  int64_t version_;
+    friend size_t
+    istream_read_func(void* pOpaque, uint64_t file_ofs, void* pBuf, size_t n);
+    std::unique_ptr<mz_zip_archive> ar_;
+    std::string archive_name_;
+    std::string archive_name_plus_slash_;
+    std::unique_ptr<ReadAdapterInterface> in_;
+    int64_t version_;
 };
 
 class CAFFE2_API PyTorchStreamWriter final {
- public:
-  explicit PyTorchStreamWriter(std::string archive_name);
-  explicit PyTorchStreamWriter(
-      const std::function<size_t(const void*, size_t)>& writer_func);
+public:
+    explicit PyTorchStreamWriter(std::string archive_name);
+    explicit PyTorchStreamWriter(
+        const std::function<size_t(const void*, size_t)>& writer_func);
 
-  void writeRecord(
-      const std::string& name,
-      const void* data,
-      size_t size,
-      bool compress = false);
-  void writeEndOfFile();
+    void writeRecord(
+        const std::string& name,
+        const void* data,
+        size_t size,
+        bool compress = false);
+    void writeEndOfFile();
 
-  bool finalized() const {
-    return finalized_;
-  }
+    bool finalized() const {
+        return finalized_;
+    }
 
-  const std::string& archiveName() {
-    return archive_name_;
-  }
+    const std::string& archiveName() {
+        return archive_name_;
+    }
 
-  ~PyTorchStreamWriter();
+    ~PyTorchStreamWriter();
 
- private:
-  void setup(const std::string& file_name);
-  void valid(const char* what, const char* info = "");
-  size_t current_pos_ = 0;
-  std::unique_ptr<mz_zip_archive> ar_;
-  std::string archive_name_;
-  std::string archive_name_plus_slash_;
-  std::string padding_;
-  std::ofstream file_stream_;
-  std::function<size_t(const void*, size_t)> writer_func_;
-  bool finalized_ = false;
-  bool err_seen_ = false;
-  friend size_t ostream_write_func(
-      void* pOpaque,
-      uint64_t file_ofs,
-      const void* pBuf,
-      size_t n);
+private:
+    void setup(const std::string& file_name);
+    void valid(const char* what, const char* info = "");
+    size_t current_pos_ = 0;
+    std::unique_ptr<mz_zip_archive> ar_;
+    std::string archive_name_;
+    std::string archive_name_plus_slash_;
+    std::string padding_;
+    std::ofstream file_stream_;
+    std::function<size_t(const void*, size_t)> writer_func_;
+    bool finalized_ = false;
+    bool err_seen_ = false;
+    friend size_t ostream_write_func(
+        void* pOpaque,
+        uint64_t file_ofs,
+        const void* pBuf,
+        size_t n);
 };
 
 } // namespace serialize
