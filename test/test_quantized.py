@@ -1,4 +1,7 @@
 from __future__ import division
+from torch.testing._internal.common_quantized import _quantize, _dequantize, _calculate_dynamic_qparams, \
+    override_quantized_engine
+from torch.testing._internal.common_utils import TEST_WITH_UBSAN, TestCase, run_tests, IS_PPC, IS_MACOS
 from builtins import round
 
 import numpy as np
@@ -15,14 +18,11 @@ from hypothesis import strategies as st
 import torch.testing._internal.hypothesis_utils as hu
 hu.assert_deadline_disabled()
 
-from torch.testing._internal.common_utils import TEST_WITH_UBSAN, TestCase, run_tests, IS_PPC, IS_MACOS
-from torch.testing._internal.common_quantized import _quantize, _dequantize, _calculate_dynamic_qparams, \
-    override_quantized_engine
 
 np_dtype = {
-    torch.quint8 : np.uint8,
-    torch.qint8 : np.int8,
-    torch.qint32 : np.int32
+    torch.quint8: np.uint8,
+    torch.qint8: np.int8,
+    torch.qint32: np.int32
 }
 
 # Make sure we won't have overflows from vpmaddubsw instruction used in FBGEMM.
@@ -31,6 +31,8 @@ np_dtype = {
 # unsigned 8-bit integer from a with the corresponding signed 8-bit integer from
 # b, producing intermediate signed 16-bit integers. This function modifies the
 # weights to eliminate the overflow on the signed 16-bit integers.
+
+
 def avoid_vpmaddubsw_overflow_linear(
     batch_size, input_channels, output_channels, X, X_min, X_max, W, W_min, W_max
 ):
@@ -65,26 +67,29 @@ def qlinear_ref(X_q, X_scale, X_zp, W_q, W_scale, W_zp, b_q, Y_scale, Y_zp):
     assert X_q.ndim == 2
     batch_size, input_channels = X_q.shape
     Prod_XqWq_ref = (
-        np.matmul(X_q.astype(np.int32), W_q.astype(np.int32).T)
-        - W_zp * row_offsets_ref
-        - X_zp * col_offsets_ref
-        + input_channels * X_zp * W_zp
+        np.matmul(X_q.astype(np.int32), W_q.astype(np.int32).T) -
+        W_zp * row_offsets_ref -
+        X_zp * col_offsets_ref +
+        input_channels * X_zp * W_zp
     )
     if b_q is not None:
         Prod_XqWq_ref += b_q
     Y_q_ref = _quantize(Prod_XqWq_ref, Y_scale / (X_scale * W_scale), Y_zp)
     return Y_q_ref
 
+
 """Computes the output shape given pooling parameters."""
+
+
 def pool_output_shape(input_size, kernel_size, padding, stride,
                       dilation, ceiling_mode=False):
     if stride is None:
         stride = kernel_size
     output_size = (
-        (input_size + 2 * padding - dilation * (kernel_size - 1) - 1
-         + (stride - 1 if ceiling_mode else 0)) // stride + 1)
-    if (padding > 0 and
-            ((output_size - 1) * stride >= input_size + padding)):
+        (input_size + 2 * padding - dilation * (kernel_size - 1) - 1 +
+         (stride - 1 if ceiling_mode else 0)) // stride + 1)
+    if (padding > 0
+            and ((output_size - 1) * stride >= input_size + padding)):
         output_size += 1
     return output_size
 
@@ -290,6 +295,7 @@ class TestQuantizedOps(TestCase):
                          {} vs {}".format(C_relu_ref.dequantize(), C_relu_hat.dequantize()))
 
     """Tests the correctness of the add and add_relu op."""
+
     def test_qadd_relu_same_qparams(self):
         for dtype in [torch.quint8, torch.qint8, torch.qint32]:
             add_relu = torch.ops.quantized.add_relu
@@ -337,8 +343,8 @@ class TestQuantizedOps(TestCase):
             self.assertEqual(qCrelu_hat, qCrelu_out_hat,
                              message="AddReLU.out failed")
 
-
     """Tests the correctness of the add and add_relu op."""
+
     def test_qadd_relu_different_qparams(self):
         for dtype in [torch.quint8, torch.qint8, torch.qint32]:
             add_relu = torch.ops.quantized.add_relu
@@ -393,6 +399,7 @@ class TestQuantizedOps(TestCase):
                              message="AddReLU.out failed")
 
     """Tests the correctness of the mul and mul_relu op."""
+
     def test_qmul_relu_same_qparams(self):
         for dtype in [torch.quint8, torch.qint8, torch.qint32]:
             mul_relu = torch.ops.quantized.mul_relu
@@ -453,6 +460,7 @@ class TestQuantizedOps(TestCase):
                 self.assertEqual(C_ref, qC_hat.dequantize())
 
     """Tests the correctness of the mul and mul_relu op."""
+
     def test_qmul_relu_different_qparams(self):
         for dtype in [torch.quint8, torch.qint8, torch.qint32]:
             mul_relu = torch.ops.quantized.mul_relu
@@ -504,6 +512,7 @@ class TestQuantizedOps(TestCase):
                              message="mulReLU.out failed")
 
     """Tests the correctness of the mul and mul_relu op."""
+
     def test_qmul_broadcast(self):
         mul_relu = torch.ops.quantized.mul_relu
         mul = torch.ops.quantized.mul
@@ -710,7 +719,6 @@ class TestQuantizedOps(TestCase):
         X, (scale, zero_point, torch_type) = X
         H, W = X.shape[-2:]
 
-
         if X.shape[1] < 176:
             X = np.repeat(X, 176 / X.shape[1], 1)
 
@@ -751,7 +759,7 @@ class TestQuantizedOps(TestCase):
                              message=error_message.format(name + '.scale', scale, X_hat.q_scale()))
             self.assertEqual(zero_point, X_hat.q_zero_point(),
                              message=error_message.format(name + '.zero_point', scale,
-                             X_hat.q_zero_point()))
+                                                          X_hat.q_zero_point()))
 
     @given(X=hu.tensor(shapes=hu.array_shapes(min_dims=4, max_dims=5,
                                               min_side=5, max_side=10),
@@ -824,7 +832,6 @@ class TestQuantizedOps(TestCase):
         X, (scale, zero_point, torch_type) = X
         D, H, W = X.shape[-3:]
 
-
         if X.shape[1] < 176:
             X = np.repeat(X, 176 / X.shape[1], 1)
 
@@ -867,7 +874,7 @@ class TestQuantizedOps(TestCase):
                              message=error_message.format(name + '.scale', scale, X_hat.q_scale()))
             self.assertEqual(zero_point, X_hat.q_zero_point(),
                              message=error_message.format(name + '.zero_point', scale,
-                             X_hat.q_zero_point()))
+                                                          X_hat.q_zero_point()))
 
     @given(X=hu.tensor(shapes=hu.array_shapes(min_dims=4, max_dims=4,
                                               min_side=1, max_side=10),
@@ -1005,7 +1012,6 @@ class TestQuantizedOps(TestCase):
         assert(len(unquantized_out) == len(quantized_out))
         torch.testing.assert_allclose(quantized_out[0].dequantize(), unquantized_out[0])
         torch.testing.assert_allclose(quantized_out[1], unquantized_out[1])
-
 
     """Tests quantize concatenation (both fused and not)."""
     @given(X=hu.tensor(shapes=hu.array_shapes(min_dims=3, max_dims=4,
@@ -1221,11 +1227,11 @@ class TestQuantizedOps(TestCase):
                 if qX.q_zero_point() != qX2.q_zero_point():
                     return False
             elif qX.qscheme() == torch.per_channel_affine:
-                if (qX.q_per_channel_scales() !=
-                   qX2.q_per_channel_scales()).any():
+                if (qX.q_per_channel_scales()
+                        != qX2.q_per_channel_scales()).any():
                     return False
-                if (qX.q_per_channel_zero_points() !=
-                   qX2.q_per_channel_zero_points()).any():
+                if (qX.q_per_channel_zero_points()
+                        != qX2.q_per_channel_zero_points()).any():
                     return False
             else:
                 raise NotImplementedError("Don't know what to do with",
@@ -1236,7 +1242,6 @@ class TestQuantizedOps(TestCase):
 
         self.assertEqual(qX.equal(qX), equal_ref(qX, qX))
         self.assertEqual(qX.equal(qX2), equal_ref(qX, qX2))
-
 
     @given(X=hu.tensor(shapes=hu.array_shapes(min_dims=4, max_dims=4,
                                               min_side=1, max_side=32),
@@ -1266,6 +1271,7 @@ class TestQuantizedOps(TestCase):
                                      running_mean=mean, running_var=var, training=False, momentum=0, eps=eps)
             quantize_ref = torch.quantize_per_tensor(float_ref, Y_scale, Y_zero_point, dtype_x)
             self.assertEqual(qy.int_repr().numpy(), quantize_ref.int_repr().numpy())
+
 
 @unittest.skipUnless('fbgemm' in torch.backends.quantized.supported_engines,
                      " Quantized operations require FBGEMM. FBGEMM is only optimized for CPUs"
@@ -1307,11 +1313,11 @@ class TestDynamicQuantizedLinear(TestCase):
             X_value_min = 0
             X_value_max = 255
             X_q0 = np.round(np.random.rand(batch_size, input_channels) *
-                            (X_value_max - X_value_min)
-                            + X_value_min
+                            (X_value_max - X_value_min) +
+                            X_value_min
                             ).astype(np.uint8)
-            X_q0 = np.round(np.random.rand(batch_size, input_channels) *
-                            (X_value_max - X_value_min) + X_value_min).astype(np.uint8)
+            X_q0 = np.round(np.random.rand(batch_size, input_channels)
+                            * (X_value_max - X_value_min) + X_value_min).astype(np.uint8)
             X_q0[0, 0] = X_value_min
             X_q0[0, 1] = X_value_max
 
@@ -1322,9 +1328,9 @@ class TestDynamicQuantizedLinear(TestCase):
             W_value_min = -128
             W_value_max = 127
             W_q0 = np.round(
-                np.random.rand(output_channels, input_channels)
-                * (W_value_max - W_value_min)
-                + W_value_min
+                np.random.rand(output_channels, input_channels) *
+                (W_value_max - W_value_min) +
+                W_value_min
             ).astype(np.int8)
             W_q0[0, 0] = W_value_min
             W_q0[1, 0] = W_value_max
@@ -1332,8 +1338,8 @@ class TestDynamicQuantizedLinear(TestCase):
             b_value_min = -10
             b_value_max = 10
             b_q0 = np.round(
-                np.random.rand(output_channels) *
-                (b_value_max - b_value_min) + b_value_min
+                np.random.rand(output_channels)
+                * (b_value_max - b_value_min) + b_value_min
             ).astype(np.int32) if use_bias else None
 
             if qengine == 'fbgemm':
@@ -1417,9 +1423,9 @@ class TestDynamicQuantizedLinear(TestCase):
         W_value_min = -128
         W_value_max = 127
         W_q0 = np.round(
-            np.random.rand(output_channels, input_channels)
-            * (W_value_max - W_value_min)
-            + W_value_min
+            np.random.rand(output_channels, input_channels) *
+            (W_value_max - W_value_min) +
+            W_value_min
         ).astype(np.int8)
         W_q0[0, 0] = W_value_min
         W_q0[1, 0] = W_value_max
@@ -1427,8 +1433,8 @@ class TestDynamicQuantizedLinear(TestCase):
         b_value_min = -10
         b_value_max = 10
         b_q0 = np.round(
-            np.random.rand(output_channels) * (b_value_max - b_value_min) +
-            b_value_min
+            np.random.rand(output_channels) * (b_value_max - b_value_min)
+            + b_value_min
         ).astype(np.int32)
 
         avoid_vpmaddubsw_overflow_linear(
@@ -1469,6 +1475,7 @@ class TestDynamicQuantizedLinear(TestCase):
 
         self.assertEqual(Y_fp32, Y_fp32_ref,
                          message="torch.ops.quantized.fbgemm_linear_dynamic results are off")
+
 
 class TestQuantizedLinear(unittest.TestCase):
     """Tests the correctness of the quantized linear and linear_relu op."""
@@ -1511,23 +1518,23 @@ class TestQuantizedLinear(unittest.TestCase):
             X_value_max = 225
             X_q0 = np.round(
                 np.random.rand(batch_size, input_channels) *
-                (X_value_max - X_value_min)
-                + X_value_min
+                (X_value_max - X_value_min) +
+                X_value_min
             ).astype(np.uint8)
             W_scales = np.random.rand(output_channels)
             W_zps = np.round(np.random.rand(output_channels) * 100 - 50).astype(np.int)
             W_value_min = -128
             W_value_max = 127
             W_q0 = np.round(
-                np.random.rand(output_channels, input_channels)
-                * (W_value_max - W_value_min)
-                + W_value_min
+                np.random.rand(output_channels, input_channels) *
+                (W_value_max - W_value_min) +
+                W_value_min
             ).astype(np.int8)
             b_value_min = -10
             b_value_max = 10
             b_q0 = np.round(
-                np.random.rand(output_channels) *
-                (b_value_max - b_value_min) + b_value_min
+                np.random.rand(output_channels)
+                * (b_value_max - b_value_min) + b_value_min
             ).astype(np.int32) if use_bias else None
             avoid_vpmaddubsw_overflow_linear(
                 batch_size,
@@ -1618,8 +1625,8 @@ class TestQuantizedLinear(unittest.TestCase):
             if use_channelwise:
                 output_channels = W.shape[0]
                 W_scales = torch.rand(output_channels).to(torch.double)
-                W_zps = torch.round(torch.rand(output_channels)
-                                    * 100 - 50).to(torch.int64)
+                W_zps = torch.round(torch.rand(output_channels) *
+                                    100 - 50).to(torch.int64)
             qlinear_prepack = torch.ops.quantized.linear_prepack
             qlinear_unpack = torch.ops.quantized.linear_unpack
 
@@ -1648,6 +1655,7 @@ class TestQuantizedLinear(unittest.TestCase):
                     W_q.q_scale()), np.float32(W_q_origin.q_scale()))
                 np.testing.assert_equal(
                     W_q.q_zero_point(), W_q_origin.q_zero_point())
+
 
 class TestQuantizedConv(unittest.TestCase):
     def _test_qconv_unpack_impl(
@@ -1704,8 +1712,8 @@ class TestQuantizedConv(unittest.TestCase):
         output_channels = output_channels_per_group * groups
         # Padded input size should be at least as big as dilated kernel
         for i in range(len(kernels)):
-            assume(input_feature_map_shape[i] + 2 * pads[i]
-                   >= dilations[i] * (kernels[i] - 1) + 1)
+            assume(input_feature_map_shape[i] + 2 * pads[i] >=
+                   dilations[i] * (kernels[i] - 1) + 1)
         W_scale = W_scale * output_channels
         W_zero_point = W_zero_point * output_channels
         # Resize W_scale and W_zero_points arrays equal to output_channels
@@ -2320,7 +2328,6 @@ class TestQNNPackOps(TestCase):
             np.testing.assert_array_almost_equal(a_pool_q.int_repr().numpy(),
                                                  qa_pool.int_repr().numpy(), decimal=0)
 
-
     @given(batch_size=st.integers(1, 5),
            channels=st.sampled_from([2, 4, 5, 8, 16, 32]),
            height=st.integers(4, 10),
@@ -2340,7 +2347,10 @@ class TestQNNPackOps(TestCase):
             qY = torch.mean(qX, dim)
             np.testing.assert_array_almost_equal(Y.int_repr().numpy(), qY.int_repr().numpy(), decimal=0)
 
+
 """Tests the correctness of the tensor comparators."""
+
+
 class TestComparatorOps(TestCase):
     """Tests the element-wise equality ops."""
     @given(A=hu.tensor(shapes=((3, 4, 5),),

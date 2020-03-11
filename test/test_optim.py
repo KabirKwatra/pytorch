@@ -779,8 +779,8 @@ class TestLRScheduler(TestCase):
     def test_cos_anneal_lr(self):
         epochs = 10
         eta_min = 1e-10
-        single_targets = [eta_min + (0.05 - eta_min) *
-                          (1 + math.cos(math.pi * x / epochs)) / 2
+        single_targets = [eta_min + (0.05 - eta_min)
+                          * (1 + math.cos(math.pi * x / epochs)) / 2
                           for x in range(epochs)]
         targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
         scheduler = CosineAnnealingLR(self.opt, T_max=epochs, eta_min=eta_min)
@@ -924,8 +924,8 @@ class TestLRScheduler(TestCase):
     def test_compound_cosanneal_and_step_lr(self):
         epochs = 10
         eta_min = 1e-10
-        single_targets = [eta_min + (0.05 - eta_min) *
-                          (1 + math.cos(math.pi * x / epochs)) / 2
+        single_targets = [eta_min + (0.05 - eta_min)
+                          * (1 + math.cos(math.pi * x / epochs)) / 2
                           for x in range(epochs)]
         single_targets = [x * 0.1 ** (i // 3) for i, x in enumerate(single_targets)]
         targets = [single_targets, list(map(lambda x: x * epochs, single_targets))]
@@ -937,8 +937,8 @@ class TestLRScheduler(TestCase):
     def test_compound_cosanneal_and_multistep_lr(self):
         epochs = 10
         eta_min = 1e-10
-        single_targets = [eta_min + (0.05 - eta_min) *
-                          (1 + math.cos(math.pi * x / epochs)) / 2
+        single_targets = [eta_min + (0.05 - eta_min)
+                          * (1 + math.cos(math.pi * x / epochs)) / 2
                           for x in range(epochs)]
         multipliers = [1] * 2 + [0.1] * 3 + [0.01] * 4 + [0.001]
         single_targets = [x * y for x, y in zip(single_targets, multipliers)]
@@ -951,8 +951,8 @@ class TestLRScheduler(TestCase):
     def test_compound_cosanneal_and_exp_lr(self):
         epochs = 10
         eta_min = 1e-10
-        single_targets = [eta_min + (0.05 - eta_min) *
-                          (1 + math.cos(math.pi * x / epochs)) / 2
+        single_targets = [eta_min + (0.05 - eta_min)
+                          * (1 + math.cos(math.pi * x / epochs)) / 2
                           for x in range(epochs)]
         multipliers = [0.1 ** i for i in range(epochs)]
         single_targets = [x * y for x, y in zip(single_targets, multipliers)]
@@ -1016,8 +1016,8 @@ class TestLRScheduler(TestCase):
             param_group['lr'] = 0.05
         epochs = 10
         eta_min = 1e-10
-        single_targets = [eta_min + (0.05 - eta_min) *
-                          (1 + math.cos(math.pi * x / epochs)) / 2
+        single_targets = [eta_min + (0.05 - eta_min)
+                          * (1 + math.cos(math.pi * x / epochs)) / 2
                           for x in range(epochs)]
         targets = [single_targets]
         targets = targets[1:]  # test runs step before checking lr
@@ -1543,6 +1543,7 @@ class TestLRScheduler(TestCase):
             last_lr = optimizer.param_groups[0]["lr"]
 
         self.assertLessEqual(last_lr, max_lr)
+
 
 if __name__ == '__main__':
     run_tests()
