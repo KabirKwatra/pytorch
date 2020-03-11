@@ -7,7 +7,6 @@ import operator_benchmark as op_bench
 
 import torch
 import torch.nn.quantized as nnq
-
 r"""Microbenchmarks for the quantized activations."""
 
 qactivation_long_configs = op_bench.cross_product_configs(
@@ -27,16 +26,16 @@ qactivation_long_configs = op_bench.cross_product_configs(
     ),
     contig=(False, True),
     inplace=(False, True),
-    dtype=(torch.quint8,),
-    tags=("long",),
+    dtype=(torch.quint8, ),
+    tags=("long", ),
 )
 
 qactivation_short_configs = op_bench.cross_product_configs(
     dims=((3, 4, 5), (2, 3, 4, 5)),  # Rank=3  # Rank=4,
-    contig=(False,),
-    inplace=(False,),
+    contig=(False, ),
+    inplace=(False, ),
     dtype=(torch.quint8, torch.qint8, torch.qint32),
-    tags=("short",),
+    tags=("short", ),
 )
 
 qactivation_ops = op_bench.op_list(
@@ -59,9 +58,10 @@ class QActivationBenchmarkBase(op_bench.TorchBenchmarkBase):
         zero_point = 0
 
         # Quantize the tensor
-        self.q_input = torch.quantize_per_tensor(
-            f_input, scale=scale, zero_point=zero_point, dtype=dtype
-        )
+        self.q_input = torch.quantize_per_tensor(f_input,
+                                                 scale=scale,
+                                                 zero_point=zero_point,
+                                                 dtype=dtype)
         if not contig:
             # Make non-contiguous
             new_shape = list(range(self.q_input.ndim))[::-1]
