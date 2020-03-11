@@ -3,10 +3,10 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import operator_benchmark as op_bench
+
 import torch
 import torch.nn.quantized as nnq
-
-import operator_benchmark as op_bench
 
 r"""Microbenchmarks for the quantized activations."""
 
