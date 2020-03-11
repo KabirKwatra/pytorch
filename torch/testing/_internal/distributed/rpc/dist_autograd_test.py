@@ -40,6 +40,8 @@ requires_grad_tensor = torch.ones(3, 3, requires_grad=True)
 # dst_rank = (self.rank + rank_distance) % self.world_size
 # we don't need a lock here since the GIL is held while executing remote
 # python UDFs, so access is serialized across several workers.
+
+
 def _set_rpc_done(ctx_id, rank_distance):
     global rpc_done
     global ctx_ids
@@ -59,6 +61,8 @@ def _torch_ones(sizes, requires_grad=False):
 
 # This method must be called on the rref owner, and verifies that the grad of
 # rref tensor equals to the given grad.
+
+
 def _compare_owner_value(context_id, rref, grad):
     grads = dist_autograd.get_gradients(context_id)
     return torch.equal(grads[rref.local_value()], grad)
@@ -152,6 +156,8 @@ def _run_trainer(rref_t1, t2, ps, rank_diff):
 
 # This function is the same as _run_trainer, except rpc calls torchscript
 # function "my_script_ref_add" instead of python funciton "my_rref_add"
+
+
 def _run_trainer_torchscript(rref_t1, t2, ps, rank_diff):
     with dist_autograd.context() as context_id:
         ret = rpc.rpc_sync(ps, my_script_ref_add, args=(rref_t1, t2))
