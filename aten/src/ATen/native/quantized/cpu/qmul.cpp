@@ -16,12 +16,15 @@ DEFINE_DISPATCH(qmul_stub);
 namespace {
 
 inline void check_inputs(const Tensor& qa, const Tensor& qb) {
-  TORCH_CHECK(qa.qscheme() == kPerTensorAffine,
-              "Only per tensor quantization is supported in Mul.");
-  TORCH_CHECK(qa.scalar_type() == qb.scalar_type(),
-              "Mul operands should have same data type.");
-  TORCH_CHECK(qa.qscheme() == qb.qscheme(),
-              "Both inputs to Mul must have the same quantization shceme.");
+  TORCH_CHECK(
+      qa.qscheme() == kPerTensorAffine,
+      "Only per tensor quantization is supported in Mul.");
+  TORCH_CHECK(
+      qa.scalar_type() == qb.scalar_type(),
+      "Mul operands should have same data type.");
+  TORCH_CHECK(
+      qa.qscheme() == qb.qscheme(),
+      "Both inputs to Mul must have the same quantization shceme.");
 }
 
 // Note: out is assumed to be the same size as self and other.
@@ -76,21 +79,19 @@ Tensor _mul_scalar_out(Tensor& out, const Tensor& self, Scalar other) {
           });
       out.set_quantizer_(make_per_tensor_affine_quantizer(
           scale_prime, zero_point_prime, self.scalar_type()));
-    } else /* other_val < 0.0 */ {
+    } else { /* other_val < 0.0 */
       scale_prime = std::abs(other_val) * self_scale;
       zero_point_prime = q_max - (self_zero_point - q_min);
 
       // xq' = q_max + q_min - x_q
       auto iter = TensorIterator::unary_op(out, self);
-      cpu_kernel(
-          iter,
-          [&](scalar_t a) -> scalar_t {
-            a = scalar_t(underlying_t(q_max + q_min - a.val_));
-            if (ReLUFused) {
-              a = scalar_t(std::max(a.val_, underlying_t(zero_point_prime)));
-            }
-            return a;
-          });
+      cpu_kernel(iter, [&](scalar_t a) -> scalar_t {
+        a = scalar_t(underlying_t(q_max + q_min - a.val_));
+        if (ReLUFused) {
+          a = scalar_t(std::max(a.val_, underlying_t(zero_point_prime)));
+        }
+        return a;
+      });
       out.set_quantizer_(make_per_tensor_affine_quantizer(
           scale_prime, zero_point_prime, self.scalar_type()));
     }
@@ -102,11 +103,13 @@ Tensor _mul_scalar_out(Tensor& out, const Tensor& self, Scalar other) {
 template <bool ReLUFused = false>
 class QMul final : public c10::OperatorKernel {
  public:
-  Tensor operator()(Tensor qa, Tensor qb,
-                    double scale, int64_t zero_point) {
+  Tensor operator()(Tensor qa, Tensor qb, double scale, int64_t zero_point) {
     check_inputs(qa, qb);
-    auto qc = at::_empty_affine_quantized(qa.sizes(),
-      at::device(kCPU).dtype(qa.scalar_type()), scale, zero_point);
+    auto qc = at::_empty_affine_quantized(
+        qa.sizes(),
+        at::device(kCPU).dtype(qa.scalar_type()),
+        scale,
+        zero_point);
     return _mul_out<ReLUFused>(qc, qa, qb);
   }
 };
@@ -120,14 +123,13 @@ class QMulOut final : public c10::OperatorKernel {
   }
 };
 
-
 template <bool ReLUFused = false>
 class QMulScalar final : public c10::OperatorKernel {
  public:
   Tensor operator()(Tensor qa, Scalar b) {
-    TORCH_CHECK(qa.qscheme() == kPerTensorAffine ||
-              qa.qscheme() == kPerTensorSymmetric,
-              "Only per tensor quantization is suuported in Mul.");
+    TORCH_CHECK(
+        qa.qscheme() == kPerTensorAffine || qa.qscheme() == kPerTensorSymmetric,
+        "Only per tensor quantization is suuported in Mul.");
     auto qc = at::empty_like(qa, LEGACY_CONTIGUOUS_MEMORY_FORMAT);
     return _mul_scalar_out<ReLUFused>(qc, qa, b);
   }
@@ -193,5 +195,6 @@ static auto registry =
                 .aliasAnalysis(at::AliasAnalysisKind::FROM_SCHEMA)
                 .kernel<QMulScalarOut</*ReLUFused=*/true>>(
                     DispatchKey::QuantizedCPUTensorId));
-}  // namespace
-}}  // namespace at::native
+} // namespace
+} // namespace native
+} // namespace at

@@ -1,12 +1,12 @@
 #pragma once
 
-#include <c10/core/QScheme.h>
 #include <c10/core/MemoryFormat.h>
+#include <c10/core/QScheme.h>
+#include <c10/core/ScalarType.h>
+#include <c10/core/TensorOptions.h>
 #include <c10/macros/Macros.h>
 #include <c10/util/Exception.h>
 #include <c10/util/intrusive_ptr.h>
-#include <c10/core/ScalarType.h>
-#include <c10/core/TensorOptions.h>
 
 #include <ATen/TensorUtils.h>
 
@@ -56,9 +56,9 @@ struct CAFFE2_API Quantizer : public c10::intrusive_ptr_target {
   // Copied from torch/csrc/jit/ir/scope.h
   QuantizerPtr intrusive_from_this() {
     c10::raw::intrusive_ptr::incref(this); // we are creating a new pointer
-                                           // from a raw `this` pointer
-                                           // so we need to bump the refcount
-                                           // to account for this ownership
+    // from a raw `this` pointer
+    // so we need to bump the refcount
+    // to account for this ownership
     return c10::intrusive_ptr<Quantizer>::reclaim(this);
   }
 
@@ -103,7 +103,8 @@ struct CAFFE2_API UniformQuantizer : public Quantizer {
  * value. K-means quantization is a representative example in this category.
  */
 struct CAFFE2_API NonUniformQuantizer : public Quantizer {
-  explicit NonUniformQuantizer(ScalarType scalar_type) : Quantizer(scalar_type) {}
+  explicit NonUniformQuantizer(ScalarType scalar_type)
+      : Quantizer(scalar_type) {}
 };
 
 // There is also StochasticQuantizer which is uniform but not affine
@@ -117,7 +118,8 @@ struct CAFFE2_API NonUniformQuantizer : public Quantizer {
  * X = (Y - zero_point) * scale
  */
 struct CAFFE2_API AffineQuantizer : public UniformQuantizer {
-  explicit AffineQuantizer(ScalarType scalar_type) : UniformQuantizer(scalar_type) {}
+  explicit AffineQuantizer(ScalarType scalar_type)
+      : UniformQuantizer(scalar_type) {}
 };
 
 // Note that we will not have Symmetric Quantizer in backend to reduce
@@ -128,10 +130,11 @@ struct CAFFE2_API AffineQuantizer : public UniformQuantizer {
  * all the values in the Tensor.
  */
 struct CAFFE2_API PerTensorAffineQuantizer : public AffineQuantizer {
-  explicit PerTensorAffineQuantizer(ScalarType scalar_type, double scale, int64_t zero_point)
-    : AffineQuantizer(scalar_type),
-        scale_(scale),
-        zero_point_(zero_point) {}
+  explicit PerTensorAffineQuantizer(
+      ScalarType scalar_type,
+      double scale,
+      int64_t zero_point)
+      : AffineQuantizer(scalar_type), scale_(scale), zero_point_(zero_point) {}
 
   Tensor quantize(Tensor tensor) override;
   Tensor dequantize(Tensor tensor) override;
@@ -234,16 +237,34 @@ CAFFE2_API QTensorImpl* get_qtensorimpl(const Tensor& self);
 // Quantize a float value into a uint value given scale and zero_point
 template <typename T>
 CAFFE2_API T quantize_val(double scale, int64_t zero_point, float value);
-template <typename T, int precision=8>
-void quantize_vec(double scale, int64_t zero_point, const float *src, T *dst, size_t count=8);
+template <typename T, int precision = 8>
+void quantize_vec(
+    double scale,
+    int64_t zero_point,
+    const float* src,
+    T* dst,
+    size_t count = 8);
 template <typename T>
-CAFFE2_API Tensor quantize_tensor(Tensor rtensor, Tensor qtensor, double scale, int64_t zero_point);
+CAFFE2_API Tensor quantize_tensor(
+    Tensor rtensor,
+    Tensor qtensor,
+    double scale,
+    int64_t zero_point);
 template <typename T>
 CAFFE2_API float dequantize_val(double scale, int64_t zero_point, T value);
 template <typename T>
-CAFFE2_API float dequantize_vec(double scale, int64_t zero_point, const T* src, float* dst, size_t count=8);
+CAFFE2_API float dequantize_vec(
+    double scale,
+    int64_t zero_point,
+    const T* src,
+    float* dst,
+    size_t count = 8);
 template <typename T>
-CAFFE2_API Tensor dequantize_tensor(Tensor qtensor, Tensor rtensor, double scale, int64_t zero_point);
+CAFFE2_API Tensor dequantize_tensor(
+    Tensor qtensor,
+    Tensor rtensor,
+    double scale,
+    int64_t zero_point);
 template <typename SRC_T, typename DST_T>
 CAFFE2_API DST_T requantize_val(double, int64_t, double, int64_t, SRC_T src);
 
@@ -256,9 +277,10 @@ requantize_from_int(double multiplier, int64_t zero_point, int64_t src);
 
 // double and int64_t are because of the native function API, we only have these
 // argument types right now in native functions
-CAFFE2_API QuantizerPtr
-make_per_tensor_affine_quantizer(
-    double scale, int64_t zero_point, ScalarType scalar_type);
+CAFFE2_API QuantizerPtr make_per_tensor_affine_quantizer(
+    double scale,
+    int64_t zero_point,
+    ScalarType scalar_type);
 
 CAFFE2_API QuantizerPtr make_per_channel_affine_quantizer(
     const Tensor& scales,
