@@ -49,42 +49,42 @@ using QuantizerPtr = c10::intrusive_ptr<Quantizer>;
  * share the same Quantizer. Quantizer should be immutable.
  */
 struct CAFFE2_API Quantizer : public c10::intrusive_ptr_target {
-  const ScalarType scalar_type_;
-  explicit Quantizer(ScalarType scalar_type) : scalar_type_(scalar_type) {}
-  virtual ~Quantizer();
+    const ScalarType scalar_type_;
+    explicit Quantizer(ScalarType scalar_type) : scalar_type_(scalar_type) {}
+    virtual ~Quantizer();
 
-  // Copied from torch/csrc/jit/ir/scope.h
-  QuantizerPtr intrusive_from_this() {
-    c10::raw::intrusive_ptr::incref(this); // we are creating a new pointer
-                                           // from a raw `this` pointer
-                                           // so we need to bump the refcount
-                                           // to account for this ownership
-    return c10::intrusive_ptr<Quantizer>::reclaim(this);
-  }
+    // Copied from torch/csrc/jit/ir/scope.h
+    QuantizerPtr intrusive_from_this() {
+        c10::raw::intrusive_ptr::incref(this); // we are creating a new pointer
+        // from a raw `this` pointer
+        // so we need to bump the refcount
+        // to account for this ownership
+        return c10::intrusive_ptr<Quantizer>::reclaim(this);
+    }
 
-  /**
-   * Each concrete Quantizer type should have a unique QScheme type.
-   */
-  virtual QScheme qscheme() const = 0;
+    /**
+     * Each concrete Quantizer type should have a unique QScheme type.
+     */
+    virtual QScheme qscheme() const = 0;
 
-  ScalarType scalar_type() {
-    return scalar_type_;
-  }
+    ScalarType scalar_type() {
+        return scalar_type_;
+    }
 
-  /**
-   * quantize a float Tensor into a quantized Tensor.
-   */
-  virtual Tensor quantize(Tensor t) = 0;
+    /**
+     * quantize a float Tensor into a quantized Tensor.
+     */
+    virtual Tensor quantize(Tensor t) = 0;
 
-  /**
-   * dequantize a quantized Tensor into a float Tensor.
-   */
-  virtual Tensor dequantize(Tensor t) = 0;
+    /**
+     * dequantize a quantized Tensor into a float Tensor.
+     */
+    virtual Tensor dequantize(Tensor t) = 0;
 
-  /**
-   * Compare against `other` for equality.
-   */
-  virtual bool equalTo(QuantizerPtr other) = 0;
+    /**
+     * Compare against `other` for equality.
+     */
+    virtual bool equalTo(QuantizerPtr other) = 0;
 };
 
 /**
@@ -94,7 +94,7 @@ struct CAFFE2_API Quantizer : public c10::intrusive_ptr_target {
  * the most commonly used scheme in this category.
  */
 struct CAFFE2_API UniformQuantizer : public Quantizer {
-  explicit UniformQuantizer(ScalarType scalar_type) : Quantizer(scalar_type) {}
+    explicit UniformQuantizer(ScalarType scalar_type) : Quantizer(scalar_type) {}
 };
 
 /**
@@ -103,7 +103,7 @@ struct CAFFE2_API UniformQuantizer : public Quantizer {
  * value. K-means quantization is a representative example in this category.
  */
 struct CAFFE2_API NonUniformQuantizer : public Quantizer {
-  explicit NonUniformQuantizer(ScalarType scalar_type) : Quantizer(scalar_type) {}
+    explicit NonUniformQuantizer(ScalarType scalar_type) : Quantizer(scalar_type) {}
 };
 
 // There is also StochasticQuantizer which is uniform but not affine
@@ -117,7 +117,7 @@ struct CAFFE2_API NonUniformQuantizer : public Quantizer {
  * X = (Y - zero_point) * scale
  */
 struct CAFFE2_API AffineQuantizer : public UniformQuantizer {
-  explicit AffineQuantizer(ScalarType scalar_type) : UniformQuantizer(scalar_type) {}
+    explicit AffineQuantizer(ScalarType scalar_type) : UniformQuantizer(scalar_type) {}
 };
 
 // Note that we will not have Symmetric Quantizer in backend to reduce
@@ -128,41 +128,41 @@ struct CAFFE2_API AffineQuantizer : public UniformQuantizer {
  * all the values in the Tensor.
  */
 struct CAFFE2_API PerTensorAffineQuantizer : public AffineQuantizer {
-  explicit PerTensorAffineQuantizer(ScalarType scalar_type, double scale, int64_t zero_point)
-    : AffineQuantizer(scalar_type),
-        scale_(scale),
-        zero_point_(zero_point) {}
+    explicit PerTensorAffineQuantizer(ScalarType scalar_type, double scale, int64_t zero_point)
+        : AffineQuantizer(scalar_type),
+          scale_(scale),
+          zero_point_(zero_point) {}
 
-  Tensor quantize(Tensor tensor) override;
-  Tensor dequantize(Tensor tensor) override;
+    Tensor quantize(Tensor tensor) override;
+    Tensor dequantize(Tensor tensor) override;
 
-  QScheme qscheme() const override {
-    return kPerTensorAffine;
-  }
-
-  double scale() const {
-    return scale_;
-  }
-
-  int64_t zero_point() const {
-    return zero_point_;
-  }
-
-  bool equalTo(QuantizerPtr other) override {
-    if (!other.get() || other->qscheme() != kPerTensorAffine) {
-      return false;
+    QScheme qscheme() const override {
+        return kPerTensorAffine;
     }
-    auto* other_per_tensor_affine =
-        static_cast<PerTensorAffineQuantizer*>(other.get());
-    return scalar_type() == other_per_tensor_affine->scalar_type() &&
-        scale() == other_per_tensor_affine->scale() &&
-        zero_point() == other_per_tensor_affine->zero_point();
-  }
 
- private:
-  const double scale_;
-  // We use int64_t for consistency with Python
-  const int64_t zero_point_;
+    double scale() const {
+        return scale_;
+    }
+
+    int64_t zero_point() const {
+        return zero_point_;
+    }
+
+    bool equalTo(QuantizerPtr other) override {
+        if (!other.get() || other->qscheme() != kPerTensorAffine) {
+            return false;
+        }
+        auto* other_per_tensor_affine =
+            static_cast<PerTensorAffineQuantizer*>(other.get());
+        return scalar_type() == other_per_tensor_affine->scalar_type() &&
+               scale() == other_per_tensor_affine->scale() &&
+               zero_point() == other_per_tensor_affine->zero_point();
+    }
+
+private:
+    const double scale_;
+    // We use int64_t for consistency with Python
+    const int64_t zero_point_;
 };
 
 /**
@@ -177,51 +177,51 @@ struct CAFFE2_API PerTensorAffineQuantizer : public AffineQuantizer {
  * dot-product to have a different scale.
  */
 struct CAFFE2_API PerChannelAffineQuantizer : public AffineQuantizer {
-  explicit PerChannelAffineQuantizer(
-      ScalarType scalar_type,
-      Tensor scales,
-      Tensor zero_points,
-      int64_t axis)
-      : AffineQuantizer(scalar_type),
-        scales_(scales),
-        zero_points_(zero_points),
-        axis_(axis) {}
+    explicit PerChannelAffineQuantizer(
+        ScalarType scalar_type,
+        Tensor scales,
+        Tensor zero_points,
+        int64_t axis)
+        : AffineQuantizer(scalar_type),
+          scales_(scales),
+          zero_points_(zero_points),
+          axis_(axis) {}
 
-  QScheme qscheme() const override {
-    return kPerChannelAffine;
-  }
-
-  Tensor scales() const {
-    return scales_;
-  }
-
-  Tensor zero_points() const {
-    return zero_points_;
-  }
-
-  int64_t axis() const {
-    return axis_;
-  }
-
-  Tensor quantize(Tensor tensor) override;
-  Tensor dequantize(Tensor tensor) override;
-
-  bool equalTo(QuantizerPtr other) override {
-    if (!other.get() || other->qscheme() != kPerChannelAffine) {
-      return false;
+    QScheme qscheme() const override {
+        return kPerChannelAffine;
     }
-    auto* other_per_channel_affine =
-        static_cast<PerChannelAffineQuantizer*>(other.get());
-    return scalar_type() == other_per_channel_affine->scalar_type() &&
-        scales().equal(other_per_channel_affine->scales()) &&
-        zero_points().equal(other_per_channel_affine->zero_points()) &&
-        axis() == other_per_channel_affine->axis();
-  }
 
- private:
-  Tensor scales_;
-  Tensor zero_points_;
-  const int64_t axis_;
+    Tensor scales() const {
+        return scales_;
+    }
+
+    Tensor zero_points() const {
+        return zero_points_;
+    }
+
+    int64_t axis() const {
+        return axis_;
+    }
+
+    Tensor quantize(Tensor tensor) override;
+    Tensor dequantize(Tensor tensor) override;
+
+    bool equalTo(QuantizerPtr other) override {
+        if (!other.get() || other->qscheme() != kPerChannelAffine) {
+            return false;
+        }
+        auto* other_per_channel_affine =
+            static_cast<PerChannelAffineQuantizer*>(other.get());
+        return scalar_type() == other_per_channel_affine->scalar_type() &&
+               scales().equal(other_per_channel_affine->scales()) &&
+               zero_points().equal(other_per_channel_affine->zero_points()) &&
+               axis() == other_per_channel_affine->axis();
+    }
+
+private:
+    Tensor scales_;
+    Tensor zero_points_;
+    const int64_t axis_;
 };
 
 // This is an internal utility function for getting at the QTensorImpl,
