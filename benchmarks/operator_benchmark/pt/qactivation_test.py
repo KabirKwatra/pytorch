@@ -28,25 +28,24 @@ qactivation_long_configs = op_bench.cross_product_configs(
     contig=(False, True),
     inplace=(False, True),
     dtype=(torch.quint8,),
-    tags=('long',)
+    tags=("long",),
 )
 
 qactivation_short_configs = op_bench.cross_product_configs(
-    dims=((3, 4, 5),      # Rank=3
-          (2, 3, 4, 5)),  # Rank=4,
+    dims=((3, 4, 5), (2, 3, 4, 5)),  # Rank=3  # Rank=4,
     contig=(False,),
     inplace=(False,),
     dtype=(torch.quint8, torch.qint8, torch.qint32),
-    tags=('short',)
+    tags=("short",),
 )
 
 qactivation_ops = op_bench.op_list(
     attrs=(
-        ('relu', nnq.ReLU),
-        ('relu6', nnq.ReLU6),
-        ('functional.hardtanh', nnq.functional.hardtanh),
+        ("relu", nnq.ReLU),
+        ("relu6", nnq.ReLU6),
+        ("functional.hardtanh", nnq.functional.hardtanh),
     ),
-    attr_names=('op_name', 'op_func'),
+    attr_names=("op_name", "op_func"),
 )
 
 
@@ -60,9 +59,9 @@ class QActivationBenchmarkBase(op_bench.TorchBenchmarkBase):
         zero_point = 0
 
         # Quantize the tensor
-        self.q_input = torch.quantize_per_tensor(f_input, scale=scale,
-                                                 zero_point=zero_point,
-                                                 dtype=dtype)
+        self.q_input = torch.quantize_per_tensor(
+            f_input, scale=scale, zero_point=zero_point, dtype=dtype
+        )
         if not contig:
             # Make non-contiguous
             new_shape = list(range(self.q_input.ndim))[::-1]
@@ -76,9 +75,11 @@ class QActivationBenchmarkBase(op_bench.TorchBenchmarkBase):
         return self.qop(self.q_input)
 
 
-op_bench.generate_pt_tests_from_op_list(qactivation_ops,
-                                        qactivation_short_configs + qactivation_long_configs,
-                                        QActivationBenchmarkBase)
+op_bench.generate_pt_tests_from_op_list(
+    qactivation_ops,
+    qactivation_short_configs + qactivation_long_configs,
+    QActivationBenchmarkBase,
+)
 
 if __name__ == "__main__":
     op_bench.benchmark_runner.main()
