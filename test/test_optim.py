@@ -1,35 +1,32 @@
-import warnings
+import functools
 import math
 import unittest
-import functools
+import warnings
 from copy import deepcopy
+
 import torch
-from torch._six import inf
-import torch.optim as optim
 import torch.nn.functional as F
-from torch.optim import SGD
-from torch.autograd import Variable
+import torch.optim as optim
 from torch import sparse
-from torch.optim.lr_scheduler import (
-    LambdaLR,
-    MultiplicativeLR,
-    StepLR,
-    MultiStepLR,
-    ExponentialLR,
-    CosineAnnealingLR,
-    ReduceLROnPlateau,
-    _LRScheduler,
-    CyclicLR,
-    CosineAnnealingWarmRestarts,
-    OneCycleLR,
-)
-from torch.testing._internal.common_utils import (
-    TestCase,
-    run_tests,
-    TEST_WITH_UBSAN,
-    load_tests,
-    skipIfRocm,
-)
+from torch._six import inf
+from torch.autograd import Variable
+from torch.optim import SGD
+from torch.optim.lr_scheduler import _LRScheduler
+from torch.optim.lr_scheduler import CosineAnnealingLR
+from torch.optim.lr_scheduler import CosineAnnealingWarmRestarts
+from torch.optim.lr_scheduler import CyclicLR
+from torch.optim.lr_scheduler import ExponentialLR
+from torch.optim.lr_scheduler import LambdaLR
+from torch.optim.lr_scheduler import MultiplicativeLR
+from torch.optim.lr_scheduler import MultiStepLR
+from torch.optim.lr_scheduler import OneCycleLR
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+from torch.optim.lr_scheduler import StepLR
+from torch.testing._internal.common_utils import load_tests
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import skipIfRocm
+from torch.testing._internal.common_utils import TEST_WITH_UBSAN
+from torch.testing._internal.common_utils import TestCase
 
 # load_tests from common_utils is used to automatically filter tests for
 # sharding on sandcastle. This line silences flake warnings

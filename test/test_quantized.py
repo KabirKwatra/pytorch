@@ -1,31 +1,28 @@
 from __future__ import division
-from torch.testing._internal.common_quantized import (
-    _quantize,
-    _dequantize,
-    _calculate_dynamic_qparams,
-    override_quantized_engine,
-)
-from torch.testing._internal.common_utils import (
-    TEST_WITH_UBSAN,
-    TestCase,
-    run_tests,
-    IS_PPC,
-    IS_MACOS,
-)
+
+import unittest
 from builtins import round
 
 import numpy as np
-import unittest
+from hypothesis import assume
+from hypothesis import given
+from hypothesis import HealthCheck
+from hypothesis import settings
+from hypothesis import strategies as st
 
-import torch
 import torch.jit
 import torch.nn.functional as F
-from torch.nn.modules.utils import _pair
-
-from hypothesis import settings, HealthCheck
-from hypothesis import assume, given
-from hypothesis import strategies as st
 import torch.testing._internal.hypothesis_utils as hu
+from torch.nn.modules.utils import _pair
+from torch.testing._internal.common_quantized import _calculate_dynamic_qparams
+from torch.testing._internal.common_quantized import _dequantize
+from torch.testing._internal.common_quantized import _quantize
+from torch.testing._internal.common_quantized import override_quantized_engine
+from torch.testing._internal.common_utils import IS_MACOS
+from torch.testing._internal.common_utils import IS_PPC
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import TEST_WITH_UBSAN
+from torch.testing._internal.common_utils import TestCase
 
 hu.assert_deadline_disabled()
 
