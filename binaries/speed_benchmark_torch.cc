@@ -40,20 +40,22 @@ C10_DEFINE_string(
 C10_DEFINE_string(input_type, "", "Input type (uint8_t/float)");
 C10_DEFINE_string(input_file, "", "Input file");
 C10_DEFINE_bool(
-  print_output,
-  false,
-  "Whether to print output with all one input tensor.");
+    print_output,
+    false,
+    "Whether to print output with all one input tensor.");
 C10_DEFINE_int(warmup, 0, "The number of iterations to warm up.");
 C10_DEFINE_int(iter, 10, "The number of iterations to run.");
 C10_DEFINE_bool(
-  report_pep,
-  false,
-  "Whether to print performance stats for AI-PEP.");
+    report_pep,
+    false,
+    "Whether to print performance stats for AI-PEP.");
 
 C10_DEFINE_int(pytext_len, 0, "Length of input sequence.");
 
-std::vector<std::string>
-split(char separator, const std::string& string, bool ignore_empty = true) {
+std::vector<std::string> split(
+    char separator,
+    const std::string& string,
+    bool ignore_empty = true) {
   std::vector<std::string> pieces;
   std::stringstream ss(string);
   std::string item;
@@ -83,14 +85,14 @@ std::vector<std::vector<c10::IValue>> nlu_process(std::string file_path) {
 
 int main(int argc, char** argv) {
   c10::SetUsageMessage(
-    "Run speed benchmark for pytorch model.\n"
-    "Example usage:\n"
-    "./speed_benchmark_torch"
-    " --model=<model_file>"
-    " --input_dims=\"1,3,224,224\""
-    " --input_type=float"
-    " --warmup=5"
-    " --iter=20");
+      "Run speed benchmark for pytorch model.\n"
+      "Example usage:\n"
+      "./speed_benchmark_torch"
+      " --model=<model_file>"
+      " --input_dims=\"1,3,224,224\""
+      " --input_type=float"
+      " --warmup=5"
+      " --iter=20");
   if (!c10::ParseCommandLineFlags(&argc, &argv)) {
     std::cerr << "Failed to parse command line flags!" << std::endl;
     return 1;
@@ -107,7 +109,7 @@ int main(int argc, char** argv) {
       "Input dims and type should have the same number of items.");
 
   std::vector<std::vector<c10::IValue>> inputs;
-  if (input_type_list[0] == "NLUType"){
+  if (input_type_list[0] == "NLUType") {
     inputs = nlu_process(FLAGS_input_file);
   } else {
     inputs.push_back(std::vector<c10::IValue>());
@@ -166,7 +168,7 @@ int main(int argc, char** argv) {
   std::vector<float> times;
   auto millis = timer.MilliSeconds();
   for (int i = 0; i < FLAGS_iter; ++i) {
-    for (const std::vector<c10::IValue>& input: inputs) {
+    for (const std::vector<c10::IValue>& input : inputs) {
       auto start = high_resolution_clock::now();
       module.forward(input);
       auto stop = high_resolution_clock::now();
@@ -177,7 +179,9 @@ int main(int argc, char** argv) {
   millis = timer.MilliSeconds();
   if (FLAGS_report_pep) {
     for (auto t : times) {
-      std::cout << "PyTorchObserver {\"type\": \"NET\", \"unit\": \"us\", \"metric\": \"latency\", \"value\": \"" << t << "\"}" << std::endl;
+      std::cout
+          << "PyTorchObserver {\"type\": \"NET\", \"unit\": \"us\", \"metric\": \"latency\", \"value\": \""
+          << t << "\"}" << std::endl;
     }
   }
   std::cout << "Main run finished. Milliseconds per iter: "
