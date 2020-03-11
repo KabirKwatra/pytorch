@@ -1,15 +1,16 @@
-from torch.testing._internal.jit_utils import JitTestCase
+import inspect
 import os
 import sys
 import unittest
-import inspect
-from typing import List, Dict
-from textwrap import dedent
 from collections import OrderedDict
+from textwrap import dedent
+from typing import Dict
+from typing import List
 
 import torch
-from torch.testing import FileCheck
 from torch._six import PY2
+from torch.testing import FileCheck
+from torch.testing._internal.jit_utils import JitTestCase
 
 # Make the helper files in test/ importable
 pytorch_test_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))

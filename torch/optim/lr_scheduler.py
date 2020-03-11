@@ -1,13 +1,13 @@
-import types
 import math
-from torch._six import inf
-from functools import wraps
+import types
 import warnings
 import weakref
-from collections import Counter
 from bisect import bisect_right
+from collections import Counter
+from functools import wraps
 
 from .optimizer import Optimizer
+from torch._six import inf
 
 
 EPOCH_DEPRECATION_WARNING = (
