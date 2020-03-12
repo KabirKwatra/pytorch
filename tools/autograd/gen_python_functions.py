@@ -3,7 +3,6 @@
 # The bindings are generated as methods on python_variable or functions on the
 # torch._C._nn object.
 #
-
 # Code tries to stick to the following rules:
 #
 # - templates should be colocated with the functions that use them.
@@ -29,9 +28,9 @@
 #   plumb in new params whose only purpose is to fill out an error
 #   message, but use what's there
 #
-
-from collections import defaultdict
 import re
+from collections import defaultdict
+
 from .gen_variable_type import should_trace
 from .utils import write
 
