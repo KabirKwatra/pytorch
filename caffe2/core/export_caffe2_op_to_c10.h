@@ -17,18 +17,18 @@ constexpr const char* PREALLOCATED_OUTPUT_ARGNAME =
     "_caffe2_preallocated_outputs";
 
 using _CallCaffe2OpFunc = c10::List<at::Tensor>(
-                              const c10::FunctionSchema& schema,
-                              std::vector<c10::IValue>&& inputs,
-                              c10::List<at::Tensor>&& outputs);
+    const c10::FunctionSchema& schema,
+    std::vector<c10::IValue>&& inputs,
+    c10::List<at::Tensor>&& outputs);
 
 template <class Caffe2Operator>
 inline c10::List<at::Tensor> _call_caffe2_op(
     const c10::FunctionSchema& schema,
     std::vector<c10::IValue>&& inputs,
     c10::List<at::Tensor>&& outputs) {
-    Caffe2Operator op(schema, std::move(inputs), std::move(outputs));
-    op.Run();
-    return std::move(op).move_newstyle_outputs();
+  Caffe2Operator op(schema, std::move(inputs), std::move(outputs));
+  op.Run();
+  return std::move(op).move_newstyle_outputs();
 }
 
 // This function is inline in the hope that compilers optimizing for speed will
@@ -43,80 +43,80 @@ inline void _call_caffe2_op_from_c10(
     c10::Stack* stack,
     const c10::FunctionSchema& schema,
     _CallCaffe2OpFunc* call_op) {
-    // precondition: on the stack, there's one IValue for each argument of the
-    // c10 schema. The last argument is an optional tensor list that
-    // (if not ivalue::None) contains a preallocated output tensor for each
-    // operator output.
+  // precondition: on the stack, there's one IValue for each argument of the
+  // c10 schema. The last argument is an optional tensor list that
+  // (if not ivalue::None) contains a preallocated output tensor for each
+  // operator output.
 
-    // As an invariant, we don't want any autograd gradients to be tracked in
-    // Caffe2 operators.
-    at::NoGradGuard guard;
+  // As an invariant, we don't want any autograd gradients to be tracked in
+  // Caffe2 operators.
+  at::NoGradGuard guard;
 
-    AT_ASSERT(
-        schema.arguments().size() != 0 &&
-        schema.arguments().back().type()->isSubtypeOf(
-            OptionalType::create(ListType::ofTensors())));
-    IValue preallocated_outputs = torch::jit::pop(*stack);
+  AT_ASSERT(
+      schema.arguments().size() != 0 &&
+      schema.arguments().back().type()->isSubtypeOf(
+          OptionalType::create(ListType::ofTensors())));
+  IValue preallocated_outputs = torch::jit::pop(*stack);
 
-    const size_t num_outputs = schema.returns().size();
-    const size_t num_inputs = schema.arguments().size() -
-                              1; // -1 because the last argument is the list of preallocated tensors
+  const size_t num_outputs = schema.returns().size();
+  const size_t num_inputs = schema.arguments().size() -
+      1; // -1 because the last argument is the list of preallocated tensors
 
-    c10::List<at::Tensor> outputs;
-    if (preallocated_outputs.isNone()) {
-        // either the schema doesn't support preallocated outputs or it does but
-        // they haven't been passed in. Pass a list of uninitialized tensors to
-        // the caffe2 operator as preallocated outputs.
-        outputs.resize(num_outputs);
-    } else {
-        AT_ASSERT(preallocated_outputs.isTensorList());
-        outputs = std::move(preallocated_outputs).toTensorList();
-    }
+  c10::List<at::Tensor> outputs;
+  if (preallocated_outputs.isNone()) {
+    // either the schema doesn't support preallocated outputs or it does but
+    // they haven't been passed in. Pass a list of uninitialized tensors to
+    // the caffe2 operator as preallocated outputs.
+    outputs.resize(num_outputs);
+  } else {
+    AT_ASSERT(preallocated_outputs.isTensorList());
+    outputs = std::move(preallocated_outputs).toTensorList();
+  }
 
-    // TODO Avoid vector allocation. One idea would be to keep the std::vector
-    // instances in the cache.
-    std::vector<IValue> inputs = torch::jit::pop(*stack, num_inputs);
+  // TODO Avoid vector allocation. One idea would be to keep the std::vector
+  // instances in the cache.
+  std::vector<IValue> inputs = torch::jit::pop(*stack, num_inputs);
 
-    outputs = (*call_op)(schema, std::move(inputs), std::move(outputs));
+  outputs = (*call_op)(schema, std::move(inputs), std::move(outputs));
 
-    for (size_t i = 0; i < outputs.size(); ++i) {
-        torch::jit::push(*stack, outputs.extract(i));
-    }
+  for (size_t i = 0; i < outputs.size(); ++i) {
+    torch::jit::push(*stack, outputs.extract(i));
+  }
 
-    // postcondition: All inputs are cleared from the stack, there's now one
-    //                IValue for each output which holds the result. This
-    //                might reuse one of the preallocated tensors but doesn't have
-    //                to.
+  // postcondition: All inputs are cleared from the stack, there's now one
+  //                IValue for each output which holds the result. This
+  //                might reuse one of the preallocated tensors but doesn't have
+  //                to.
 }
 
 template <const c10::FunctionSchema& (*Schema)(), class Caffe2Operator>
 void call_caffe2_op_from_c10(
     const c10::OperatorHandle& /*opHandle*/,
     c10::Stack* stack) {
-    _call_caffe2_op_from_c10(stack, Schema(), &_call_caffe2_op<Caffe2Operator>);
+  _call_caffe2_op_from_c10(stack, Schema(), &_call_caffe2_op<Caffe2Operator>);
 }
 
 inline FunctionSchema make_function_schema_for_c10(const char* schema_str) {
 #if !defined(EXPOSE_C2_OPS) && \
     (defined(CAFFE2_IS_XPLAT_BUILD) || defined(C10_MOBILE))
-    throw std::logic_error(
-        "We don't support registering c10 ops on mobile yet because the function schema parser isn't present in the mobile build.");
+  throw std::logic_error(
+      "We don't support registering c10 ops on mobile yet because the function schema parser isn't present in the mobile build.");
 #else
-    c10::FunctionSchema parsed_schema = torch::jit::parseSchema(schema_str);
-    std::vector<c10::Argument> arguments = parsed_schema.arguments();
-    arguments.emplace_back(
-        PREALLOCATED_OUTPUT_ARGNAME,
-        c10::OptionalType::create(c10::ListType::ofTensors()),
-        nullopt,
-        IValue());
+  c10::FunctionSchema parsed_schema = torch::jit::parseSchema(schema_str);
+  std::vector<c10::Argument> arguments = parsed_schema.arguments();
+  arguments.emplace_back(
+      PREALLOCATED_OUTPUT_ARGNAME,
+      c10::OptionalType::create(c10::ListType::ofTensors()),
+      nullopt,
+      IValue());
 
-    return FunctionSchema(
-               parsed_schema.name(),
-               parsed_schema.overload_name(),
-               std::move(arguments),
-               parsed_schema.returns(),
-               parsed_schema.is_vararg(),
-               parsed_schema.is_varret());
+  return FunctionSchema(
+      parsed_schema.name(),
+      parsed_schema.overload_name(),
+      std::move(arguments),
+      parsed_schema.returns(),
+      parsed_schema.is_vararg(),
+      parsed_schema.is_varret());
 #endif
 }
 
