@@ -63,113 +63,113 @@ using OperationCreator = Operation (*)(const Node*);
  */
 
 struct TORCH_API Operator {
-  Operator(c10::OperatorHandle opHandle, Operation operation)
-      : schema_(std::make_shared<FunctionSchema>(opHandle.schema())),
-        op_(std::make_shared<Operation>(std::move(operation))),
-        c10Handle_(opHandle) {}
+    Operator(c10::OperatorHandle opHandle, Operation operation)
+        : schema_(std::make_shared<FunctionSchema>(opHandle.schema())),
+          op_(std::make_shared<Operation>(std::move(operation))),
+          c10Handle_(opHandle) {}
 
 
-  Operator(
-      const std::string& schema,
-      int(*op)(Stack&),
-      c10::AliasAnalysisKind alias_analysis)
-      : schema_string_(schema),
-        alias_analysis_(alias_analysis),
-        op_(std::make_shared<Operation>(std::move(op))) {}
+    Operator(
+        const std::string& schema,
+        int(*op)(Stack&),
+        c10::AliasAnalysisKind alias_analysis)
+        : schema_string_(schema),
+          alias_analysis_(alias_analysis),
+          op_(std::make_shared<Operation>(std::move(op))) {}
 
 
-  Operator(
-      const std::string& schema,
-      OperationCreator op_creator,
-      c10::AliasAnalysisKind alias_analysis)
-      : schema_string_(schema),
-        alias_analysis_(alias_analysis),
-        op_creator_(std::move(op_creator)) {}
+    Operator(
+        const std::string& schema,
+        OperationCreator op_creator,
+        c10::AliasAnalysisKind alias_analysis)
+        : schema_string_(schema),
+          alias_analysis_(alias_analysis),
+          op_creator_(std::move(op_creator)) {}
 
-  // Helper constructor to register `op` to run
-  // run for _every_ IR Node where n.kind() == name, regardless of arguments.
-  // This is accomplished by marking the schema varargs and having no required
-  // arguments.
-  Operator(
-      Symbol name,
-      OperationCreator op_creator,
-      c10::AliasAnalysisKind alias_analysis)
-      : schema_(std::make_shared<FunctionSchema>(varArgSchemaWithName(name))),
-        op_creator_(std::move(op_creator)) {
-    schema_->setAliasAnalysis(alias_analysis);
-  }
-
-  Operation getOperation(const Node* node = nullptr) const {
-    if (op_) {
-      return *op_;
+    // Helper constructor to register `op` to run
+    // run for _every_ IR Node where n.kind() == name, regardless of arguments.
+    // This is accomplished by marking the schema varargs and having no required
+    // arguments.
+    Operator(
+        Symbol name,
+        OperationCreator op_creator,
+        c10::AliasAnalysisKind alias_analysis)
+        : schema_(std::make_shared<FunctionSchema>(varArgSchemaWithName(name))),
+          op_creator_(std::move(op_creator)) {
+        schema_->setAliasAnalysis(alias_analysis);
     }
-    AT_ASSERT(node != nullptr);
-    return op_creator_(node);
-  }
 
-  const FunctionSchema& schema() const {
-    // we lazily parse schema initialized from strings so that
-    // we do less work during static operator registration
-    if (!schema_) {
-      schema_ =
-          std::make_shared<FunctionSchema>(parseSchema(schema_string_.value()));
-      if (alias_analysis_.has_value()) {
-        schema_->setAliasAnalysis(*alias_analysis_);
-      }
-      schema_string_ = c10::nullopt;
-      alias_analysis_ = c10::nullopt;
+    Operation getOperation(const Node* node = nullptr) const {
+        if (op_) {
+            return *op_;
+        }
+        AT_ASSERT(node != nullptr);
+        return op_creator_(node);
     }
-    return *schema_;
-  }
 
-  bool isC10Op() const {
-    return c10Handle_.has_value();
-  }
-
-  c10::AliasAnalysisKind aliasAnalysisKind() const {
-    if (isC10Op()) {
-      const FunctionSchema& schemaRef = schema();
-      TORCH_CHECK(
-          schemaRef.aliasAnalysis() == AliasAnalysisKind::FROM_SCHEMA ||
-              !schemaRef.hasAnyAliasInfo(),
-          "In operator registration: Tried to register operator ",
-          schemaRef,
-          " with aliasing information in the schema but without AliasAnalysisKind::FROM_SCHEMA.");
+    const FunctionSchema& schema() const {
+        // we lazily parse schema initialized from strings so that
+        // we do less work during static operator registration
+        if (!schema_) {
+            schema_ =
+                std::make_shared<FunctionSchema>(parseSchema(schema_string_.value()));
+            if (alias_analysis_.has_value()) {
+                schema_->setAliasAnalysis(*alias_analysis_);
+            }
+            schema_string_ = c10::nullopt;
+            alias_analysis_ = c10::nullopt;
+        }
+        return *schema_;
     }
-    return schema().aliasAnalysis();
-  }
-  bool hasOperation() const {
-    return op_ != nullptr;
-  }
- private:
-  static FunctionSchema varArgSchemaWithName(Symbol name) {
-    return FunctionSchema(
-        name,
-        "",
-        {},
-        {},
-        /*is_vararg*/ true,
-        /*is_varret*/ true);
-  }
-  mutable c10::optional<std::string> schema_string_;
-  // cannot use c10::optional because windows has issues that require an
-  // assignment operator to be generated cannot use std::unique_ptr because
-  // initializer lists of Operators end up copying the Operator
-  mutable std::shared_ptr<FunctionSchema> schema_;
-  mutable c10::optional<c10::AliasAnalysisKind> alias_analysis_;
 
-  // Essentially a variant<Operation, OperationCreator>.
-  // NB: std::function has a default state (where it == nullptr).
-  std::shared_ptr<Operation> op_;
-  OperationCreator op_creator_;
-  c10::optional<c10::OperatorHandle> c10Handle_;
+    bool isC10Op() const {
+        return c10Handle_.has_value();
+    }
+
+    c10::AliasAnalysisKind aliasAnalysisKind() const {
+        if (isC10Op()) {
+            const FunctionSchema& schemaRef = schema();
+            TORCH_CHECK(
+                schemaRef.aliasAnalysis() == AliasAnalysisKind::FROM_SCHEMA ||
+                !schemaRef.hasAnyAliasInfo(),
+                "In operator registration: Tried to register operator ",
+                schemaRef,
+                " with aliasing information in the schema but without AliasAnalysisKind::FROM_SCHEMA.");
+        }
+        return schema().aliasAnalysis();
+    }
+    bool hasOperation() const {
+        return op_ != nullptr;
+    }
+private:
+    static FunctionSchema varArgSchemaWithName(Symbol name) {
+        return FunctionSchema(
+                   name,
+                   "",
+                   {},
+                   {},
+                   /*is_vararg*/ true,
+                   /*is_varret*/ true);
+    }
+    mutable c10::optional<std::string> schema_string_;
+    // cannot use c10::optional because windows has issues that require an
+    // assignment operator to be generated cannot use std::unique_ptr because
+    // initializer lists of Operators end up copying the Operator
+    mutable std::shared_ptr<FunctionSchema> schema_;
+    mutable c10::optional<c10::AliasAnalysisKind> alias_analysis_;
+
+    // Essentially a variant<Operation, OperationCreator>.
+    // NB: std::function has a default state (where it == nullptr).
+    std::shared_ptr<Operation> op_;
+    OperationCreator op_creator_;
+    c10::optional<c10::OperatorHandle> c10Handle_;
 };
 
 TORCH_API std::string canonicalSchemaString(const FunctionSchema& schema);
 
 TORCH_API const std::vector<std::shared_ptr<Operator>> getAllOperators();
 TORCH_API const std::vector<std::shared_ptr<Operator>>& getAllOperatorsFor(
-    Symbol name);
+            Symbol name);
 
 // given a operator with an overload name, find the specific operator related to it,
 // may return nullptr if no operator exists.
