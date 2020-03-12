@@ -209,6 +209,7 @@ TORCH_NN_MODULE_IGNORED_ATTRS = {
     '_state_dict_hooks', '_load_state_dict_pre_hooks', '_modules', 'training',
 }
 
+
 class TestCppApiParity(common.TestCase):
     def _python_arg_to_cpp_arg(self, python_arg):
         if type(python_arg) == int:
@@ -363,7 +364,8 @@ class TestCppApiParity(common.TestCase):
             input_args = self._get_forward_input_args(test_params)
             input_arg_types = [self._python_arg_to_cpp_arg(arg).type for arg in list(input_args)]
             input_args = ['arg{}'.format(str(i)) for i in range(len(input_arg_types))]
-            input_arg_declarations = ['{} {}'.format(arg_type, arg_name) for arg_type, arg_name in zip(input_arg_types, input_args)]
+            input_arg_declarations = ['{} {}'.format(arg_type, arg_name)
+                                      for arg_type, arg_name in zip(input_arg_types, input_args)]
             test_cpp_sources = template.substitute(
                 module_variant_name=test_params.module_variant_name,
                 module_qualified_name='torch::nn::{}'.format(test_params.module_name),
@@ -597,13 +599,16 @@ def _process_test_params(test_params_dict, module_metadata, device, is_criterion
         device=device,
     )
 
+
 def has_test(test_name):
     return hasattr(TestCppApiParity, test_name)
+
 
 def add_test(test_name, test_fn):
     if has_test(test_name):
         raise RuntimeError("Found two tests with the same name: " + test_name)
     setattr(TestCppApiParity, test_name, test_fn)
+
 
 devices = ['cpu', 'cuda']
 
@@ -669,6 +674,7 @@ def add_torch_nn_module_tests(module_tests, is_criterion):
 
         add_ctor_args_test_for_module(module_name, has_impl_parity)
         add_variant_test_for_module(module_name, test_params_dict, has_impl_parity)
+
 
 add_torch_nn_module_tests(
     sample_module.module_tests + common_nn.module_tests + common_nn.new_module_tests,
