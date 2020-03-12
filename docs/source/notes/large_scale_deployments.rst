@@ -67,7 +67,7 @@ Here's an example:
     }
 
     void onFunctionEnter(const RecordFunction& fn) {
-        std::cerr << "Before function " << fn.name() 
+        std::cerr << "Before function " << fn.name()
                   << " with " << fn.inputs().size() << " inputs" << std::endl;
     }
 
