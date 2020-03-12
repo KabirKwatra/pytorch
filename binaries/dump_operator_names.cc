@@ -25,28 +25,28 @@
 namespace torch {
 namespace jit {
 void dump_opnames(const Module& m, std::unordered_set<std::string>& opnames) {
-  auto methods = m.get_methods();
-  for (const auto& method : methods) {
-    const auto& func = method.function();
-    std::cout << "function name: " << func.name() << std::endl;
-    torch::jit::Code code(func.graph(), "");
-    for (size_t i = 0; i < code.instructions().size(); ++i) {
-      auto ins = code.instructions()[i];
-      auto node = code.instructions_source()[i];
-      if (ins.op == OpCode::OP) {
-        auto opname = node->schema().operator_name();
-        std::string namestr = opname.name;
-        if (!opname.overload_name.empty())
-          namestr += "." + opname.overload_name;
-        std::cout << "    " << namestr << std::endl;
-        opnames.emplace(namestr);
-      }
+    auto methods = m.get_methods();
+    for (const auto& method : methods) {
+        const auto& func = method.function();
+        std::cout << "function name: " << func.name() << std::endl;
+        torch::jit::Code code(func.graph(), "");
+        for (size_t i = 0; i < code.instructions().size(); ++i) {
+            auto ins = code.instructions()[i];
+            auto node = code.instructions_source()[i];
+            if (ins.op == OpCode::OP) {
+                auto opname = node->schema().operator_name();
+                std::string namestr = opname.name;
+                if (!opname.overload_name.empty())
+                    namestr += "." + opname.overload_name;
+                std::cout << "    " << namestr << std::endl;
+                opnames.emplace(namestr);
+            }
+        }
     }
-  }
-  for (const auto& sub_m : m.children()) {
-    std::cout << "sub module name: " << sub_m.type()->name()->qualifiedName() << std::endl;
-    dump_opnames(sub_m, opnames);
-  }
+    for (const auto& sub_m : m.children()) {
+        std::cout << "sub module name: " << sub_m.type()->name()->qualifiedName() << std::endl;
+        dump_opnames(sub_m, opnames);
+    }
 }
 }
 }
@@ -55,29 +55,29 @@ C10_DEFINE_string(model, "", "The given torch script model.");
 C10_DEFINE_string(output, "", "The output yaml file of operator list.");
 
 int main(int argc, char** argv) {
-  c10::SetUsageMessage(
-    "Dump operators in a script module and its sub modules.\n"
-    "Example usage:\n"
-    "./dump_operator_names"
-    " --model=<model_file>"
-    " --output=<output.yaml>");
+    c10::SetUsageMessage(
+        "Dump operators in a script module and its sub modules.\n"
+        "Example usage:\n"
+        "./dump_operator_names"
+        " --model=<model_file>"
+        " --output=<output.yaml>");
 
-  if (!c10::ParseCommandLineFlags(&argc, &argv)) {
-    std::cerr << "Failed to parse command line flags!" << std::endl;
-    return 1;
-  }
+    if (!c10::ParseCommandLineFlags(&argc, &argv)) {
+        std::cerr << "Failed to parse command line flags!" << std::endl;
+        return 1;
+    }
 
-  CAFFE_ENFORCE_GE(FLAGS_model.size(), 0, "Model file must be specified.");
-  CAFFE_ENFORCE_GE(FLAGS_output.size(), 0, "Output yaml file must be specified.");
+    CAFFE_ENFORCE_GE(FLAGS_model.size(), 0, "Model file must be specified.");
+    CAFFE_ENFORCE_GE(FLAGS_output.size(), 0, "Output yaml file must be specified.");
 
-  auto m = torch::jit::load(FLAGS_model);
-  std::unordered_set<std::string> opnames;
-  torch::jit::dump_opnames(m, opnames);
-  std::ofstream ofile(FLAGS_output);
-  std::cout << "-- Final List --" << std::endl;
-  for (const auto& name : opnames) {
-    std::cout << name << std::endl;
-    ofile << "- " << name << std::endl;
-  }
-  ofile.close();
+    auto m = torch::jit::load(FLAGS_model);
+    std::unordered_set<std::string> opnames;
+    torch::jit::dump_opnames(m, opnames);
+    std::ofstream ofile(FLAGS_output);
+    std::cout << "-- Final List --" << std::endl;
+    for (const auto& name : opnames) {
+        std::cout << name << std::endl;
+        ofile << "- " << name << std::endl;
+    }
+    ofile.close();
 }

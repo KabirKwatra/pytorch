@@ -27,13 +27,13 @@ TORCH_API std::vector<GraphPass>& getCustomPostFusionPasses();
 TORCH_API std::vector<GraphPass>& getCustomPreFusionPasses();
 
 struct TORCH_API RegisterPostFusionPass {
-  RegisterPostFusionPass(GraphPass p);
+    RegisterPostFusionPass(GraphPass p);
 };
 
 using RegisterPass = RegisterPostFusionPass;
 
 struct TORCH_API RegisterPreFusionPass {
-  RegisterPreFusionPass(GraphPass p);
+    RegisterPreFusionPass(GraphPass p);
 };
 
 } // namespace jit

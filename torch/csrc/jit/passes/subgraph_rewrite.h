@@ -43,54 +43,54 @@ TORCH_API Module PatternBasedRewrite(const Module& module);
  * `RegisterRewritePattern`.
  */
 class TORCH_API SubgraphRewriter {
- public:
-  // Run pattern-based subgraph rewrite pass on the module.
-  Module runOnModule(const Module& module);
+public:
+    // Run pattern-based subgraph rewrite pass on the module.
+    Module runOnModule(const Module& module);
 
-  // Run pattern-based subgraph rewrite pass on the graph (used in testing).
-  // filter is a function that does extra filtering on the match, if it returns
-  // false for a given Match, we'll skip the match
-  // filter function takes a `Match` and a value map from parsing the pattern graph
-  // since we need to do extra filtering on the matched result but we need to refer
-  // to the values in the matched result through the values in pattern graph.
-  void runOnGraph(
-      std::shared_ptr<Graph>& graph,
-      const std::function<
-          bool(const Match&, const std::unordered_map<std::string, Value*>&)>&
-          filter =
-              [](const Match&, const std::unordered_map<std::string, Value*>&) {
-                return true;
-              });
+    // Run pattern-based subgraph rewrite pass on the graph (used in testing).
+    // filter is a function that does extra filtering on the match, if it returns
+    // false for a given Match, we'll skip the match
+    // filter function takes a `Match` and a value map from parsing the pattern graph
+    // since we need to do extra filtering on the matched result but we need to refer
+    // to the values in the matched result through the values in pattern graph.
+    void runOnGraph(
+        std::shared_ptr<Graph>& graph,
+        const std::function<
+        bool(const Match&, const std::unordered_map<std::string, Value*>&)>&
+        filter =
+    [](const Match&, const std::unordered_map<std::string, Value*>&) {
+        return true;
+    });
 
-  // Register standard rewrite patterns.
-  void RegisterDefaultPatterns();
+    // Register standard rewrite patterns.
+    void RegisterDefaultPatterns();
 
-  /** Register a custom rewrite pattern.
-   *
-   * The method takes two parameters specifying the pattern:
-   * \p PATTERN - IR string representing the pattern subgraph.
-   * \p REPLACEMENT - IR stringn representing the replacement subgraph.
-   *
-   * See examples of pattern registering in `RegisterDefaultPatterns`.
-   */
-  void RegisterRewritePattern(
-      const std::string& pattern,
-      const std::string& replacement);
+    /** Register a custom rewrite pattern.
+     *
+     * The method takes two parameters specifying the pattern:
+     * \p PATTERN - IR string representing the pattern subgraph.
+     * \p REPLACEMENT - IR stringn representing the replacement subgraph.
+     *
+     * See examples of pattern registering in `RegisterDefaultPatterns`.
+     */
+    void RegisterRewritePattern(
+        const std::string& pattern,
+        const std::string& replacement);
 
- private:
-  std::vector<RewritePatternDescr> patterns_;
-  std::unordered_set<Node*> nodes_to_delete_;
+private:
+    std::vector<RewritePatternDescr> patterns_;
+    std::unordered_set<Node*> nodes_to_delete_;
 
-  void rewriteSinglePatternOnGraph(
-      std::shared_ptr<Graph>& graph,
-      const RewritePatternDescr& pattern,
-      const std::function<
-          bool(const Match&, const std::unordered_map<std::string, Value*>&)>&
-          filter =
-              [](const Match&, const std::unordered_map<std::string, Value*>&) {
-                return true;
-              });
-  bool overlapsWithPreviousMatches(const Match* match);
+    void rewriteSinglePatternOnGraph(
+        std::shared_ptr<Graph>& graph,
+        const RewritePatternDescr& pattern,
+        const std::function<
+        bool(const Match&, const std::unordered_map<std::string, Value*>&)>&
+        filter =
+    [](const Match&, const std::unordered_map<std::string, Value*>&) {
+        return true;
+    });
+    bool overlapsWithPreviousMatches(const Match* match);
 };
 
 /** Rewrite pattern descriptor.
@@ -99,8 +99,8 @@ class TORCH_API SubgraphRewriter {
  * supposed to be used externally.
  */
 struct RewritePatternDescr {
-  std::string pattern;
-  std::string replacement;
+    std::string pattern;
+    std::string replacement;
 };
 
 } // namespace jit

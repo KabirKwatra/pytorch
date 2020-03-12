@@ -225,7 +225,7 @@ C10_EXPORT double strtod_c(const char *nptr, char **endptr)
         if (fail_pos)
         {
             fail_pos = (char *)digits_pos +
-                (fail_pos - copy);
+                       (fail_pos - copy);
         }
 
         free(copy);
@@ -250,9 +250,9 @@ invalid_string:
 }
 #else
 C10_EXPORT double strtod_c(const char* nptr, char** endptr) {
-  /// NOLINTNEXTLINE(hicpp-signed-bitwise)
-  static locale_t loc = newlocale(LC_ALL_MASK, "C", nullptr);
-  return strtod_l(nptr, endptr, loc);
+    /// NOLINTNEXTLINE(hicpp-signed-bitwise)
+    static locale_t loc = newlocale(LC_ALL_MASK, "C", nullptr);
+    return strtod_l(nptr, endptr, loc);
 }
 #endif
 

@@ -7,7 +7,7 @@ namespace torch {
 namespace jit {
 
 auto scalar_operators_source = CodeTemplate(
-    R"SCRIPT(
+                                   R"SCRIPT(
 def mul(a : ${Scalar}, b : Tensor) -> Tensor:
   return b * a
 def add(a : ${Scalar}, b : Tensor) -> Tensor:

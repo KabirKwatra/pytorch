@@ -12,25 +12,25 @@ namespace torch {
 namespace jit {
 
 void testConstantPooling() {
-  {
-    auto graph = std::make_shared<Graph>();
-    parseIR(
-        R"IR(
+    {
+        auto graph = std::make_shared<Graph>();
+        parseIR(
+            R"IR(
 graph():
   %8 : int = prim::Constant[value=1]()
   %10 : int = prim::Constant[value=1]()
   return (%8, %10)
   )IR",
-        &*graph);
-    ConstantPooling(graph);
-    testing::FileCheck()
+            &*graph);
+        ConstantPooling(graph);
+        testing::FileCheck()
         .check_count("prim::Constant", 1, /*exactly*/ true)
         ->run(*graph);
-  }
-  {
-    auto graph = std::make_shared<Graph>();
-    parseIR(
-        R"IR(
+    }
+    {
+        auto graph = std::make_shared<Graph>();
+        parseIR(
+            R"IR(
 graph(%cond : Tensor):
   %a : str = prim::Constant[value="bcd"]()
   %3 : bool = aten::Bool(%cond)
@@ -44,17 +44,17 @@ graph(%cond : Tensor):
   %7 : (str, str) = prim::TupleConstruct(%a, %b)
   return (%7)
   )IR",
-        &*graph);
-    ConstantPooling(graph);
-    testing::FileCheck()
+            &*graph);
+        ConstantPooling(graph);
+        testing::FileCheck()
         .check_count("prim::Constant[value=\"abc\"]", 1, /*exactly*/ true)
         ->check_count("prim::Constant[value=\"bcd\"]", 1, /*exactly*/ true)
         ->run(*graph);
-  }
-  {
-    auto graph = std::make_shared<Graph>();
-    parseIR(
-        R"IR(
+    }
+    {
+        auto graph = std::make_shared<Graph>();
+        parseIR(
+            R"IR(
 graph():
   %2 : int = prim::Constant[value=2]()
   %1 : int = prim::Constant[value=1]()
@@ -70,16 +70,16 @@ graph():
   prim::Print(%x, %y, %z)
   return (%1)
   )IR",
-        &*graph);
-    // three tensors created - two different devices among the three
-    // don't have good support for parsing tensor constants
-    ConstantPropagation(graph);
-    ConstantPooling(graph);
-    testing::FileCheck()
+            &*graph);
+        // three tensors created - two different devices among the three
+        // don't have good support for parsing tensor constants
+        ConstantPropagation(graph);
+        ConstantPooling(graph);
+        testing::FileCheck()
         .check_count("Float(2) = prim::Constant", 1, /*exactly*/ true)
         ->check_count("Long(2) = prim::Constant", 1, /*exactly*/ true)
         ->run(*graph);
-  }
+    }
 }
 } // namespace jit
 } // namespace torch

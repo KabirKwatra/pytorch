@@ -4,21 +4,21 @@ namespace torch {
 namespace jit {
 
 std::vector<GraphPass>& getCustomPostFusionPasses() {
-  static std::vector<GraphPass> passes;
-  return passes;
+    static std::vector<GraphPass> passes;
+    return passes;
 }
 
 std::vector<GraphPass>& getCustomPreFusionPasses() {
-  static std::vector<GraphPass> passes;
-  return passes;
+    static std::vector<GraphPass> passes;
+    return passes;
 }
 
 RegisterPostFusionPass::RegisterPostFusionPass(GraphPass p) {
-  getCustomPostFusionPasses().emplace_back(std::move(p));
+    getCustomPostFusionPasses().emplace_back(std::move(p));
 }
 
 RegisterPreFusionPass::RegisterPreFusionPass(GraphPass p) {
-  getCustomPreFusionPasses().emplace_back(std::move(p));
+    getCustomPreFusionPasses().emplace_back(std::move(p));
 }
 
 } // namespace jit
