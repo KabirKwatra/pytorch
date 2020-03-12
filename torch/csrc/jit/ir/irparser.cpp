@@ -1,8 +1,8 @@
-#include <torch/csrc/jit/ir/irparser.h>
-#include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/frontend/lexer.h>
 #include <torch/csrc/jit/frontend/parse_string_literal.h>
 #include <torch/csrc/jit/frontend/schema_type_parser.h>
+#include <torch/csrc/jit/ir/ir.h>
+#include <torch/csrc/jit/ir/irparser.h>
 
 #include <string>
 #include <vector>
@@ -150,7 +150,7 @@ ParsedLiteral IRParser::parseScalarLiteral(Node* n) {
       str = "-";
       L.next();
       L.expect(TK_NUMBER);
-      // Fallthrough
+    // Fallthrough
     case TK_NUMBER:
       str += L.cur().text();
 

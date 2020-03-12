@@ -3,9 +3,9 @@
 #include <c10/util/C++17.h>
 #include <c10/util/Exception.h>
 #include <torch/csrc/WindowsTorchApiMacro.h>
-#include <torch/csrc/jit/frontend/strtod.h>
 #include <torch/csrc/jit/frontend/parser_constants.h>
 #include <torch/csrc/jit/frontend/source_range.h>
+#include <torch/csrc/jit/frontend/strtod.h>
 #include <algorithm>
 #include <clocale>
 #include <cstdlib>
@@ -240,7 +240,7 @@ struct CAFFE2_API SharedParserData {
       const std::string& str,
       size_t pos,
       bool continuation, // are we inside a scope where newlines don't count
-                         // (e.g. inside parens)
+      // (e.g. inside parens)
       bool whitespace_token, // should we treat whitespace as a token
       int* kind,
       size_t* start,

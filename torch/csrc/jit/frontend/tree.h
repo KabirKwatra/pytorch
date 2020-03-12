@@ -5,9 +5,9 @@
 #include <unordered_map>
 #include <vector>
 
-#include <torch/csrc/jit/frontend/lexer.h>
-#include <c10/util/intrusive_ptr.h>
 #include <c10/util/SmallVector.h>
+#include <c10/util/intrusive_ptr.h>
+#include <torch/csrc/jit/frontend/lexer.h>
 
 namespace torch {
 namespace jit {
@@ -57,9 +57,9 @@ struct Tree : c10::intrusive_ptr_target {
   virtual TreeRef map(const std::function<TreeRef(TreeRef)>& fn) {
     (void)fn;
     c10::raw::intrusive_ptr::incref(this); // we are creating a new pointer
-                                           // from a raw `this` pointer
-                                           // so we need to bump the refcount
-                                           // to account for this ownership
+    // from a raw `this` pointer
+    // so we need to bump the refcount
+    // to account for this ownership
     return TreeRef::reclaim(this);
   }
   template <typename... Args>

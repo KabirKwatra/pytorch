@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
+#include <c10/util/Flags.h>
 #include <torch/csrc/jit/api/module.h>
 #include <torch/csrc/jit/mobile/module.h>
-#include <torch/csrc/jit/serialization/import.h>
 #include <torch/csrc/jit/runtime/instruction.h>
-#include <c10/util/Flags.h>
+#include <torch/csrc/jit/serialization/import.h>
 
 #include <fstream>
 
@@ -44,23 +44,24 @@ void dump_opnames(const Module& m, std::unordered_set<std::string>& opnames) {
     }
   }
   for (const auto& sub_m : m.children()) {
-    std::cout << "sub module name: " << sub_m.type()->name()->qualifiedName() << std::endl;
+    std::cout << "sub module name: " << sub_m.type()->name()->qualifiedName()
+              << std::endl;
     dump_opnames(sub_m, opnames);
   }
 }
-}
-}
+} // namespace jit
+} // namespace torch
 
 C10_DEFINE_string(model, "", "The given torch script model.");
 C10_DEFINE_string(output, "", "The output yaml file of operator list.");
 
 int main(int argc, char** argv) {
   c10::SetUsageMessage(
-    "Dump operators in a script module and its sub modules.\n"
-    "Example usage:\n"
-    "./dump_operator_names"
-    " --model=<model_file>"
-    " --output=<output.yaml>");
+      "Dump operators in a script module and its sub modules.\n"
+      "Example usage:\n"
+      "./dump_operator_names"
+      " --model=<model_file>"
+      " --output=<output.yaml>");
 
   if (!c10::ParseCommandLineFlags(&argc, &argv)) {
     std::cerr << "Failed to parse command line flags!" << std::endl;
@@ -68,7 +69,8 @@ int main(int argc, char** argv) {
   }
 
   CAFFE_ENFORCE_GE(FLAGS_model.size(), 0, "Model file must be specified.");
-  CAFFE_ENFORCE_GE(FLAGS_output.size(), 0, "Output yaml file must be specified.");
+  CAFFE_ENFORCE_GE(
+      FLAGS_output.size(), 0, "Output yaml file must be specified.");
 
   auto m = torch::jit::load(FLAGS_model);
   std::unordered_set<std::string> opnames;

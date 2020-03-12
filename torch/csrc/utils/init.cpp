@@ -44,8 +44,6 @@ void initThroughputBenchmarkBindings(PyObject* module) {
         pybind11::gil_scoped_release no_gil_guard;
         return self.benchmark(config);
       });
-
-
 }
 
 } // namespace throughput_benchmark

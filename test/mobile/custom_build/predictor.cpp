@@ -2,9 +2,9 @@
 // a forward pass with fixed input `torch::ones({1, 3, 224, 224})`.
 // It's used for end-to-end integration test for custom mobile build.
 
+#include <torch/script.h>
 #include <iostream>
 #include <string>
-#include <torch/script.h>
 
 using namespace std;
 

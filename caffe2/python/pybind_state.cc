@@ -498,7 +498,7 @@ void addObjectMethods(py::module& m) {
             *t = TensorFeeder<CPUContext>().FeedTensor(
                 DeviceOption{}, reinterpret_cast<PyArrayObject*>(obj.ptr()));
 #else
-            CAFFE_THROW("Caffe2 compiled without NumPy support.");
+        CAFFE_THROW("Caffe2 compiled without NumPy support.");
 #endif // USE_NUMPY
           },
           "Copy data from given numpy array into this tensor.")
@@ -1842,7 +1842,7 @@ void addGlobalMethods(py::module& m) {
       import_array1();
     })();
 #endif // USE_NUMPY
-    // Single threaded, so safe
+       // Single threaded, so safe
     static bool initialized = false;
     if (initialized) {
       return;

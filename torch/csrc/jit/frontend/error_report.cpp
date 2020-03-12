@@ -1,5 +1,5 @@
-#include <torch/csrc/jit/frontend/error_report.h>
 #include <c10/util/Optional.h>
+#include <torch/csrc/jit/frontend/error_report.h>
 #include <torch/csrc/jit/frontend/tree.h>
 #include <torch/csrc/utils/memory.h>
 
@@ -33,17 +33,13 @@ ErrorReport::CallStack::~CallStack() {
   calls.pop_back();
 }
 #else // defined C10_MOBILE
-ErrorReport::ErrorReport(SourceRange r)
-    : context(std::move(r)) {}
+ErrorReport::ErrorReport(SourceRange r) : context(std::move(r)) {}
 
-void ErrorReport::CallStack::update_pending_range(const SourceRange& range) {
-}
+void ErrorReport::CallStack::update_pending_range(const SourceRange& range) {}
 
-ErrorReport::CallStack::CallStack(const std::string& name) {
-}
+ErrorReport::CallStack::CallStack(const std::string& name) {}
 
-ErrorReport::CallStack::~CallStack() {
-}
+ErrorReport::CallStack::~CallStack() {}
 #endif // C10_MOBILE
 
 const char* ErrorReport::what() const noexcept {

@@ -1,13 +1,13 @@
 #pragma once
 
 #include <ATen/core/ivalue.h>
-#include <torch/csrc/jit/api/module.h>
 #include <pybind11/pybind11.h>
+#include <torch/csrc/jit/api/module.h>
 
 #include <torch/csrc/jit/python/pybind_utils.h>
 
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace py = pybind11;
 
@@ -58,9 +58,9 @@ namespace detail {
  */
 template <class Input, class Output, class Model>
 class BenchmarkHelper {
-public:
+ public:
   BenchmarkHelper();
-  explicit BenchmarkHelper(Model model): model_(model), initialized_(true) {}
+  explicit BenchmarkHelper(Model model) : model_(model), initialized_(true) {}
 
   // This method to be used in benchmark() method
   // Note that there is no result. This way we don't have to call this under GIL
@@ -74,7 +74,9 @@ public:
   void addInput(py::args&&, py::kwargs&&);
   BenchmarkExecutionStats benchmark(const BenchmarkConfig& config) const;
 
-  bool initialized() const { return initialized_; }
+  bool initialized() const {
+    return initialized_;
+  }
 
   // Destructor doesn't require the GIL because it is going to be executed on
   // the PyThon thread
@@ -100,26 +102,23 @@ typedef py::object ModuleOutput;
 typedef std::vector<at::IValue> ScriptModuleInput;
 typedef at::IValue ScriptModuleOutput;
 
-template<class Input>
+template <class Input>
 Input cloneInput(const Input& input);
 
-typedef BenchmarkHelper<
-    ScriptModuleInput,
-    at::IValue,
-    jit::Module>
+typedef BenchmarkHelper<ScriptModuleInput, at::IValue, jit::Module>
     ScriptModuleBenchmark;
 template <>
-inline BenchmarkHelper<ScriptModuleInput, at::IValue, jit::Module>::BenchmarkHelper()
-  : model_("Module", std::make_shared<jit::CompilationUnit>()),
-    initialized_(false) {}
+inline BenchmarkHelper<ScriptModuleInput, at::IValue, jit::Module>::
+    BenchmarkHelper()
+    : model_("Module", std::make_shared<jit::CompilationUnit>()),
+      initialized_(false) {}
 typedef BenchmarkHelper<ModuleInput, py::object, py::object> ModuleBenchmark;
 template <>
 inline BenchmarkHelper<ModuleInput, py::object, py::object>::BenchmarkHelper()
-  : initialized_(false) {}
+    : initialized_(false) {}
 
 template <>
-void ScriptModuleBenchmark::runOnce(
-    ScriptModuleInput&& input) const;
+void ScriptModuleBenchmark::runOnce(ScriptModuleInput&& input) const;
 
 template <>
 ScriptModuleOutput ScriptModuleBenchmark::runOnce(
@@ -179,7 +178,7 @@ class C10_HIDDEN ThroughputBenchmark {
   detail::ScriptModuleBenchmark script_module_;
   detail::ModuleBenchmark module_;
 };
-} // namespace throughput benchmark
-} // namepsace torch
+} // namespace throughput_benchmark
+} // namespace torch
 
 #include <torch/csrc/utils/throughput_benchmark-inl.h>
