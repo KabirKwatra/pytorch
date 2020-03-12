@@ -1,23 +1,3 @@
-import torch._C
-import torch._jit_internal as _jit_internal
-import torch.jit.annotations
-import torch.testing
-import torch.jit._recursive
-
-from torch.jit._recursive import ScriptMethodStub
-from torch.jit._builtins import (
-    _find_builtin,
-    _get_builtin_table,
-    _register_builtin,
-)  # noqa
-from torch._jit_internal import _qualified_name
-from torch.autograd import Variable, function
-from torch.jit.frontend import get_jit_class_def, get_jit_def, get_default_args
-from torch.nn import Module
-from torch.serialization import validate_cuda_device
-from torch._six import PY2, PY37, with_metaclass, string_classes, get_function_from_type
-from torch.utils import set_module
-
 import collections
 import contextlib
 import copy
@@ -31,10 +11,36 @@ import textwrap
 import warnings
 import weakref
 
-
+import torch._C
+import torch._jit_internal as _jit_internal
+import torch.jit._recursive
+import torch.jit.annotations
+import torch.testing
+from torch._jit_internal import _overload
+from torch._jit_internal import _overload_method
+from torch._jit_internal import _qualified_name
+from torch._jit_internal import export
+from torch._jit_internal import Final
+from torch._jit_internal import ignore
+from torch._jit_internal import unused
+from torch._six import get_function_from_type
+from torch._six import PY2
+from torch._six import PY37
+from torch._six import string_classes
+from torch._six import with_metaclass
+from torch.autograd import function
+from torch.autograd import Variable
+from torch.jit._builtins import _find_builtin
+from torch.jit._builtins import _get_builtin_table
+from torch.jit._builtins import _register_builtin
+from torch.jit._recursive import ScriptMethodStub
+from torch.jit.frontend import get_default_args
+from torch.jit.frontend import get_jit_class_def
+from torch.jit.frontend import get_jit_def
+from torch.nn import Module
+from torch.serialization import validate_cuda_device
+from torch.utils import set_module
 # These are imported so users can access them from the `torch.jit` module
-from torch._jit_internal import Final, _overload, _overload_method
-from torch._jit_internal import ignore, export, unused
 
 if sys.version_info[0] > 2:
     import pathlib

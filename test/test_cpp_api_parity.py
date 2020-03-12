@@ -1,25 +1,23 @@
-import os
-import tempfile
-from string import Template
 import copy
+import inspect
+import os
+import re
+import tempfile
 import unittest
 import warnings
-import inspect
-import re
+from string import Template
 
-import torch
-from torch._six import PY2
-import torch.testing._internal.common_utils as common
+from cpp_api_parity import CppArg
+from cpp_api_parity import parse_parity_tracker_table
+from cpp_api_parity import sample_module
+from cpp_api_parity import torch_nn_modules
+from cpp_api_parity import TorchNNTestParams
+
 import torch.testing._internal.common_nn as common_nn
-from torch.testing._internal.common_cuda import TEST_CUDA
+import torch.testing._internal.common_utils as common
 import torch.utils.cpp_extension
-from cpp_api_parity import (
-    sample_module,
-    torch_nn_modules,
-    TorchNNTestParams,
-    CppArg,
-    parse_parity_tracker_table,
-)
+from torch._six import PY2
+from torch.testing._internal.common_cuda import TEST_CUDA
 
 
 parity_table_path = os.path.join(
