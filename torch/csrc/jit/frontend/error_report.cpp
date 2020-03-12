@@ -1,5 +1,5 @@
-#include <torch/csrc/jit/frontend/error_report.h>
 #include <c10/util/Optional.h>
+#include <torch/csrc/jit/frontend/error_report.h>
 #include <torch/csrc/jit/frontend/tree.h>
 #include <torch/csrc/utils/memory.h>
 
@@ -22,53 +22,49 @@ ErrorReport::ErrorReport(SourceRange r)
     : context(std::move(r)), error_stack(calls.begin(), calls.end()) {}
 
 void ErrorReport::CallStack::update_pending_range(const SourceRange& range) {
-    calls.back().caller_range = range;
+  calls.back().caller_range = range;
 }
 
 ErrorReport::CallStack::CallStack(const std::string& name) {
-    calls.push_back({name, c10::nullopt});
+  calls.push_back({name, c10::nullopt});
 }
 
 ErrorReport::CallStack::~CallStack() {
-    calls.pop_back();
+  calls.pop_back();
 }
 #else // defined C10_MOBILE
-ErrorReport::ErrorReport(SourceRange r)
-    : context(std::move(r)) {}
+ErrorReport::ErrorReport(SourceRange r) : context(std::move(r)) {}
 
-void ErrorReport::CallStack::update_pending_range(const SourceRange& range) {
-}
+void ErrorReport::CallStack::update_pending_range(const SourceRange& range) {}
 
-ErrorReport::CallStack::CallStack(const std::string& name) {
-}
+ErrorReport::CallStack::CallStack(const std::string& name) {}
 
-ErrorReport::CallStack::~CallStack() {
-}
+ErrorReport::CallStack::~CallStack() {}
 #endif // C10_MOBILE
 
 const char* ErrorReport::what() const noexcept {
-    std::stringstream msg;
-    msg << "\n" << ss.str();
-    msg << ":\n";
-    context.highlight(msg);
+  std::stringstream msg;
+  msg << "\n" << ss.str();
+  msg << ":\n";
+  context.highlight(msg);
 
-    if (error_stack.size() > 0) {
-        for (auto it = error_stack.rbegin(); it != error_stack.rend() - 1; ++it) {
-            auto callee = it + 1;
+  if (error_stack.size() > 0) {
+    for (auto it = error_stack.rbegin(); it != error_stack.rend() - 1; ++it) {
+      auto callee = it + 1;
 
-            msg << "'" << it->fn_name
-                << "' is being compiled since it was called from '" << callee->fn_name
-                << "'\n";
-            if (callee->caller_range) {
-                callee->caller_range->highlight(msg);
-            } else {
-                msg << "<no range>\n";
-            }
-        }
+      msg << "'" << it->fn_name
+          << "' is being compiled since it was called from '" << callee->fn_name
+          << "'\n";
+      if (callee->caller_range) {
+        callee->caller_range->highlight(msg);
+      } else {
+        msg << "<no range>\n";
+      }
     }
+  }
 
-    the_message = msg.str();
-    return the_message.c_str();
+  the_message = msg.str();
+  return the_message.c_str();
 }
 
 } // namespace jit

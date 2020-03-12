@@ -25,44 +25,44 @@ using ResolverPtr = std::shared_ptr<Resolver>;
  * handle the method.
  */
 struct Resolver {
-    virtual ~Resolver() {}
+  virtual ~Resolver() {}
 
-    // Resolve a given name to a SugaredValue. This takes the method `m` that the
-    // caller is currently constructing, since we may need to insert nodes into
-    // the graph to create a value.
-    virtual std::shared_ptr<SugaredValue> resolveValue(
-        const std::string& name,
-        Function& m,
-        const SourceRange& loc) {
-        return nullptr;
-    }
+  // Resolve a given name to a SugaredValue. This takes the method `m` that the
+  // caller is currently constructing, since we may need to insert nodes into
+  // the graph to create a value.
+  virtual std::shared_ptr<SugaredValue> resolveValue(
+      const std::string& name,
+      Function& m,
+      const SourceRange& loc) {
+    return nullptr;
+  }
 
-    // Resolve `name` to a TypePtr.
-    virtual TypePtr resolveType(const std::string& name, const SourceRange& loc) {
-        return nullptr;
-    }
+  // Resolve `name` to a TypePtr.
+  virtual TypePtr resolveType(const std::string& name, const SourceRange& loc) {
+    return nullptr;
+  }
 };
 
 // A resolver that only understands "torch.foo()" lookups.
 struct NativeResolver : public Resolver {
-    std::shared_ptr<SugaredValue> resolveValue(
-        const std::string& name,
-        Function& m,
-        const SourceRange& loc) override {
-        if (name == "torch") {
-            return std::make_shared<BuiltinModule>("aten");
-        }
-        return nullptr;
+  std::shared_ptr<SugaredValue> resolveValue(
+      const std::string& name,
+      Function& m,
+      const SourceRange& loc) override {
+    if (name == "torch") {
+      return std::make_shared<BuiltinModule>("aten");
     }
+    return nullptr;
+  }
 
-    TypePtr resolveType(const std::string& name, const SourceRange& loc)
-    override {
-        return nullptr;
-    }
+  TypePtr resolveType(const std::string& name, const SourceRange& loc)
+      override {
+    return nullptr;
+  }
 };
 
 inline std::shared_ptr<NativeResolver> nativeResolver() {
-    return std::make_shared<NativeResolver>();
+  return std::make_shared<NativeResolver>();
 }
 } // namespace jit
 } // namespace torch

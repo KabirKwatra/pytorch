@@ -13,9 +13,9 @@ namespace jit {
 // if it returns nullopt, then failure_messages contains a good error report
 
 struct MatchedSchema {
-    std::vector<Value*> inputs;
-    std::vector<TypePtr> return_types;
-    c10::OptNameList return_field_names;
+  std::vector<Value*> inputs;
+  std::vector<TypePtr> return_types;
+  c10::OptNameList return_field_names;
 };
 
 TORCH_API MatchedSchema matchSchema(

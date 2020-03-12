@@ -1,9 +1,9 @@
 #pragma once
 
-#include <torch/csrc/jit/python/pybind_utils.h>
-#include <torch/csrc/jit/frontend/concrete_module_type.h>
 #include <torch/csrc/jit/api/module.h>
+#include <torch/csrc/jit/frontend/concrete_module_type.h>
 #include <torch/csrc/jit/frontend/sugared_value.h>
+#include <torch/csrc/jit/python/pybind_utils.h>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -15,7 +15,7 @@ namespace jit {
 std::string typeString(py::handle h);
 
 inline std::shared_ptr<SugaredValue> toSimple(Value* v) {
-    return std::make_shared<SimpleValue>(v);
+  return std::make_shared<SimpleValue>(v);
 }
 
 // NB: This should be the single entry-point for instantiating a SugaredValue
@@ -30,100 +30,100 @@ std::shared_ptr<SugaredValue> toSugaredValue(
 c10::optional<StrongFunctionPtr> as_function(const py::object& obj);
 
 struct VISIBILITY_HIDDEN PythonValue : public SugaredValue {
-    PythonValue(
-        py::object the_self,
-        c10::optional<py::object> rcb = c10::nullopt,
-        Value* module_self = nullptr)
-        : self(std::move(the_self)),
-          rcb(std::move(rcb)),
-          moduleSelf_(module_self) {}
+  PythonValue(
+      py::object the_self,
+      c10::optional<py::object> rcb = c10::nullopt,
+      Value* module_self = nullptr)
+      : self(std::move(the_self)),
+        rcb(std::move(rcb)),
+        moduleSelf_(module_self) {}
 
-    FunctionSchema getSchema(
-        const size_t n_args,
-        const size_t n_binders,
-        const SourceRange& loc);
+  FunctionSchema getSchema(
+      const size_t n_args,
+      const size_t n_binders,
+      const SourceRange& loc);
 
-    // call it like a function, e.g. `outputs = this(inputs)`
-    std::shared_ptr<SugaredValue> call(
-        const SourceRange& loc,
-        Function& m,
-        at::ArrayRef<NamedValue> inputs_,
-        at::ArrayRef<NamedValue> attributes,
-        size_t n_binders) override;
+  // call it like a function, e.g. `outputs = this(inputs)`
+  std::shared_ptr<SugaredValue> call(
+      const SourceRange& loc,
+      Function& m,
+      at::ArrayRef<NamedValue> inputs_,
+      at::ArrayRef<NamedValue> attributes,
+      size_t n_binders) override;
 
-    std::string kind() const override;
+  std::string kind() const override;
 
-    std::vector<std::shared_ptr<SugaredValue>> asTuple(
-            const SourceRange& loc,
-            Function& m,
-            const c10::optional<size_t>& size_hint = {}) override;
+  std::vector<std::shared_ptr<SugaredValue>> asTuple(
+      const SourceRange& loc,
+      Function& m,
+      const c10::optional<size_t>& size_hint = {}) override;
 
-    std::shared_ptr<SugaredValue> attr(
-        const SourceRange& loc,
-        Function& m,
-        const std::string& field) override;
+  std::shared_ptr<SugaredValue> attr(
+      const SourceRange& loc,
+      Function& m,
+      const std::string& field) override;
 
-protected:
-    py::object getattr(const SourceRange& loc, const std::string& name);
+ protected:
+  py::object getattr(const SourceRange& loc, const std::string& name);
 
-    void checkForAddToConstantsError(std::stringstream& ss);
+  void checkForAddToConstantsError(std::stringstream& ss);
 
-    py::object self;
-    c10::optional<py::object> rcb;
-    Value* moduleSelf_ = nullptr;
+  py::object self;
+  c10::optional<py::object> rcb;
+  Value* moduleSelf_ = nullptr;
 };
 
 struct VISIBILITY_HIDDEN PythonModuleValue : public PythonValue {
-    explicit PythonModuleValue(py::object mod) : PythonValue(std::move(mod)) {}
+  explicit PythonModuleValue(py::object mod) : PythonValue(std::move(mod)) {}
 
-    std::shared_ptr<SugaredValue> attr(
-        const SourceRange& loc,
-        Function& m,
-        const std::string& field) override;
+  std::shared_ptr<SugaredValue> attr(
+      const SourceRange& loc,
+      Function& m,
+      const std::string& field) override;
 };
 
 // Represents all the parameters of a module as a List[Tensor]
 struct VISIBILITY_HIDDEN ConstantParameterList : public SugaredValue {
-    ConstantParameterList(Value* the_list) : the_list_(the_list) {}
-    std::string kind() const override {
-        return "constant parameter list";
-    }
-    std::shared_ptr<SugaredValue> call(
-        const SourceRange& loc,
-        Function& caller,
-        at::ArrayRef<NamedValue> inputs,
-        at::ArrayRef<NamedValue> attributes,
-        size_t n_binders) override {
-        return toSimple(the_list_);
-    }
+  ConstantParameterList(Value* the_list) : the_list_(the_list) {}
+  std::string kind() const override {
+    return "constant parameter list";
+  }
+  std::shared_ptr<SugaredValue> call(
+      const SourceRange& loc,
+      Function& caller,
+      at::ArrayRef<NamedValue> inputs,
+      at::ArrayRef<NamedValue> attributes,
+      size_t n_binders) override {
+    return toSimple(the_list_);
+  }
 
-private:
-    Value* the_list_;
+ private:
+  Value* the_list_;
 };
 
 struct VISIBILITY_HIDDEN ModuleDictMethod : public SugaredValue {
-    explicit ModuleDictMethod(SugaredValuePtr iterable, const std::string& name)
-        : iterable_(iterable), name_(name) {};
+  explicit ModuleDictMethod(SugaredValuePtr iterable, const std::string& name)
+      : iterable_(iterable), name_(name){};
 
-    std::string kind() const override {
-        return name_;
+  std::string kind() const override {
+    return name_;
+  }
+
+  std::shared_ptr<SugaredValue> call(
+      const SourceRange& loc,
+      Function& f,
+      at::ArrayRef<NamedValue> inputs,
+      at::ArrayRef<NamedValue> attributes,
+      size_t n_binders) override {
+    if (inputs.size() || attributes.size()) {
+      throw ErrorReport(loc)
+          << name_ << " method does not accept any arguments";
     }
+    return iterable_;
+  }
 
-    std::shared_ptr<SugaredValue> call(
-        const SourceRange& loc,
-        Function& f,
-        at::ArrayRef<NamedValue> inputs,
-        at::ArrayRef<NamedValue> attributes,
-        size_t n_binders) override {
-        if (inputs.size() || attributes.size()) {
-            throw ErrorReport(loc)
-                    << name_ << " method does not accept any arguments";
-        }
-        return iterable_;
-    }
-
-    SugaredValuePtr iterable_;
-    const std::string name_;
+  SugaredValuePtr iterable_;
+  const std::string name_;
 };
 
 struct SugaredModuleDict;
@@ -136,52 +136,52 @@ struct SugaredModuleDict;
 // holding the actual nn.Module class.
 
 struct VISIBILITY_HIDDEN ModuleValue : public SugaredValue {
-    ModuleValue(Value* self, std::shared_ptr<ConcreteModuleType> concreteType)
-        : self_(self), concreteType_(std::move(concreteType)) {}
+  ModuleValue(Value* self, std::shared_ptr<ConcreteModuleType> concreteType)
+      : self_(self), concreteType_(std::move(concreteType)) {}
 
-    std::string kind() const override {
-        return "module";
-    }
+  std::string kind() const override {
+    return "module";
+  }
 
-    Value* asValue(const SourceRange& loc, Function& m) override;
+  Value* asValue(const SourceRange& loc, Function& m) override;
 
-    // select an attribute on it, e.g. `this.field`
-    std::shared_ptr<SugaredValue> attr(
-        const SourceRange& loc,
-        Function& m,
-        const std::string& field) override;
+  // select an attribute on it, e.g. `this.field`
+  std::shared_ptr<SugaredValue> attr(
+      const SourceRange& loc,
+      Function& m,
+      const std::string& field) override;
 
-    // call module.forward
-    std::shared_ptr<SugaredValue> call(
-        const SourceRange& loc,
-        Function& caller,
-        at::ArrayRef<NamedValue> inputs,
-        at::ArrayRef<NamedValue> attributes,
-        size_t n_binders) override {
-        return attr(loc, caller, "forward")
-               ->call(loc, caller, inputs, attributes, n_binders);
-    }
+  // call module.forward
+  std::shared_ptr<SugaredValue> call(
+      const SourceRange& loc,
+      Function& caller,
+      at::ArrayRef<NamedValue> inputs,
+      at::ArrayRef<NamedValue> attributes,
+      size_t n_binders) override {
+    return attr(loc, caller, "forward")
+        ->call(loc, caller, inputs, attributes, n_binders);
+  }
 
-    std::shared_ptr<SugaredModuleDict> getSugaredModuleDict(
-        const SourceRange& loc,
-        Function& m);
+  std::shared_ptr<SugaredModuleDict> getSugaredModuleDict(
+      const SourceRange& loc,
+      Function& m);
 
-    void setAttr(
-        const SourceRange& loc,
-        Function& m,
-        const std::string& field,
-        Value* newValue) override;
+  void setAttr(
+      const SourceRange& loc,
+      Function& m,
+      const std::string& field,
+      Value* newValue) override;
 
-    SugaredValuePtr iter(const SourceRange& loc, Function& m) override;
+  SugaredValuePtr iter(const SourceRange& loc, Function& m) override;
 
-    std::shared_ptr<SugaredValue> getitem(
-        const SourceRange& loc,
-        Function& m,
-        Value* idx) override;
+  std::shared_ptr<SugaredValue> getitem(
+      const SourceRange& loc,
+      Function& m,
+      Value* idx) override;
 
-private:
-    Value* self_;
-    std::shared_ptr<ConcreteModuleType> concreteType_;
+ private:
+  Value* self_;
+  std::shared_ptr<ConcreteModuleType> concreteType_;
 };
 
 void recurseThroughNestedModules(
@@ -195,75 +195,75 @@ void recurseThroughNestedModules(
 
 // Used to support named_modules()
 struct VISIBILITY_HIDDEN SugaredModuleDict : public SugaredValue {
-    explicit SugaredModuleDict(
-        std::shared_ptr<ModuleValue> self,
-        std::shared_ptr<SugaredTupleValue> keys,
-        std::shared_ptr<SugaredTupleValue> modules) {
-        self_ = std::move(self);
-        keys_ = std::move(keys);
-        modules_ = std::move(modules);
-    }
+  explicit SugaredModuleDict(
+      std::shared_ptr<ModuleValue> self,
+      std::shared_ptr<SugaredTupleValue> keys,
+      std::shared_ptr<SugaredTupleValue> modules) {
+    self_ = std::move(self);
+    keys_ = std::move(keys);
+    modules_ = std::move(modules);
+  }
 
-    std::string kind() const override {
-        return "ModuleDict";
-    }
+  std::string kind() const override {
+    return "ModuleDict";
+  }
 
-    std::shared_ptr<SugaredTupleValue> getKeys() {
-        return keys_;
-    }
+  std::shared_ptr<SugaredTupleValue> getKeys() {
+    return keys_;
+  }
 
-    std::shared_ptr<SugaredTupleValue> getModules() {
-        return modules_;
-    }
+  std::shared_ptr<SugaredTupleValue> getModules() {
+    return modules_;
+  }
 
-    std::shared_ptr<SugaredValue> attr(
-        const SourceRange& loc,
-        Function& m,
-        const std::string& field) override;
+  std::shared_ptr<SugaredValue> attr(
+      const SourceRange& loc,
+      Function& m,
+      const std::string& field) override;
 
-    SugaredValuePtr iter(const SourceRange& loc, Function& m) {
-        return keys_;
-    };
+  SugaredValuePtr iter(const SourceRange& loc, Function& m) {
+    return keys_;
+  };
 
-    std::shared_ptr<ModuleValue> self_;
-    std::shared_ptr<SugaredTupleValue> keys_;
-    std::shared_ptr<SugaredTupleValue> modules_;
+  std::shared_ptr<ModuleValue> self_;
+  std::shared_ptr<SugaredTupleValue> keys_;
+  std::shared_ptr<SugaredTupleValue> modules_;
 };
 
 struct VISIBILITY_HIDDEN BooleanDispatchValue : public SugaredValue {
-    BooleanDispatchValue(py::dict dispatched_fn)
-        : dispatched_fn_(std::move(dispatched_fn)) {}
+  BooleanDispatchValue(py::dict dispatched_fn)
+      : dispatched_fn_(std::move(dispatched_fn)) {}
 
-    std::string kind() const override {
-        return "boolean dispatch";
-    }
+  std::string kind() const override {
+    return "boolean dispatch";
+  }
 
-    std::shared_ptr<SugaredValue> call(
-        const SourceRange& loc,
-        Function& caller,
-        at::ArrayRef<NamedValue> inputs,
-        at::ArrayRef<NamedValue> attributes,
-        size_t n_binders) override;
+  std::shared_ptr<SugaredValue> call(
+      const SourceRange& loc,
+      Function& caller,
+      at::ArrayRef<NamedValue> inputs,
+      at::ArrayRef<NamedValue> attributes,
+      size_t n_binders) override;
 
-private:
-    py::dict dispatched_fn_;
+ private:
+  py::dict dispatched_fn_;
 };
 
 struct VISIBILITY_HIDDEN PythonClassValue : public ClassValue {
-    PythonClassValue(ClassTypePtr type, py::object py_type)
-        : ClassValue(std::move(type)), py_type_(std::move(py_type)) {}
+  PythonClassValue(ClassTypePtr type, py::object py_type)
+      : ClassValue(std::move(type)), py_type_(std::move(py_type)) {}
 
-    std::string kind() const override {
-        return "Python type";
-    }
+  std::string kind() const override {
+    return "Python type";
+  }
 
-    std::shared_ptr<SugaredValue> attr(
-        const SourceRange& loc,
-        Function& m,
-        const std::string& field) override;
+  std::shared_ptr<SugaredValue> attr(
+      const SourceRange& loc,
+      Function& m,
+      const std::string& field) override;
 
-private:
-    py::object py_type_;
+ private:
+  py::object py_type_;
 };
 
 } // namespace jit

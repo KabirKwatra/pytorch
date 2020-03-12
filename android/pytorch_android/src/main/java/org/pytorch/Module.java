@@ -7,14 +7,15 @@ import com.facebook.soloader.nativeloader.SystemDelegate;
 
 /** Java wrapper for torch::jit::Module. */
 public class Module {
-
   private INativePeer mNativePeer;
 
   /**
    * Loads a serialized TorchScript module from the specified path on the disk.
    *
-   * @param modelPath path to file that contains the serialized TorchScript module.
-   * @return new {@link org.pytorch.Module} object which owns torch::jit::Module.
+   * @param modelPath path to file that contains the serialized TorchScript
+   *     module.
+   * @return new {@link org.pytorch.Module} object which owns
+   *     torch::jit::Module.
    */
   public static Module load(final String modelPath) {
     if (!NativeLoader.isInitialized()) {
@@ -49,10 +50,11 @@ public class Module {
   }
 
   /**
-   * Explicitly destroys the native torch::jit::Module. Calling this method is not required,
-   * as the native object will be destroyed when this object is garbage-collected. However, the
-   * timing of garbage collection is not guaranteed, so proactively calling {@code destroy} can free
-   * memory more quickly. See {@link com.facebook.jni.HybridData#resetNative}.
+   * Explicitly destroys the native torch::jit::Module. Calling this method is
+   * not required, as the native object will be destroyed when this object is
+   * garbage-collected. However, the timing of garbage collection is not
+   * guaranteed, so proactively calling {@code destroy} can free memory more
+   * quickly. See {@link com.facebook.jni.HybridData#resetNative}.
    */
   public void destroy() {
     mNativePeer.resetNative();

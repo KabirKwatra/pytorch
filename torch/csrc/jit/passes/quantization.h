@@ -5,40 +5,40 @@
  */
 #pragma once
 
-#include <torch/csrc/jit/ir/ir.h>
 #include <torch/csrc/jit/api/module.h>
+#include <torch/csrc/jit/ir/ir.h>
 
 namespace std {
 
 template <>
 struct hash<torch::jit::Module> {
-    inline size_t operator()(const torch::jit::Module& arg) const {
-        return std::hash<c10::intrusive_ptr<c10::ivalue::Object>>()(arg._ivalue());
-    }
+  inline size_t operator()(const torch::jit::Module& arg) const {
+    return std::hash<c10::intrusive_ptr<c10::ivalue::Object>>()(arg._ivalue());
+  }
 };
 
-}
+} // namespace std
 
 namespace torch {
 namespace jit {
 
 using QConfig = std::tuple<Module, Module>;
 using QConfigDict = std::unordered_map<std::string, QConfig>;
-using ModuleQConfigMap =
-    std::unordered_map<ModulePtr, c10::optional<QConfig>>;
+using ModuleQConfigMap = std::unordered_map<ModulePtr, c10::optional<QConfig>>;
 
 struct OptionalQConfigHash {
-    inline size_t operator()(const c10::optional<QConfig>& qconfig_opt) const {
-        if (qconfig_opt.has_value()) {
-            const auto& m1 = std::get<0>(*qconfig_opt);
-            const auto& m2 = std::get<1>(*qconfig_opt);
-            return std::hash<Module>()(m1) + 7 * std::hash<Module>()(m2);
-        }
-        return 0;
+  inline size_t operator()(const c10::optional<QConfig>& qconfig_opt) const {
+    if (qconfig_opt.has_value()) {
+      const auto& m1 = std::get<0>(*qconfig_opt);
+      const auto& m2 = std::get<1>(*qconfig_opt);
+      return std::hash<Module>()(m1) + 7 * std::hash<Module>()(m2);
     }
+    return 0;
+  }
 };
 
-using QConfigTypePtrMap = std::unordered_map<c10::optional<QConfig>, TypePtr, OptionalQConfigHash>;
+using QConfigTypePtrMap =
+    std::unordered_map<c10::optional<QConfig>, TypePtr, OptionalQConfigHash>;
 
 /** \brief Quantize model's inputs and outputs.
  *
@@ -64,9 +64,8 @@ TORCH_API void FoldQuantNodesIntoInputsOutputs(std::shared_ptr<Graph>& graph);
 TORCH_API Module InsertObservers(
     Module& module,
     const std::string& method_name,
-    const std::unordered_map<
-    std::string,
-    std::tuple<Module, Module>>& qconfig_dict,
+    const std::unordered_map<std::string, std::tuple<Module, Module>>&
+        qconfig_dict,
     bool inplace = false);
 
 /** \brief Insert quantize - int_repr - dequantize calls to the Tensors

@@ -12,22 +12,22 @@ struct Module;
 struct PythonPrintImpl;
 
 struct TORCH_API PythonPrint {
-    PythonPrint(
-        std::vector<at::Tensor>& tensor_table,
-        std::vector<c10::NamedTypePtr>& deps_table,
-        bool enforce_importable = false);
+  PythonPrint(
+      std::vector<at::Tensor>& tensor_table,
+      std::vector<c10::NamedTypePtr>& deps_table,
+      bool enforce_importable = false);
 
-    void printNamedType(const c10::NamedTypePtr& classType);
-    void printFunction(const Function& callee);
-    void printMethod(const Function& callee);
+  void printNamedType(const c10::NamedTypePtr& classType);
+  void printFunction(const Function& callee);
+  void printMethod(const Function& callee);
 
-    std::string str() const;
-    const SourceRangeRecords& ranges() const;
+  std::string str() const;
+  const SourceRangeRecords& ranges() const;
 
-    ~PythonPrint();
+  ~PythonPrint();
 
-private:
-    std::shared_ptr<PythonPrintImpl> pImpl;
+ private:
+  std::shared_ptr<PythonPrintImpl> pImpl;
 };
 
 TORCH_API bool printerHasSpecialCaseFor(c10::Symbol sym);

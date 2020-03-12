@@ -46,58 +46,58 @@ static const std::unordered_map<int, int> unary_prec = {
 };
 
 bool SharedParserData::isUnary(int kind, int* prec) {
-    auto it = unary_prec.find(kind);
-    if (it != unary_prec.end()) {
-        *prec = it->second;
-        return true;
-    }
-    return false;
+  auto it = unary_prec.find(kind);
+  if (it != unary_prec.end()) {
+    *prec = it->second;
+    return true;
+  }
+  return false;
 }
 bool SharedParserData::isBinary(int kind, int* prec) {
-    auto it = binary_prec.find(kind);
-    if (it != binary_prec.end()) {
-        *prec = it->second;
-        return true;
-    }
-    return false;
+  auto it = binary_prec.find(kind);
+  if (it != binary_prec.end()) {
+    *prec = it->second;
+    return true;
+  }
+  return false;
 }
 
 C10_EXPORT int stringToKind(const std::string& str) {
-    static std::once_flag init_flag;
-    static std::unordered_map<std::string, int> str_to_kind;
-    std::call_once(init_flag, []() {
-        for (char tok : std::string(valid_single_char_tokens))
-            str_to_kind[std::string(1, tok)] = tok;
+  static std::once_flag init_flag;
+  static std::unordered_map<std::string, int> str_to_kind;
+  std::call_once(init_flag, []() {
+    for (char tok : std::string(valid_single_char_tokens))
+      str_to_kind[std::string(1, tok)] = tok;
 #define DEFINE_CASE(tok, _, str) \
   if (std::string(str) != "")    \
     str_to_kind[str] = tok;
-        TC_FORALL_TOKEN_KINDS(DEFINE_CASE)
+    TC_FORALL_TOKEN_KINDS(DEFINE_CASE)
 #undef DEFINE_CASE
-    });
-    try {
-        return str_to_kind.at(str);
-    } catch (std::out_of_range& err) {
-        throw std::out_of_range("unknown token in stringToKind");
-    }
+  });
+  try {
+    return str_to_kind.at(str);
+  } catch (std::out_of_range& err) {
+    throw std::out_of_range("unknown token in stringToKind");
+  }
 }
 
 C10_EXPORT std::string kindToString(int kind) {
-    if (kind < 256)
-        return std::string(1, kind);
-    switch (kind) {
+  if (kind < 256)
+    return std::string(1, kind);
+  switch (kind) {
 #define DEFINE_CASE(tok, str, _) \
   case tok:                      \
     return str;
-        TC_FORALL_TOKEN_KINDS(DEFINE_CASE)
+    TC_FORALL_TOKEN_KINDS(DEFINE_CASE)
 #undef DEFINE_CASE
     default:
-        throw std::runtime_error("Unknown kind: " + c10::guts::to_string(kind));
-    }
+      throw std::runtime_error("Unknown kind: " + c10::guts::to_string(kind));
+  }
 }
 
 C10_EXPORT SharedParserData& sharedParserData() {
-    static SharedParserData data; // safely handles multi-threaded init
-    return data;
+  static SharedParserData data; // safely handles multi-threaded init
+  return data;
 }
 
 } // namespace jit
