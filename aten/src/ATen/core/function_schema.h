@@ -1,12 +1,12 @@
 #pragma once
 
-#include <c10/util/StringUtil.h>
-#include <ATen/core/jit_type.h>
+#include <ATen/core/alias_info.h>
+#include <ATen/core/dispatch/OperatorOptions.h>
 #include <ATen/core/interned_strings.h>
 #include <ATen/core/ivalue.h>
-#include <ATen/core/alias_info.h>
+#include <ATen/core/jit_type.h>
 #include <ATen/core/operator_name.h>
-#include <ATen/core/dispatch/OperatorOptions.h>
+#include <c10/util/StringUtil.h>
 #include <unordered_map>
 
 namespace c10 {
@@ -47,8 +47,7 @@ struct Argument {
         default_value_(std::move(default_value)),
         kwarg_only_(kwarg_only),
         alias_info_(std::move(alias_info)),
-        is_inferred_type_(is_inferred_type) {
-  }
+        is_inferred_type_(is_inferred_type) {}
   const std::string& name() const {
     return name_;
   }
@@ -92,7 +91,8 @@ struct Argument {
   }
 
   Argument cloneWithType(TypePtr new_type) const {
-    return Argument(name_, new_type, N_, default_value_, kwarg_only_, alias_info_);
+    return Argument(
+        name_, new_type, N_, default_value_, kwarg_only_, alias_info_);
   }
 
   // this function check whether this Argument is backward compatible with
@@ -102,9 +102,9 @@ struct Argument {
   //   3) this arg must provide the same default value if old arg has one,
   bool isBackwardCompatibleWith(
       const Argument& old,
-      std::ostream* why_not=nullptr) const;
+      std::ostream* why_not = nullptr) const;
 
-private:
+ private:
   std::string name_;
   TypePtr type_;
   // for list types, an optional statically known length for the list
@@ -121,12 +121,11 @@ private:
 };
 
 inline bool operator==(const Argument& lhs, const Argument& rhs) {
-  return lhs.name() == rhs.name()
-          && *lhs.type() == *rhs.type()
-          && lhs.N() == rhs.N()
-          && detail::defaultValueEquals_(lhs.default_value(), rhs.default_value())
-          && lhs.kwarg_only() == rhs.kwarg_only()
-          && lhs.alias_info() == rhs.alias_info();
+  return lhs.name() == rhs.name() && *lhs.type() == *rhs.type() &&
+      lhs.N() == rhs.N() &&
+      detail::defaultValueEquals_(lhs.default_value(), rhs.default_value()) &&
+      lhs.kwarg_only() == rhs.kwarg_only() &&
+      lhs.alias_info() == rhs.alias_info();
 }
 
 bool operator==(const FunctionSchema& lhs, const FunctionSchema& rhs);
@@ -197,7 +196,10 @@ struct FunctionSchema {
   // this should always be set no matter what
   c10::optional<AliasAnalysisKind> alias_kind_;
 
-  void checkArg(const IValue& value, const Argument& argument, optional<size_t> pos) const;
+  void checkArg(
+      const IValue& value,
+      const Argument& argument,
+      optional<size_t> pos) const;
 
   void checkSchema() const {
     bool seen_default_arg = false;
@@ -220,8 +222,7 @@ struct FunctionSchema {
     }
   }
 
-public:
-
+ public:
   void dump() const;
 
   const OperatorName& operator_name() const {
@@ -254,8 +255,8 @@ public:
   }
 
   c10::optional<int> argumentIndexWithName(const std::string& name) const {
-    for(size_t i = 0; i < arguments().size(); ++i) {
-      if(name == arguments()[i].name())
+    for (size_t i = 0; i < arguments().size(); ++i) {
+      if (name == arguments()[i].name())
         return i;
     }
     return c10::nullopt;
@@ -310,7 +311,6 @@ public:
     return false;
   }
 
-
   // TODO remove the mutation here
   bool isDefaultAliasAnalysisKind() const {
     return !alias_kind_;
@@ -326,16 +326,17 @@ public:
   // schema and have the program typecheck?
   // as_method - if true, treat this schema as a method and ignore
   // the first argument, which will be the object in both cases
-  bool isSubtypeOf(const FunctionSchema& rhs, bool as_method, std::ostream* why_not=nullptr) const;
+  bool isSubtypeOf(
+      const FunctionSchema& rhs,
+      bool as_method,
+      std::ostream* why_not = nullptr) const;
 };
 
 inline bool operator==(const FunctionSchema& lhs, const FunctionSchema& rhs) {
-  return lhs.name() == rhs.name()
-      && lhs.overload_name() == rhs.overload_name()
-      && lhs.arguments() == rhs.arguments()
-      && lhs.returns() == rhs.returns()
-      && lhs.is_vararg() == rhs.is_vararg()
-      && lhs.is_varret() == rhs.is_varret();
+  return lhs.name() == rhs.name() &&
+      lhs.overload_name() == rhs.overload_name() &&
+      lhs.arguments() == rhs.arguments() && lhs.returns() == rhs.returns() &&
+      lhs.is_vararg() == rhs.is_vararg() && lhs.is_varret() == rhs.is_varret();
 }
 
 inline bool operator!=(const FunctionSchema& lhs, const FunctionSchema& rhs) {
@@ -377,7 +378,7 @@ inline std::ostream& operator<<(std::ostream& out, const Argument& arg) {
   if (arg.default_value()) {
     out << "=";
     if (arg.type()->kind() == c10::TypeKind::StringType) {
-        printQuotedString(out, arg.default_value().value().toStringRef());
+      printQuotedString(out, arg.default_value().value().toStringRef());
     } else {
       out << arg.default_value().value();
     }
@@ -385,7 +386,9 @@ inline std::ostream& operator<<(std::ostream& out, const Argument& arg) {
   return out;
 }
 
-inline std::ostream& operator<<(std::ostream& out, const FunctionSchema& schema);
+inline std::ostream& operator<<(
+    std::ostream& out,
+    const FunctionSchema& schema);
 
 inline std::string toString(const FunctionSchema& schema) {
   std::ostringstream str;

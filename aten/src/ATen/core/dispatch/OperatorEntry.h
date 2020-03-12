@@ -7,7 +7,7 @@
 
 namespace c10 {
 namespace impl {
-  class OperatorEntry;
+class OperatorEntry;
 }
 
 namespace impl {
@@ -15,7 +15,7 @@ namespace impl {
 // This is a private class used inside the Dispatcher to represent an operator
 // and its dispatch table. This is not part of the public API.
 class OperatorEntry final {
-public:
+ public:
   explicit OperatorEntry(FunctionSchema&& schema);
 
   OperatorEntry(const OperatorEntry&) = delete;
@@ -33,14 +33,18 @@ public:
 
   void prepareForDeregistration();
 
-  RegistrationHandleRAII registerKernel(c10::optional<DispatchKey> dispatch_key, KernelFunction kernel);
+  RegistrationHandleRAII registerKernel(
+      c10::optional<DispatchKey> dispatch_key,
+      KernelFunction kernel);
 
   void updateSchemaAliasAnalysis(AliasAnalysisKind a) {
     schema_.setAliasAnalysis(a);
   }
 
-private:
-  void deregisterKernel_(c10::optional<DispatchKey> dispatch_key, std::list<KernelFunction>::iterator kernel);
+ private:
+  void deregisterKernel_(
+      c10::optional<DispatchKey> dispatch_key,
+      std::list<KernelFunction>::iterator kernel);
 
   FunctionSchema schema_;
 
@@ -49,8 +53,8 @@ private:
 
   // kernels_ stores all registered kernels for the corresponding dispatch key
   // and catchAllKernels_ stores the catch-all kernels.
-  // If an operator library gets loaded that overwrites an already existing kernel,
-  // both kernels will be in that list but only the newer one will be in
+  // If an operator library gets loaded that overwrites an already existing
+  // kernel, both kernels will be in that list but only the newer one will be in
   // dispatchTable. If any of the kernels go away (say the library gets
   // unloaded), we remove the kernel from this list and update the
   // dispatchTable if necessary.
@@ -78,7 +82,8 @@ private:
   // re-executed and then only allow one kernel here, i.e. error if a kernel
   // is already registered, but that's a lot of effort to implement and
   // currently not high-pri.
-  ska::flat_hash_map<c10::optional<DispatchKey>, std::list<KernelFunction>> kernels_;
+  ska::flat_hash_map<c10::optional<DispatchKey>, std::list<KernelFunction>>
+      kernels_;
 
   std::mutex kernelsMutex_; // protects kernels_
 
@@ -87,5 +92,5 @@ private:
   void updateDispatchTable_(c10::optional<DispatchKey> dispatch_key);
 };
 
-}
-}
+} // namespace impl
+} // namespace c10

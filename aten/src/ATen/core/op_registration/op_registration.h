@@ -5,9 +5,9 @@
  * functionality needed to do so for you.
  */
 
-#include <c10/core/DispatchKey.h>
 #include <ATen/core/dispatch/Dispatcher.h>
 #include <ATen/core/op_registration/infer_schema.h>
+#include <c10/core/DispatchKey.h>
 #if defined(EXPOSE_C2_OPS) || !defined(CAFFE2_IS_XPLAT_BUILD)
 #include <torch/csrc/jit/frontend/function_schema_parser.h>
 #endif
@@ -35,7 +35,7 @@ namespace c10 {
  * >         .kernel<my_kernel_cpu>(DispatchKey::CPUTensorId));
  */
 class CAFFE2_API RegisterOperators final {
-public:
+ public:
   RegisterOperators();
   ~RegisterOperators();
 
@@ -45,29 +45,38 @@ public:
   RegisterOperators& operator=(RegisterOperators&&) noexcept;
 
   class CAFFE2_API Options final {
-  public:
+   public:
     Options(const Options&) = delete;
     Options(Options&&) noexcept = delete;
     Options& operator=(const Options&) = delete;
     Options& operator=(Options&&) noexcept = delete;
 
     // internal-only for registering stack based kernels
-    template<KernelFunction::BoxedKernelFunction* kernel_func>
+    template <KernelFunction::BoxedKernelFunction* kernel_func>
     Options&& kernel(DispatchKey dispatch_key) && {
-      return std::move(*this).kernel(dispatch_key, KernelFunction::makeFromBoxedFunction<kernel_func>(), nullptr);
+      return std::move(*this).kernel(
+          dispatch_key,
+          KernelFunction::makeFromBoxedFunction<kernel_func>(),
+          nullptr);
     }
 
     // internal-only for registering stack based catch-all kernels
-    template<KernelFunction::BoxedKernelFunction* kernel_func>
+    template <KernelFunction::BoxedKernelFunction* kernel_func>
     Options&& catchAllKernel() && {
-      return std::move(*this).kernel(c10::nullopt, KernelFunction::makeFromBoxedFunction<kernel_func>(), nullptr);
+      return std::move(*this).kernel(
+          c10::nullopt,
+          KernelFunction::makeFromBoxedFunction<kernel_func>(),
+          nullptr);
     }
 
     // internal only for registering caffe2 ops
     Options&& schema(FunctionSchema&& schema) {
-        TORCH_CHECK(!schemaOrName_.has_value(), "You can only specify the schema once per operator registration.");
-        schemaOrName_ = c10::make_right<OperatorName, FunctionSchema>(std::move(schema));
-        return std::move(*this);
+      TORCH_CHECK(
+          !schemaOrName_.has_value(),
+          "You can only specify the schema once per operator registration.");
+      schemaOrName_ =
+          c10::make_right<OperatorName, FunctionSchema>(std::move(schema));
+      return std::move(*this);
     }
 
     /**
@@ -91,21 +100,27 @@ public:
      * >         .kernel<my_kernel_cpu>(DispatchKey::CPUTensorId));
      */
     Options&& schema(const std::string& schemaOrName) {
-      TORCH_CHECK(!schemaOrName_.has_value(), "Tried to register operator ", schemaOrName," but specified schema multiple times. You can only specify the schema once per operator registration.");
+      TORCH_CHECK(
+          !schemaOrName_.has_value(),
+          "Tried to register operator ",
+          schemaOrName,
+          " but specified schema multiple times. You can only specify the schema once per operator registration.");
 
-      #if !defined(EXPOSE_C2_OPS) && defined(CAFFE2_IS_XPLAT_BUILD)
-        throw std::logic_error("Tried to register operator " + schemaOrName + ". We don't support registering c10 ops on mobile yet because the function schema parser isn't present in the mobile build.");
-      #else
-        schemaOrName_ = torch::jit::parseSchemaOrName(schemaOrName);
-      #endif
+#if !defined(EXPOSE_C2_OPS) && defined(CAFFE2_IS_XPLAT_BUILD)
+      throw std::logic_error(
+          "Tried to register operator " + schemaOrName +
+          ". We don't support registering c10 ops on mobile yet because the function schema parser isn't present in the mobile build.");
+#else
+      schemaOrName_ = torch::jit::parseSchemaOrName(schemaOrName);
+#endif
 
       return std::move(*this);
     }
 
     /**
-     * Use this to register an operator whose kernel is implemented as a functor.
-     * The kernel is only called for inputs matching the given dispatch key.
-     * You can register multiple kernels for different dispatch keys.
+     * Use this to register an operator whose kernel is implemented as a
+     * functor. The kernel is only called for inputs matching the given dispatch
+     * key. You can register multiple kernels for different dispatch keys.
      *
      * Example:
      *
@@ -128,8 +143,8 @@ public:
      * > namespace {
      * >   class my_kernel_cpu final : public c10::OperatorKernel {
      * >   public:
-     * >     explicit my_kernel_cpu(std::string some_configuration, int a, bool b)
-     * >         : ... {...}
+     * >     explicit my_kernel_cpu(std::string some_configuration, int a, bool
+     * b) >         : ... {...}
      * >
      * >     Tensor operator()(Tensor a, Tensor b) {...}
      * >   };
@@ -138,25 +153,36 @@ public:
      * > static auto registry = c10::RegisterOperators()
      * >     .op(c10::RegisterOperators::options()
      * >         .schema("my_op")
-     * >         .kernel<my_kernel_cpu>(DispatchKey::CPUTensorId, "some_configuration", 3, true));
+     * >         .kernel<my_kernel_cpu>(DispatchKey::CPUTensorId,
+     * "some_configuration", 3, true));
      */
-    template<class KernelFunctor, class... ConstructorParameters>
+    template <class KernelFunctor, class... ConstructorParameters>
     // enable_if: only enable it if KernelFunctor is actually a functor
-    std::enable_if_t<guts::is_functor<KernelFunctor>::value, Options&&> kernel(DispatchKey dispatch_key, ConstructorParameters&&... constructorParameters) && {
-      static_assert(std::is_base_of<OperatorKernel, KernelFunctor>::value, "Tried to register a kernel functor using the kernel<Functor>() API, but it doesn't inherit from c10::OperatorKernel. Please have the functor inherit from it.");
-      static_assert(std::is_constructible<KernelFunctor, ConstructorParameters...>::value, "Wrong argument list for constructor of kernel functor. The arguments to kernel<Functor>(arguments...) must match one of the constructors of Functor.");
+    std::enable_if_t<guts::is_functor<KernelFunctor>::value, Options&&> kernel(
+        DispatchKey dispatch_key,
+        ConstructorParameters&&... constructorParameters) && {
+      static_assert(
+          std::is_base_of<OperatorKernel, KernelFunctor>::value,
+          "Tried to register a kernel functor using the kernel<Functor>() API, but it doesn't inherit from c10::OperatorKernel. Please have the functor inherit from it.");
+      static_assert(
+          std::is_constructible<KernelFunctor, ConstructorParameters...>::value,
+          "Wrong argument list for constructor of kernel functor. The arguments to kernel<Functor>(arguments...) must match one of the constructors of Functor.");
 
       return std::move(*this).kernel(
-        std::move(dispatch_key),
-        KernelFunction::makeFromUnboxedFunctorFactory<KernelFunctor>(detail::KernelFactory<KernelFunctor, std::decay_t<ConstructorParameters>...>(std::forward<ConstructorParameters>(constructorParameters)...)),
-        detail::FunctionSchemaInferer<KernelFunctor>()()
-      );
+          std::move(dispatch_key),
+          KernelFunction::makeFromUnboxedFunctorFactory<KernelFunctor>(
+              detail::KernelFactory<
+                  KernelFunctor,
+                  std::decay_t<ConstructorParameters>...>(
+                  std::forward<ConstructorParameters>(
+                      constructorParameters)...)),
+          detail::FunctionSchemaInferer<KernelFunctor>()());
     }
 
     /**
-     * Use this to register an operator whose kernel is implemented as a functor.
-     * The kernel is a catch-all kernel, meaning it's called independent from
-     * the input. Dispatch is disabled for this operator.
+     * Use this to register an operator whose kernel is implemented as a
+     * functor. The kernel is a catch-all kernel, meaning it's called
+     * independent from the input. Dispatch is disabled for this operator.
      *
      * Example:
      *
@@ -179,8 +205,8 @@ public:
      * > namespace {
      * >   class my_kernel_cpu final : public c10::OperatorKernel {
      * >   public:
-     * >     explicit my_kernel_cpu(std::string some_configuration, int a, bool b)
-     * >         : ... {...}
+     * >     explicit my_kernel_cpu(std::string some_configuration, int a, bool
+     * b) >         : ... {...}
      * >
      * >     Tensor operator()(Tensor a, Tensor b) {...}
      * >   };
@@ -191,23 +217,33 @@ public:
      * >         .schema("my_op")
      * >         .catchAllKernel<my_kernel_cpu>("some_configuration", 3, true));
      */
-    template<class KernelFunctor, class... ConstructorParameters>
+    template <class KernelFunctor, class... ConstructorParameters>
     // enable_if: only enable it if KernelFunctor is actually a functor
-    std::enable_if_t<guts::is_functor<KernelFunctor>::value, Options&&> catchAllKernel(ConstructorParameters&&... constructorParameters) && {
-      static_assert(std::is_base_of<OperatorKernel, KernelFunctor>::value, "Tried to register a kernel functor using the kernel<Functor>() API, but it doesn't inherit from c10::OperatorKernel. Please have the functor inherit from it.");
-      static_assert(std::is_constructible<KernelFunctor, ConstructorParameters...>::value, "Wrong argument list for constructor of kernel functor. The arguments to kernel<Functor>(arguments...) must match one of the constructors of Functor.");
+    std::enable_if_t<guts::is_functor<KernelFunctor>::value, Options&&>
+    catchAllKernel(ConstructorParameters&&... constructorParameters) && {
+      static_assert(
+          std::is_base_of<OperatorKernel, KernelFunctor>::value,
+          "Tried to register a kernel functor using the kernel<Functor>() API, but it doesn't inherit from c10::OperatorKernel. Please have the functor inherit from it.");
+      static_assert(
+          std::is_constructible<KernelFunctor, ConstructorParameters...>::value,
+          "Wrong argument list for constructor of kernel functor. The arguments to kernel<Functor>(arguments...) must match one of the constructors of Functor.");
 
       return std::move(*this).kernel(
-        c10::nullopt,
-        KernelFunction::makeFromUnboxedFunctorFactory<KernelFunctor>(detail::KernelFactory<KernelFunctor, std::decay_t<ConstructorParameters>...>(std::forward<ConstructorParameters>(constructorParameters)...)),
-        detail::FunctionSchemaInferer<KernelFunctor>()()
-      );
+          c10::nullopt,
+          KernelFunction::makeFromUnboxedFunctorFactory<KernelFunctor>(
+              detail::KernelFactory<
+                  KernelFunctor,
+                  std::decay_t<ConstructorParameters>...>(
+                  std::forward<ConstructorParameters>(
+                      constructorParameters)...)),
+          detail::FunctionSchemaInferer<KernelFunctor>()());
     }
 
     /**
-     * Use this to register an operator whose kernel is implemented by a function.
-     * The kernel is only called for inputs matching the given dispatch key.
-     * You can register multiple kernels for different dispatch keys.
+     * Use this to register an operator whose kernel is implemented by a
+     * function. The kernel is only called for inputs matching the given
+     * dispatch key. You can register multiple kernels for different dispatch
+     * keys.
      *
      * Example:
      *
@@ -216,26 +252,32 @@ public:
      * > static auto registry = c10::RegisterOperators()
      * >     .op(c10::RegisterOperators::options()
      * >         .schema("my_op")
-     * >         .kernel<decltype(my_kernel_cpu), &my_kernel_cpu>(DispatchKey::CPUTensorId));
+     * >         .kernel<decltype(my_kernel_cpu),
+     * &my_kernel_cpu>(DispatchKey::CPUTensorId));
      */
-    template<class FuncType, FuncType* kernel_func>
+    template <class FuncType, FuncType* kernel_func>
     // enable_if: only enable it if FuncType is actually a function
-    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&> kernel(DispatchKey dispatch_key) && {
-      static_assert(!std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value, "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
-      static_assert(kernel_func != nullptr, "Kernel function cannot be nullptr");
+    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&> kernel(
+        DispatchKey dispatch_key) && {
+      static_assert(
+          !std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value,
+          "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
+      static_assert(
+          kernel_func != nullptr, "Kernel function cannot be nullptr");
 
       return std::move(*this).kernel(
-        std::move(dispatch_key),
-        KernelFunction::makeFromUnboxedFunction<FuncType, kernel_func>(),
-        // TODO Do schema inference without relying on WrapKernelFunction
-        detail::FunctionSchemaInferer<typename detail::WrapKernelFunction<FuncType, kernel_func>::type>()()
-      );
+          std::move(dispatch_key),
+          KernelFunction::makeFromUnboxedFunction<FuncType, kernel_func>(),
+          // TODO Do schema inference without relying on WrapKernelFunction
+          detail::FunctionSchemaInferer<typename detail::WrapKernelFunction<
+              FuncType,
+              kernel_func>::type>()());
     }
 
     /**
-     * Use this to register an operator whose kernel is implemented by a function.
-     * The kernel is a catch-all kernel, meaning it's called independent from
-     * the input. Dispatch is disabled for this operator.
+     * Use this to register an operator whose kernel is implemented by a
+     * function. The kernel is a catch-all kernel, meaning it's called
+     * independent from the input. Dispatch is disabled for this operator.
      *
      * Example:
      *
@@ -246,73 +288,99 @@ public:
      * >         .schema("my_op")
      * >         .catchAllKernel<decltype(my_kernel_cpu), &my_kernel_cpu>());
      */
-    template<class FuncType, FuncType* kernel_func>
+    template <class FuncType, FuncType* kernel_func>
     // enable_if: only enable it if FuncType is actually a function
-    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&> catchAllKernel() && {
-      static_assert(!std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value, "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
-      static_assert(kernel_func != nullptr, "Kernel function cannot be nullptr");
+    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&>
+    catchAllKernel() && {
+      static_assert(
+          !std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value,
+          "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
+      static_assert(
+          kernel_func != nullptr, "Kernel function cannot be nullptr");
 
       return std::move(*this).kernel(
-        c10::nullopt,
-        KernelFunction::makeFromUnboxedFunction<FuncType, kernel_func>(),
-        // TODO Do schema inference without relying on WrapKernelFunction
-        detail::FunctionSchemaInferer<typename detail::WrapKernelFunction<FuncType, kernel_func>::type>()()
+          c10::nullopt,
+          KernelFunction::makeFromUnboxedFunction<FuncType, kernel_func>(),
+          // TODO Do schema inference without relying on WrapKernelFunction
+          detail::FunctionSchemaInferer<typename detail::WrapKernelFunction<
+              FuncType,
+              kernel_func>::type>()());
+    }
+
+    template <class FuncType>
+    // enable_if: only enable it if FuncType is actually a function
+    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&> kernel(
+        DispatchKey dispatch_key,
+        FuncType* kernel_func) && {
+      static_assert(
+          !std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value,
+          "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
+      TORCH_INTERNAL_ASSERT(
+          kernel_func != nullptr, "Kernel function cannot be nullptr");
+
+      return std::move(*this).kernel(
+          std::move(dispatch_key),
+          KernelFunction::makeFromUnboxedRuntimeFunction(kernel_func),
+          // TODO Do schema inference without relying on WrapKernelFunction
+          detail::FunctionSchemaInferer<
+              detail::WrapRuntimeKernelFunctor<std::decay_t<FuncType>>>()());
+    }
+
+    template <class FuncType>
+    // enable_if: only enable it if FuncType is actually a function
+    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&>
+    catchAllKernel(FuncType* kernel_func) && {
+      static_assert(
+          !std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value,
+          "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
+      TORCH_INTERNAL_ASSERT(
+          kernel_func != nullptr, "Kernel function cannot be nullptr");
+
+      return std::move(*this).kernel(
+          c10::nullopt,
+          KernelFunction::makeFromUnboxedRuntimeFunction(kernel_func),
+          // TODO Do schema inference without relying on WrapKernelFunction
+          detail::FunctionSchemaInferer<
+              detail::WrapRuntimeKernelFunctor<std::decay_t<FuncType>>>()());
+    }
+
+    // TODO Remove impl_unboxedOnlyKernel once all of aten can generate boxed
+    // kernels
+    template <class FuncType, FuncType* kernel_func>
+    // enable_if: only enable it if FuncType is actually a function
+    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&>
+    impl_unboxedOnlyKernel(DispatchKey dispatch_key) && {
+      static_assert(
+          !std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value,
+          "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
+      static_assert(
+          kernel_func != nullptr, "Kernel function cannot be nullptr");
+
+      return std::move(*this).kernel(
+          std::move(dispatch_key),
+          KernelFunction::makeFromUnboxedOnlyRuntimeFunction(kernel_func),
+          nullptr // disable function schema inference because some ops from
+                  // native_functions.yaml don't support it yet
       );
     }
 
-    template<class FuncType>
+    // TODO Remove impl_unboxedOnlyCatchAllKernel once all of aten can generate
+    // boxed kernels
+    template <class FuncType, FuncType* kernel_func>
     // enable_if: only enable it if FuncType is actually a function
-    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&> kernel(DispatchKey dispatch_key, FuncType* kernel_func) && {
-      static_assert(!std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value, "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
-      TORCH_INTERNAL_ASSERT(kernel_func != nullptr, "Kernel function cannot be nullptr");
+    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&>
+    impl_unboxedOnlyCatchAllKernel() && {
+      static_assert(
+          !std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value,
+          "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
+      static_assert(
+          kernel_func != nullptr, "Kernel function cannot be nullptr");
 
       return std::move(*this).kernel(
-        std::move(dispatch_key),
-        KernelFunction::makeFromUnboxedRuntimeFunction(kernel_func),
-        // TODO Do schema inference without relying on WrapKernelFunction
-        detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<std::decay_t<FuncType>>>()()
-      );
-    }
-
-    template<class FuncType>
-    // enable_if: only enable it if FuncType is actually a function
-    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&> catchAllKernel(FuncType* kernel_func) && {
-      static_assert(!std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value, "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
-      TORCH_INTERNAL_ASSERT(kernel_func != nullptr, "Kernel function cannot be nullptr");
-
-      return std::move(*this).kernel(
-        c10::nullopt,
-        KernelFunction::makeFromUnboxedRuntimeFunction(kernel_func),
-        // TODO Do schema inference without relying on WrapKernelFunction
-        detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<std::decay_t<FuncType>>>()()
-      );
-    }
-
-    // TODO Remove impl_unboxedOnlyKernel once all of aten can generate boxed kernels
-    template<class FuncType, FuncType* kernel_func>
-    // enable_if: only enable it if FuncType is actually a function
-    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&> impl_unboxedOnlyKernel(DispatchKey dispatch_key) && {
-      static_assert(!std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value, "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
-      static_assert(kernel_func != nullptr, "Kernel function cannot be nullptr");
-
-      return std::move(*this).kernel(
-        std::move(dispatch_key),
-        KernelFunction::makeFromUnboxedOnlyRuntimeFunction(kernel_func),
-        nullptr // disable function schema inference because some ops from native_functions.yaml don't support it yet
-      );
-    }
-
-    // TODO Remove impl_unboxedOnlyCatchAllKernel once all of aten can generate boxed kernels
-    template<class FuncType, FuncType* kernel_func>
-    // enable_if: only enable it if FuncType is actually a function
-    std::enable_if_t<guts::is_function_type<FuncType>::value, Options&&> impl_unboxedOnlyCatchAllKernel() && {
-      static_assert(!std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value, "Tried to register a stackbased (i.e. internal) kernel function using the public kernel<...>() API. Please either use the internal kernel(...) API or also implement the kernel function as defined by the public API.");
-      static_assert(kernel_func != nullptr, "Kernel function cannot be nullptr");
-
-      return std::move(*this).kernel(
-        c10::nullopt,
-        KernelFunction::makeFromUnboxedOnlyRuntimeFunction(kernel_func),
-        nullptr // disable function schema inference because some ops from native_functions.yaml don't support it yet
+          c10::nullopt,
+          KernelFunction::makeFromUnboxedOnlyRuntimeFunction(kernel_func),
+          nullptr // disable function schema inference because some ops from
+                  // native_functions.yaml don't support it yet
       );
     }
 
@@ -330,30 +398,42 @@ public:
      * > static auto registry = c10::RegisterOperators()
      * >     .op(c10::RegisterOperators::options()
      * >         .schema("my_op")
-     * >         .kernel(DispatchKey::CPUTensorId, [] (Tensor a) -> Tensor {...}));
+     * >         .kernel(DispatchKey::CPUTensorId, [] (Tensor a) -> Tensor
+     * {...}));
      */
-    template<class Lambda>
-    // enable_if: only enable it if Lambda is a functor (note: lambdas are functors)
+    template <class Lambda>
+    // enable_if: only enable it if Lambda is a functor (note: lambdas are
+    // functors)
     std::enable_if_t<
-        guts::is_functor<std::decay_t<Lambda>>::value
-        && !std::is_same<typename guts::infer_function_traits_t<std::decay_t<Lambda>>::func_type, KernelFunction::BoxedKernelFunction>::value,
-        Options&&> kernel(DispatchKey dispatch_key, Lambda&& functor) && {
-      static_assert(!std::is_base_of<OperatorKernel, std::decay_t<Lambda>>::value, "The kernel(x) API for registering a kernel is only meant to be used with lambdas. Your kernel is a functor. Please use the kernel<Functor>() API instead.");
+        guts::is_functor<std::decay_t<Lambda>>::value &&
+            !std::is_same<
+                typename guts::infer_function_traits_t<
+                    std::decay_t<Lambda>>::func_type,
+                KernelFunction::BoxedKernelFunction>::value,
+        Options&&>
+    kernel(DispatchKey dispatch_key, Lambda&& functor) && {
+      static_assert(
+          !std::is_base_of<OperatorKernel, std::decay_t<Lambda>>::value,
+          "The kernel(x) API for registering a kernel is only meant to be used with lambdas. Your kernel is a functor. Please use the kernel<Functor>() API instead.");
 
-      // We don't support stateful lambdas (i.e. lambdas with a capture), because their
-      // behavior would be nonobvious. A functor kernel with cache gets a new instance of
-      // its cache each time the kernel is looked up from the dispatch table.
-      // A lambda with a capture would be global and share its capture between all kernel lookups.
-      // So, instead of making users having to think about it (including the thread-safety
-      // issues this causes), let's just forbid stateful lambdas altogether.
-      static_assert(guts::is_stateless_lambda<std::decay_t<Lambda>>::value, "The kernel(x) API for registering a kernel only works for stateless lambdas (i.e. lambdas without captures). If you need a cache, please use the functor based API kernel<Functor>() instead.");
+      // We don't support stateful lambdas (i.e. lambdas with a capture),
+      // because their behavior would be nonobvious. A functor kernel with cache
+      // gets a new instance of its cache each time the kernel is looked up from
+      // the dispatch table. A lambda with a capture would be global and share
+      // its capture between all kernel lookups. So, instead of making users
+      // having to think about it (including the thread-safety issues this
+      // causes), let's just forbid stateful lambdas altogether.
+      static_assert(
+          guts::is_stateless_lambda<std::decay_t<Lambda>>::value,
+          "The kernel(x) API for registering a kernel only works for stateless lambdas (i.e. lambdas without captures). If you need a cache, please use the functor based API kernel<Functor>() instead.");
 
       return std::move(*this).kernel(
-        std::move(dispatch_key),
-        KernelFunction::makeFromUnboxedLambda(std::forward<Lambda>(functor)),
-        // TODO Do schema inference without relying on WrapRuntimeKernelFunctor
-        detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<std::decay_t<Lambda>>>()()
-      );
+          std::move(dispatch_key),
+          KernelFunction::makeFromUnboxedLambda(std::forward<Lambda>(functor)),
+          // TODO Do schema inference without relying on
+          // WrapRuntimeKernelFunctor
+          detail::FunctionSchemaInferer<
+              detail::WrapRuntimeKernelFunctor<std::decay_t<Lambda>>>()());
     }
 
     /**
@@ -372,38 +452,53 @@ public:
      * >         .schema("my_op")
      * >         .catchAllKernel([] (Tensor a) -> Tensor {...}));
      */
-    template<class Lambda>
-    // enable_if: only enable it if Lambda is a functor (note: lambdas are functors)
+    template <class Lambda>
+    // enable_if: only enable it if Lambda is a functor (note: lambdas are
+    // functors)
     std::enable_if_t<
-        guts::is_functor<std::decay_t<Lambda>>::value
-        && !std::is_same<typename guts::infer_function_traits_t<std::decay_t<Lambda>>::func_type, KernelFunction::BoxedKernelFunction>::value,
-        Options&&> catchAllKernel(Lambda&& lambda) && {
-      static_assert(!std::is_base_of<OperatorKernel, std::decay_t<Lambda>>::value, "The kernel(x) API for registering a kernel is only meant to be used with lambdas. Your kernel is a functor. Please use the kernel<Functor>() API instead.");
+        guts::is_functor<std::decay_t<Lambda>>::value &&
+            !std::is_same<
+                typename guts::infer_function_traits_t<
+                    std::decay_t<Lambda>>::func_type,
+                KernelFunction::BoxedKernelFunction>::value,
+        Options&&>
+    catchAllKernel(Lambda&& lambda) && {
+      static_assert(
+          !std::is_base_of<OperatorKernel, std::decay_t<Lambda>>::value,
+          "The kernel(x) API for registering a kernel is only meant to be used with lambdas. Your kernel is a functor. Please use the kernel<Functor>() API instead.");
 
-      // We don't support stateful lambdas (i.e. lambdas with a capture), because their
-      // behavior would be nonobvious.
-      // A lambda with a capture would be global and share its capture between all kernel lookups.
-      // This would be a likely source for unexpected race conditions, so we forbid it.
-      // If a kernel really needs global state, they can just have regular global state
-      // in their .cpp file next to the kernel lambda.
-      static_assert(guts::is_stateless_lambda<std::decay_t<Lambda>>::value, "The kernel(x) API for registering a kernel only works for stateless lambdas (i.e. lambdas without captures). If you need a cache, please use the functor based API kernel<Functor>() instead.");
+      // We don't support stateful lambdas (i.e. lambdas with a capture),
+      // because their behavior would be nonobvious. A lambda with a capture
+      // would be global and share its capture between all kernel lookups. This
+      // would be a likely source for unexpected race conditions, so we forbid
+      // it. If a kernel really needs global state, they can just have regular
+      // global state in their .cpp file next to the kernel lambda.
+      static_assert(
+          guts::is_stateless_lambda<std::decay_t<Lambda>>::value,
+          "The kernel(x) API for registering a kernel only works for stateless lambdas (i.e. lambdas without captures). If you need a cache, please use the functor based API kernel<Functor>() instead.");
 
       return std::move(*this).kernel(
-        c10::nullopt,
-        KernelFunction::makeFromUnboxedLambda(std::forward<Lambda>(lambda)),
-        // TODO Do schema inference without relying on WrapRuntimeKernelFunctor
-        detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<std::decay_t<Lambda>>>()()
-      );
+          c10::nullopt,
+          KernelFunction::makeFromUnboxedLambda(std::forward<Lambda>(lambda)),
+          // TODO Do schema inference without relying on
+          // WrapRuntimeKernelFunctor
+          detail::FunctionSchemaInferer<
+              detail::WrapRuntimeKernelFunctor<std::decay_t<Lambda>>>()());
     }
 
     Options&& aliasAnalysis(AliasAnalysisKind aliasAnalysisKind) && {
-      TORCH_CHECK(!aliasAnalysisKind_.has_value(), "You can only call aliasAnalysis() once per operator registration.");
+      TORCH_CHECK(
+          !aliasAnalysisKind_.has_value(),
+          "You can only call aliasAnalysis() once per operator registration.");
       aliasAnalysisKind_ = aliasAnalysisKind;
       return std::move(*this);
     }
 
-  private:
-    Options&& kernel(c10::optional<DispatchKey> dispatch_key, KernelFunction&& func, std::unique_ptr<FunctionSchema>&& inferred_function_schema) && {
+   private:
+    Options&& kernel(
+        c10::optional<DispatchKey> dispatch_key,
+        KernelFunction&& func,
+        std::unique_ptr<FunctionSchema>&& inferred_function_schema) && {
       KernelRegistrationConfig config;
       config.dispatch_key = dispatch_key;
       config.func = std::move(func);
@@ -413,19 +508,17 @@ public:
     }
 
     Options()
-    : schemaOrName_(c10::nullopt)
-    , kernels()
-    , aliasAnalysisKind_(c10::nullopt)
-    {}
+        : schemaOrName_(c10::nullopt),
+          kernels(),
+          aliasAnalysisKind_(c10::nullopt) {}
 
     // KernelRegistrationConfig accumulates all information from the config
     // parameters passed to a RegisterOperators::op() call into one object.
     struct KernelRegistrationConfig final {
       KernelRegistrationConfig()
-        : dispatch_key(c10::nullopt)
-        , func()
-        , inferred_function_schema(nullptr)
-      {}
+          : dispatch_key(c10::nullopt),
+            func(),
+            inferred_function_schema(nullptr) {}
 
       c10::optional<DispatchKey> dispatch_key;
       KernelFunction func;
@@ -469,7 +562,9 @@ public:
    * specify the operator schema outside of the options parameter.
    * See class doc comment for examples.
    */
-  RegisterOperators&& op(const std::string& schemaOrName, Options&& options = RegisterOperators::options()) && {
+  RegisterOperators&& op(
+      const std::string& schemaOrName,
+      Options&& options = RegisterOperators::options()) && {
     return std::move(*this).op(std::move(options).schema(schemaOrName));
   }
 
@@ -478,10 +573,14 @@ public:
     return std::move(*this).op(std::move(options).schema(std::move(schema)));
   }
 
-  template<class FuncType>
-  explicit RegisterOperators(const std::string& schemaOrName, FuncType&& func, Options&& options = RegisterOperators::options())
-  : RegisterOperators() {
-    std::move(*this).op(schemaOrName, std::forward<FuncType>(func), std::move(options));
+  template <class FuncType>
+  explicit RegisterOperators(
+      const std::string& schemaOrName,
+      FuncType&& func,
+      Options&& options = RegisterOperators::options())
+      : RegisterOperators() {
+    std::move(*this).op(
+        schemaOrName, std::forward<FuncType>(func), std::move(options));
   }
 
   /**
@@ -517,80 +616,122 @@ public:
    * >     .op("my_op", c10::RegisterOperators::options()
    * >         .kernel<my_kernel_cpu>());
    */
-   template<class FuncType>
-   // enable_if: only enable it if FuncType is actually a function, but not a stack based BoxedKernelFunction.
-   std::enable_if_t<guts::is_function_type<FuncType>::value && !std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value, RegisterOperators&&>
-   op(const std::string& schemaOrName, FuncType* func, Options&& options = RegisterOperators::options()) && {
-     constexpr bool AllowLegacyTypes = true;
-     return std::move(*this).op(std::move(options).schema(schemaOrName).kernel(
-       c10::nullopt,
-       KernelFunction::makeFromUnboxedRuntimeFunction<AllowLegacyTypes>(func),
-       // TODO Do schema inference without relying on WrapRuntimeKernelFunctor
-       detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<std::decay_t<FuncType>>>()()
-     ));
-   }
+  template <class FuncType>
+  // enable_if: only enable it if FuncType is actually a function, but not a
+  // stack based BoxedKernelFunction.
+  std::enable_if_t<
+      guts::is_function_type<FuncType>::value &&
+          !std::is_same<FuncType, KernelFunction::BoxedKernelFunction>::value,
+      RegisterOperators&&>
+  op(const std::string& schemaOrName,
+     FuncType* func,
+     Options&& options = RegisterOperators::options()) && {
+    constexpr bool AllowLegacyTypes = true;
+    return std::move(*this).op(
+        std::move(options)
+            .schema(schemaOrName)
+            .kernel(
+                c10::nullopt,
+                KernelFunction::makeFromUnboxedRuntimeFunction<
+                    AllowLegacyTypes>(func),
+                // TODO Do schema inference without relying on
+                // WrapRuntimeKernelFunctor
+                detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<
+                    std::decay_t<FuncType>>>()()));
+  }
 
-   /**
-    * This API registers an operator based on a kernel lambda.
-    *
-    * This API looks like:
-    *
-    * > static auto registry = c10::RegisterOperators()
-    * >     .op("my_op", [] (Tensor a, Tensor b) {...});
-    *
-    * This is equivalent to:
-    *
-    * > static auto registry = c10::RegisterOperators()
-    * >     .op("my_op", c10::RegisterOperators::options()
-    * >         .catchAllKernel([] (Tensor a, Tensor b) {...}));
-    *
-    */
-    template<class Lambda>
-    // enable_if: only enable it if Lambda is actually a stateless lambda
-    std::enable_if_t<guts::is_functor<Lambda>::value && guts::is_stateless_lambda<std::decay_t<Lambda>>::value, RegisterOperators&&>
-    op(const std::string& schemaOrName, Lambda&& lambda, Options&& options = RegisterOperators::options()) && {
-      static_assert(!std::is_base_of<OperatorKernel, Lambda>::value, "c10::OperatorKernel is part of the new kernel registration API and shouldn't be used together with the deprecated registration API. Please use the new RegisterOperators::options().kernel() based API instead.");
+  /**
+   * This API registers an operator based on a kernel lambda.
+   *
+   * This API looks like:
+   *
+   * > static auto registry = c10::RegisterOperators()
+   * >     .op("my_op", [] (Tensor a, Tensor b) {...});
+   *
+   * This is equivalent to:
+   *
+   * > static auto registry = c10::RegisterOperators()
+   * >     .op("my_op", c10::RegisterOperators::options()
+   * >         .catchAllKernel([] (Tensor a, Tensor b) {...}));
+   *
+   */
+  template <class Lambda>
+  // enable_if: only enable it if Lambda is actually a stateless lambda
+  std::enable_if_t<
+      guts::is_functor<Lambda>::value &&
+          guts::is_stateless_lambda<std::decay_t<Lambda>>::value,
+      RegisterOperators&&>
+  op(const std::string& schemaOrName,
+     Lambda&& lambda,
+     Options&& options = RegisterOperators::options()) && {
+    static_assert(
+        !std::is_base_of<OperatorKernel, Lambda>::value,
+        "c10::OperatorKernel is part of the new kernel registration API and shouldn't be used together with the deprecated registration API. Please use the new RegisterOperators::options().kernel() based API instead.");
 
-      constexpr bool AllowLegacyTypes = true;
-      return std::move(*this).op(std::move(options).schema(schemaOrName).kernel(
-        c10::nullopt,
-        KernelFunction::makeFromUnboxedLambda<AllowLegacyTypes>(std::forward<Lambda>(lambda)),
-        // TODO Do schema inference without relying on WrapRuntimeKernelFunctor
-        detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<std::decay_t<Lambda>>>()()
-      ));
-    }
+    constexpr bool AllowLegacyTypes = true;
+    return std::move(*this).op(
+        std::move(options)
+            .schema(schemaOrName)
+            .kernel(
+                c10::nullopt,
+                KernelFunction::makeFromUnboxedLambda<AllowLegacyTypes>(
+                    std::forward<Lambda>(lambda)),
+                // TODO Do schema inference without relying on
+                // WrapRuntimeKernelFunctor
+                detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<
+                    std::decay_t<Lambda>>>()()));
+  }
 
-    template<class Lambda>
-    C10_DEPRECATED_MESSAGE("Registering operator kernels with stateful lambdas (i.e. lambdas with a capture) has non-obvious behavior. This is deprecated. Please use a lambda without a capture or a functor class instead.")
-    // enable_if: only enable it if Lambda is actually a functor but not a stateless lambda
-    std::enable_if_t<guts::is_functor<Lambda>::value && !guts::is_stateless_lambda<std::decay_t<Lambda>>::value, RegisterOperators&&>
-    op(const std::string& schemaOrName, Lambda&& lambda, Options&& options = RegisterOperators::options()) && {
-      static_assert(!std::is_base_of<OperatorKernel, Lambda>::value, "c10::OperatorKernel is part of the new kernel registration API and shouldn't be used together with the deprecated registration API. Please use the new RegisterOperators::options().kernel() based API instead.");
+  template <class Lambda>
+  C10_DEPRECATED_MESSAGE(
+      "Registering operator kernels with stateful lambdas (i.e. lambdas with a capture) has non-obvious behavior. This is deprecated. Please use a lambda without a capture or a functor class instead.")
+  // enable_if: only enable it if Lambda is actually a functor but not a
+  // stateless lambda
+  std::enable_if_t<
+      guts::is_functor<Lambda>::value &&
+          !guts::is_stateless_lambda<std::decay_t<Lambda>>::value,
+      RegisterOperators&&> op(const std::string& schemaOrName, Lambda&& lambda, Options&& options = RegisterOperators::options()) && {
+    static_assert(
+        !std::is_base_of<OperatorKernel, Lambda>::value,
+        "c10::OperatorKernel is part of the new kernel registration API and shouldn't be used together with the deprecated registration API. Please use the new RegisterOperators::options().kernel() based API instead.");
 
-      constexpr bool AllowLegacyTypes = true;
-      return std::move(*this).op(std::move(options).schema(schemaOrName).kernel(
-        c10::nullopt,
-        KernelFunction::makeFromUnboxedLambda<AllowLegacyTypes>(std::forward<Lambda>(lambda)),
-        // TODO Do schema inference without relying on WrapRuntimeKernelFunctor
-        detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<std::decay_t<Lambda>>>()()
-      ));
-    }
+    constexpr bool AllowLegacyTypes = true;
+    return std::move(*this).op(
+        std::move(options)
+            .schema(schemaOrName)
+            .kernel(
+                c10::nullopt,
+                KernelFunction::makeFromUnboxedLambda<AllowLegacyTypes>(
+                    std::forward<Lambda>(lambda)),
+                // TODO Do schema inference without relying on
+                // WrapRuntimeKernelFunctor
+                detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<
+                    std::decay_t<Lambda>>>()()));
+  }
 
-private:
+ private:
   void checkSchemaAndRegisterOp_(Options&& config);
 
-  static c10::FunctionSchema inferSchemaFromKernels_(const OperatorName& opNameStr, const Options& options);
+  static c10::FunctionSchema inferSchemaFromKernels_(
+      const OperatorName& opNameStr,
+      const Options& options);
   void checkNoDuplicateKernels_(const Options& options);
   void registerOp_(Options&& options);
-  void registerSchemaAndKernel_(FunctionSchema schema, Options::KernelRegistrationConfig&& config);
+  void registerSchemaAndKernel_(
+      FunctionSchema schema,
+      Options::KernelRegistrationConfig&& config);
   void registerSchemaOnly_(FunctionSchema&& schema);
 
   class OperatorRegistrar;
 
   std::vector<OperatorRegistrar> registrars_;
 
-  static_assert(std::is_nothrow_move_constructible<std::vector<OperatorRegistrar>>::value, "");
-  static_assert(std::is_nothrow_move_assignable<std::vector<OperatorRegistrar>>::value, "");
+  static_assert(
+      std::is_nothrow_move_constructible<std::vector<OperatorRegistrar>>::value,
+      "");
+  static_assert(
+      std::is_nothrow_move_assignable<std::vector<OperatorRegistrar>>::value,
+      "");
 };
 
 // --------------------------------------------------------------------------
@@ -627,7 +768,6 @@ private:
 // Also, you can omit the top level namespace and specify it explicitly in
 // the sub-definitions, e.g.,  torch::import().impl("aten::mul", ...)
 
-
 // Represents a C++ function that implements an operator.  Most users won't
 // interact directly with this class, except via error messages: the
 // constructors this function define the set of permissible "function"-like
@@ -639,22 +779,33 @@ private:
 // TODO: This is morally the same thing as KernelRegistrationConfig, but it's
 // opaque to the user.
 class CAFFE2_API CppFunction final {
-public:
+ public:
   // This overload accepts function pointers, e.g., CppFunction(&add_impl)
   template <typename Func>
-  explicit CppFunction(Func* f, std::enable_if_t<guts::is_function_type<Func>::value, std::nullptr_t> = nullptr)
-    : func_(c10::KernelFunction::makeFromUnboxedRuntimeFunction(f))
-    // TODO: Don't go through WrapRuntimeKernelFunctor
-    , schema_(detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<std::decay_t<Func>>>()())
-    {}
+  explicit CppFunction(
+      Func* f,
+      std::enable_if_t<guts::is_function_type<Func>::value, std::nullptr_t> =
+          nullptr)
+      : func_(c10::KernelFunction::makeFromUnboxedRuntimeFunction(f))
+        // TODO: Don't go through WrapRuntimeKernelFunctor
+        ,
+        schema_(detail::FunctionSchemaInferer<
+                detail::WrapRuntimeKernelFunctor<std::decay_t<Func>>>()()) {}
 
-  // This overload accepts lambdas, e.g., CppFunction([](const Tensor& self) { ... })
+  // This overload accepts lambdas, e.g., CppFunction([](const Tensor& self) {
+  // ... })
   template <typename Lambda>
-  explicit CppFunction(Lambda&& f, std::enable_if_t<guts::is_functor<std::decay_t<Lambda>>::value, std::nullptr_t> = nullptr)
-    : func_(c10::KernelFunction::makeFromUnboxedLambda(std::forward<Lambda>(f)))
-    // TODO: Don't go through WrapRuntimeKernelFunctor
-    , schema_(detail::FunctionSchemaInferer<detail::WrapRuntimeKernelFunctor<std::decay_t<Lambda>>>()())
-    {}
+  explicit CppFunction(
+      Lambda&& f,
+      std::enable_if_t<
+          guts::is_functor<std::decay_t<Lambda>>::value,
+          std::nullptr_t> = nullptr)
+      : func_(
+            c10::KernelFunction::makeFromUnboxedLambda(std::forward<Lambda>(f)))
+        // TODO: Don't go through WrapRuntimeKernelFunctor
+        ,
+        schema_(detail::FunctionSchemaInferer<
+                detail::WrapRuntimeKernelFunctor<std::decay_t<Lambda>>>()()) {}
 
   // This static factory lets you create CppFunctions that (1) don't have boxing
   // wrappers (because we don't support it yet) and (2) don't have schema
@@ -664,12 +815,11 @@ public:
   template <typename Func>
   static CppFunction makeUnboxedOnly(Func* f) {
     return CppFunction(
-      c10::KernelFunction::makeFromUnboxedOnlyRuntimeFunction(f),
-      /* schema */ nullptr
-    );
+        c10::KernelFunction::makeFromUnboxedOnlyRuntimeFunction(f),
+        /* schema */ nullptr);
   }
 
-private:
+ private:
   c10::optional<c10::DispatchKey> dispatch_key_;
   c10::KernelFunction func_;
   std::unique_ptr<c10::FunctionSchema> schema_;
@@ -700,7 +850,7 @@ inline CppFunction dispatch(c10::DispatchKey k, Func&& raw_f) {
 // Convenience overload of dispatch which accepts DeviceType
 template <typename Func>
 inline CppFunction dispatch(DeviceType type, Func&& raw_f) {
-  auto deviceTypeToDispatchKey = [](DeviceType t){
+  auto deviceTypeToDispatchKey = [](DeviceType t) {
     switch (t) {
       case DeviceType::CPU:
         return c10::DispatchKey::CPUTensorId;
@@ -709,9 +859,12 @@ inline CppFunction dispatch(DeviceType type, Func&& raw_f) {
       case DeviceType::XLA:
         return c10::DispatchKey::XLATensorId;
       default:
-        TORCH_CHECK(false,
-          "Device type ", t, " cannot be overloaded at dispatch time, "
-          "please file a bug report explaining what you were trying to do.");
+        TORCH_CHECK(
+            false,
+            "Device type ",
+            t,
+            " cannot be overloaded at dispatch time, "
+            "please file a bug report explaining what you were trying to do.");
     }
   };
   return dispatch(deviceTypeToDispatchKey(type), std::forward<Func>(raw_f));
@@ -734,8 +887,8 @@ inline CppFunction dispatch(DeviceType type, Func&& raw_f) {
 class CAFFE2_API Module final {
   // Could be nullptr, in which case it represents the "top-level" namespace
   // (all subsequent definitions must be explicitly namespaced).
-  // TODO: Could store a optional<std::string> if you want to support dynamically computed
-  // namespaces; for now don't support
+  // TODO: Could store a optional<std::string> if you want to support
+  // dynamically computed namespaces; for now don't support
   const char* ns_;
 
   // Internal implementation details; right now implement in terms of
@@ -748,7 +901,7 @@ class CAFFE2_API Module final {
   friend Module import(const char* ns);
   friend Module import();
 
-public:
+ public:
   Module(const Module&) = delete;
   Module& operator=(const Module&) = delete;
 
@@ -761,9 +914,9 @@ public:
   Module&& def(const char* schema) &&;
 
   // Convenience method to define an operator for a schema and then register
-  // an implementation for it.  def(n, f) is almost equivalent to def(n).impl(f),
-  // except that if n is not a schema, then the schema is inferred from the
-  // static type of f.
+  // an implementation for it.  def(n, f) is almost equivalent to
+  // def(n).impl(f), except that if n is not a schema, then the schema is
+  // inferred from the static type of f.
   Module&& def(const char* name_or_schema, CppFunction&& f) &&;
   template <typename Func>
   Module&& def(const char* name_or_schema, Func&& raw_f) && {
@@ -801,10 +954,10 @@ inline Module import() {
 } // namespace c10
 
 namespace torch {
-  // Old-style API
-  using RegisterOperators = c10::RegisterOperators;
+// Old-style API
+using RegisterOperators = c10::RegisterOperators;
 
-  // New-style API
-  using c10::dispatch;
-  using c10::import;
-}
+// New-style API
+using c10::dispatch;
+using c10::import;
+} // namespace torch

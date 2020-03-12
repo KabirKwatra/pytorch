@@ -1,8 +1,8 @@
-#include "torch/csrc/jit/runtime/operator.h"
 #include "torch/csrc/jit/runtime/custom_operator.h"
+#include "torch/csrc/jit/runtime/operator.h"
 
-#include "torch/csrc/autograd/profiler.h"
 #include "torch/csrc/autograd/generated/variable_factories.h"
+#include "torch/csrc/autograd/profiler.h"
 
 #include <ATen/ATen.h>
 #include <ATen/core/functional.h>
@@ -31,19 +31,20 @@
 // file and in a particular order. See gen_jit_dispatch.py for
 // details.
 
-namespace torch { namespace jit {
+namespace torch {
+namespace jit {
 
-using autograd::Variable;
-using autograd::variable_list;
+using at::DeviceGuard;
+using at::MemoryFormat;
 using at::Scalar;
 using at::ScalarType;
 using at::Tensor;
 using at::TensorOptions;
-using at::DeviceGuard;
-using at::MemoryFormat;
+using autograd::Variable;
+using autograd::variable_list;
 
-using ::c10::fmap;
 using ::c10::filter;
+using ::c10::fmap;
 
 namespace {
 
@@ -66,13 +67,13 @@ std::vector<Tensor> toListOfOptionalTensor(const IValue& v) {
   auto vlist = v.toListRef();
   std::vector<Tensor> res;
 
-  for (const IValue &v: vlist) {
+  for (const IValue& v : vlist) {
     res.emplace_back(toOptionalTensor(v));
   }
   return res;
 }
 
-template<size_t N>
+template <size_t N>
 std::array<bool, N> as_bool_array(const c10::List<bool>& list) {
   std::array<bool, N> res;
   AT_ASSERT(list.size() == N);
@@ -127,7 +128,7 @@ RegisterOperators reg(
      // Generated operators
      ${constructors}});
 
-} // anon namespace
+} // namespace
 
-
-}} // namespace torch::jit
+} // namespace jit
+} // namespace torch
