@@ -3,10 +3,10 @@ The weak_script annotation needs to be here instead of inside torch/jit/ so it
 can be used in other places in torch/ (namely torch.nn) without running into
 circular dependency problems
 """
-
 import inspect
-import weakref
 import warnings
+import weakref
+
 import torch
 from torch._six import builtins
 from torch._utils_internal import get_source_lines_and_file
@@ -25,15 +25,16 @@ def createResolutionCallbackFromEnv(lookup_base):
     You should not use this directly, it should only be used from the other
     createResolutionCallbackFrom* functions.
     """
+
     def env(qualified_name, module):
         # We may need to resolve a qualified name, something like `torch.device`
         # or `a.b.c.d`. We first look up `torch` or `a` in the function's closed
         # over scope, then proceed to use the looked-up value to go down the
         # chain.
-        if '.' in qualified_name:
-            parts = qualified_name.split('.')
+        if "." in qualified_name:
+            parts = qualified_name.split(".")
             base = parts[0]
-            remainding_pieces = '.'.join(parts[1:])
+            remainding_pieces = ".".join(parts[1:])
             module_value = getattr(module, base)
             return env(remainding_pieces, module_value)
         else:
@@ -100,6 +101,7 @@ def get_closure(fn):
 
     return captures
 
+
 # [local resolution in python]
 # Depending on where a variable is defined, and where it is used, we may
 # or may not be able to recover its value when recursively compiling a
@@ -142,7 +144,6 @@ def get_closure(fn):
 # values global in the function.
 
 
-
 def createResolutionCallbackFromClosure(fn):
     """
     Create a resolutionCallback by introspecting the function instead of
@@ -169,8 +170,11 @@ def can_compile_class(cls):
     if is_ignored_fn(cls):
         return False
     names = cls.__dict__
-    fns = [getattr(cls, name) for name in names if inspect.isroutine(getattr(cls, name, None))]
-    has_code = [hasattr(fn, '__code__') for fn in fns]
+    fns = [
+        getattr(cls, name) for name in names
+        if inspect.isroutine(getattr(cls, name, None))
+    ]
+    has_code = [hasattr(fn, "__code__") for fn in fns]
     return all(has_code)
 
 
@@ -181,7 +185,10 @@ def createResolutionCallbackForClassMethods(cls):
     """
     # cls is a type here, so `ismethod` is false since the methods on the type
     # aren't bound to anything, so Python treats them as regular functions
-    fns = [getattr(cls, name) for name in cls.__dict__ if inspect.isroutine(getattr(cls, name))]
+    fns = [
+        getattr(cls, name) for name in cls.__dict__
+        if inspect.isroutine(getattr(cls, name))
+    ]
     captures = {}
 
     for fn in fns:
@@ -190,12 +197,14 @@ def createResolutionCallbackForClassMethods(cls):
     return lambda key: captures.get(key, None)
 
 
-def boolean_dispatch(arg_name, arg_index, default, if_true, if_false, module_name, func_name):
+def boolean_dispatch(arg_name, arg_index, default, if_true, if_false,
+                     module_name, func_name):
     """
     Dispatches to either of 2 script functions based on a boolean argument.
     In TorchScript, the boolean argument must be constant so that the correct
     function to use can be determined at compile time.
     """
+
     def fn(*args, **kwargs):
         dispatch_flag = False
         if arg_name in kwargs:
@@ -231,7 +240,7 @@ def boolean_dispatch(arg_name, arg_index, default, if_true, if_false, module_nam
         "if_false": if_false,
         "index": arg_index,
         "default": default,
-        "arg_name": arg_name
+        "arg_name": arg_name,
     }
     return fn
 
@@ -241,12 +250,14 @@ class FunctionModifiers(object):
     Used to denote the behavior of a function in TorchScript. See export() and
     ignore() for details.
     """
+
     UNUSED = "unused (ignored and replaced with raising of an exception)"
     IGNORE = "ignore (leave as a call to Python, cannot be torch.jit.save'd)"
     EXPORT = "export (compile this function even if nothing calls it)"
     DEFAULT = "default (compile if called from a exported function / forward)"
-    COPY_TO_SCRIPT_WRAPPER = \
+    COPY_TO_SCRIPT_WRAPPER = (
         "if this method is not scripted, copy the python method onto the scripted model"
+    )
 
 
 def export(fn):
@@ -335,6 +346,7 @@ def unused(fn):
     fn._torchscript_modifier = FunctionModifiers.UNUSED
     return fn
 
+
 def ignore(drop=False, **kwargs):
     """
     This decorator indicates to the compiler that a function or method should
@@ -412,13 +424,19 @@ def ignore(drop=False, **kwargs):
     # for backwards compat
     drop_on_export = kwargs.pop("drop_on_export", None)
     if drop_on_export:
-        warnings.warn("ignore(drop_on_export=True) has been deprecated. TorchScript will now drop the function "
-                      "call on compilation. Use torch.jit.unused now. {}", category=FutureWarning)
+        warnings.warn(
+            "ignore(drop_on_export=True) has been deprecated. TorchScript will now drop the function "
+            "call on compilation. Use torch.jit.unused now. {}",
+            category=FutureWarning,
+        )
 
         drop = drop_on_export
     elif drop:
-        warnings.warn("ignore(True) has been deprecated. TorchScript will now drop the function "
-                      "call on compilation. Use torch.jit.unused now. {}", category=FutureWarning)
+        warnings.warn(
+            "ignore(True) has been deprecated. TorchScript will now drop the function "
+            "call on compilation. Use torch.jit.unused now. {}",
+            category=FutureWarning,
+        )
 
     def decorator(fn):
         if drop:
@@ -426,12 +444,14 @@ def ignore(drop=False, **kwargs):
         else:
             fn._torchscript_modifier = FunctionModifiers.IGNORE
         return fn
+
     return decorator
 
 
 def _copy_to_script_wrapper(fn):
     fn._torchscript_modifier = FunctionModifiers.COPY_TO_SCRIPT_WRAPPER
     return fn
+
 
 def module_has_exports(mod):
     for name in dir(mod):
@@ -440,6 +460,7 @@ def module_has_exports(mod):
             if get_torchscript_modifier(item) is FunctionModifiers.EXPORT:
                 return True
     return False
+
 
 def should_drop(fn):
     attr = get_torchscript_modifier(fn)
@@ -452,12 +473,14 @@ def is_ignored_fn(fn):
     mod = get_torchscript_modifier(fn)
     return mod is FunctionModifiers.UNUSED or mod is FunctionModifiers.IGNORE
 
+
 def get_torchscript_modifier(fn):
     if not callable(fn):
         return None
-    if hasattr(fn, '__func__'):
+    if hasattr(fn, "__func__"):
         fn = fn.__func__
-    return getattr(fn, '_torchscript_modifier', FunctionModifiers.DEFAULT)
+    return getattr(fn, "_torchscript_modifier", FunctionModifiers.DEFAULT)
+
 
 def copy_torchscript_modifier(orig, new):
     attr = get_torchscript_modifier(orig)
@@ -465,12 +488,14 @@ def copy_torchscript_modifier(orig, new):
         return
     new._torchscript_modifier = attr
 
+
 # overloading registration
 # overloads get registered in this file, and compiled in torch/jit/__init__.py
 # so that they can be imported in nn/functional.py without an import cycle
 
 # qualified_name => list[overload_functions]
 _overloaded_fns = {}  # noqa: T484
+
 
 def _overload(func):
     qual_name = _qualified_name(func)
@@ -482,11 +507,14 @@ def _overload(func):
     fn_overload_list.append(func)
     return func
 
+
 def _get_fn_overloads(qual_name):
     return _overloaded_fns.get(qual_name)
 
+
 def _clear_fn_overloads(qual_name):
     del _overloaded_fns[qual_name]
+
 
 def get_class_name_lineno(method):
     current_frame = inspect.currentframe()
@@ -497,6 +525,7 @@ def get_class_name_lineno(method):
     class_name = current_frame.f_code.co_name
     line_no = current_frame.f_code.co_firstlineno
     return class_name, line_no
+
 
 # At the the point the decorator is applied to class methods the method
 # has no reference to its owning class. _qualified_name would not include
@@ -510,9 +539,9 @@ def get_class_name_lineno(method):
 # qualified_name => class name => list[overload_functions]
 _overloaded_methods = {}  # noqa: T484
 
-
 # (qualified_name, class name) => class_fileno
 _overloaded_method_class_fileno = {}
+
 
 def _overload_method(func):
     qual_name = _qualified_name(func)
@@ -529,13 +558,16 @@ def _overload_method(func):
         class_name_map[class_name] = method_overloads
         _overloaded_method_class_fileno[(qual_name, class_name)] = line_no
     else:
-        existing_lineno = _overloaded_method_class_fileno[(qual_name, class_name)]
+        existing_lineno = _overloaded_method_class_fileno[(qual_name,
+                                                           class_name)]
         if existing_lineno != line_no:
-            raise RuntimeError("Cannot currently overload the same method name in two different"
-                               " classes with the same name in the same module")
+            raise RuntimeError(
+                "Cannot currently overload the same method name in two different"
+                " classes with the same name in the same module")
 
     method_overloads.append(func)
     return func
+
 
 def _get_overloaded_methods(method, mod_class):
     # TODO: __name__ not set for submodules in recursive script
@@ -551,10 +583,15 @@ def _get_overloaded_methods(method, mod_class):
 
     method_line_no = get_source_lines_and_file(method)[1]
     mod_class_fileno = get_source_lines_and_file(mod_class)[1]
-    mod_end_fileno = mod_class_fileno + len(get_source_lines_and_file(mod_class)[0])
-    if not (method_line_no >= mod_class_fileno and method_line_no <= mod_end_fileno):
-        raise Exception("Overloads are not useable when a module is redeclared within the same file: " + str(method))
+    mod_end_fileno = mod_class_fileno + len(
+        get_source_lines_and_file(mod_class)[0])
+    if not (method_line_no >= mod_class_fileno
+            and method_line_no <= mod_end_fileno):
+        raise Exception(
+            "Overloads are not useable when a module is redeclared within the same file: "
+            + str(method))
     return overloads
+
 
 try:
     import typing
@@ -562,25 +599,25 @@ try:
 
     def is_tuple(ann):
         # For some reason Python 3.7 violates the Type[A, B].__origin__ == Type rule
-        if not hasattr(ann, '__module__'):
+        if not hasattr(ann, "__module__"):
             return False
-        return ann.__module__ == 'typing' and \
-            (getattr(ann, '__origin__', None) is typing.Tuple or
-             getattr(ann, '__origin__', None) is tuple)
+        return ann.__module__ == "typing" and (
+            getattr(ann, "__origin__", None) is typing.Tuple
+            or getattr(ann, "__origin__", None) is tuple)
 
     def is_list(ann):
-        if not hasattr(ann, '__module__'):
+        if not hasattr(ann, "__module__"):
             return False
-        return ann.__module__ == 'typing' and \
-            (getattr(ann, '__origin__', None) is typing.List or
-             getattr(ann, '__origin__', None) is list)
+        return ann.__module__ == "typing" and (
+            getattr(ann, "__origin__", None) is typing.List
+            or getattr(ann, "__origin__", None) is list)
 
     def is_dict(ann):
-        if not hasattr(ann, '__module__'):
+        if not hasattr(ann, "__module__"):
             return False
-        return ann.__module__ == 'typing' and \
-            (getattr(ann, '__origin__', None) is typing.Dict or
-             getattr(ann, '__origin__', None) is dict)
+        return ann.__module__ == "typing" and (
+            getattr(ann, "__origin__", None) is typing.Dict
+            or getattr(ann, "__origin__", None) is dict)
 
     def is_optional(ann):
         # Optional[T] is just shorthand for Union[T, None], so check for both
@@ -591,19 +628,22 @@ try:
                 return False
             return issubclass(the_type, super_type)
 
-        if not hasattr(ann, '__module__'):
+        if not hasattr(ann, "__module__"):
             return False
 
         union_optional = False
-        if ann.__module__ == 'typing' and \
-           (getattr(ann, '__origin__', None) is typing.Union):
-            args = getattr(ann, '__args__', ())
+        if ann.__module__ == "typing" and (getattr(ann, "__origin__", None) is
+                                           typing.Union):
+            args = getattr(ann, "__args__", ())
             if len(args) == 2:
-                union_optional = (safe_is_subclass(args[1], type(None)) and not safe_is_subclass(args[0], type(None))) \
-                    or (safe_is_subclass(args[0], type(None)) and not safe_is_subclass(args[1], type(None)))
+                union_optional = (
+                    safe_is_subclass(args[1], type(None))
+                    and not safe_is_subclass(args[0], type(None))) or (
+                        safe_is_subclass(args[0], type(None))
+                        and not safe_is_subclass(args[1], type(None)))
 
-        optional = ann.__module__ == 'typing' and \
-            (getattr(ann, '__origin__', None) is typing.Optional)
+        optional = ann.__module__ == "typing" and (getattr(
+            ann, "__origin__", None) is typing.Optional)
 
         return optional or union_optional
 
@@ -618,13 +658,13 @@ except ImportError:
             return TupleInstance(types)
 
     class TupleInstance(object):
-        __slots__ = ['__args__']
+        __slots__ = ["__args__"]
 
         def __init__(self, types):
             self.__args__ = types
 
     class ListInstance(object):
-        __slots__ = ['__args__']
+        __slots__ = ["__args__"]
 
         def __init__(self, types):
             self.__args__ = types
@@ -634,7 +674,7 @@ except ImportError:
             return TupleInstance(types)
 
     class DictInstance(object):
-        __slots__ = ['__args__']
+        __slots__ = ["__args__"]
 
         def __init__(self, types):
             self.__args__ = types
@@ -644,7 +684,7 @@ except ImportError:
             return DictInstance(types)
 
     class OptionalInstance(object):
-        __slots__ = ['__args__']
+        __slots__ = ["__args__"]
 
         def __init__(self, types):
             self.__args__ = types
@@ -680,12 +720,13 @@ try:
     from typing_extensions import Final
 
     def is_final(ann):
-        return ann.__module__ == 'typing_extensions' and \
-            (getattr(ann, '__origin__', None) is typing_extensions.Final)
+        return ann.__module__ == "typing_extensions" and (getattr(
+            ann, "__origin__", None) is typing_extensions.Final)
+
 except ImportError:
     # Same as above, this polyfill is only for `typing_extensions`
     class FinalInstance(object):
-        __slots__ = ['__args__']
+        __slots__ = ["__args__"]
 
         def __init__(self, types):
             self.__args__ = types
@@ -703,10 +744,10 @@ except ImportError:
 try:
     from typing import TypeVar, Generic
 
-    T = TypeVar('T')
+    T = TypeVar("T")
 
     class RRef(Generic[T]):
-        __slots__ = ['__args__']
+        __slots__ = ["__args__"]
 
         def __init__(self, types):
             self.__args__ = types
@@ -715,8 +756,9 @@ try:
         return getattr(ann, "__origin__", None) is RRef
 
 except ImportError:
+
     class RRefInstance(object):
-        __slots__ = ['__args__']
+        __slots__ = ["__args__"]
 
         def __init__(self, types):
             self.__args__ = types
@@ -736,6 +778,7 @@ class BroadcastingListCls(object):
     def __getitem__(self, types):
         return
 
+
 # mypy doesn't support parameters on types, so we have to explicitly type each
 # list size
 BroadcastingList1 = BroadcastingListCls()
@@ -743,6 +786,8 @@ for i in range(2, 7):
     globals()["BroadcastingList{}".format(i)] = BroadcastingList1
 
 # Retrieves a fully-qualified name (module hierarchy + classname) for a given obj.
+
+
 def _qualified_name(obj):
     # This special case allows us to override the qualified name on a type.
     # It's currently used in conjunction with tracing, where we create a
@@ -751,15 +796,15 @@ def _qualified_name(obj):
     # its qualname so it appears correctly in the TorchScript system. This,
     # we set '_jit_override_qualname' with the original traced module's
     # qualified name, which is picked up here
-    if hasattr(obj, '_jit_override_qualname'):
+    if hasattr(obj, "_jit_override_qualname"):
         return obj._jit_override_qualname
     # short-circuit in cases where the object already has a known qualified name
     if isinstance(obj, torch._C.ScriptFunction):
         return obj.qualified_name
 
     name = obj.__name__
-    if name == '<lambda>':
-        name = '_lambda'  # make name a valid identifier
+    if name == "<lambda>":
+        name = "_lambda"  # make name a valid identifier
 
     module_name = obj.__module__
 
@@ -795,10 +840,18 @@ def _qualified_name(obj):
 # Thin wrapper around SourceRangeFactory to store extra metadata
 # about the function-to-be-compiled.
 class SourceContext(torch._C._jit_tree_views.SourceRangeFactory):
-    def __init__(self, source, filename, file_lineno, leading_whitespace_len, uses_true_division=True):
-        super(SourceContext, self).__init__(source, filename, file_lineno, leading_whitespace_len)
+    def __init__(
+            self,
+            source,
+            filename,
+            file_lineno,
+            leading_whitespace_len,
+            uses_true_division=True,
+    ):
+        super(SourceContext, self).__init__(source, filename, file_lineno,
+                                            leading_whitespace_len)
         self.uses_true_division = uses_true_division
 
 
 def fake_range():
-    return SourceContext('', None, 0, 0)
+    return SourceContext("", None, 0, 0)
