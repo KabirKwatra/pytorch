@@ -1,8 +1,9 @@
-import torch._C as C
-from torch.testing._internal.common_utils import TestCase, run_tests
-
 import itertools
 import unittest
+
+import torch._C as C
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import TestCase
 
 # TODO: Expand the dispatcher API to be a generic API for interfacing with
 # the dispatcher from Python!

@@ -1,8 +1,10 @@
 """Gradient interface"""
+import warnings
 
 import torch
-from .modules.utils import _single, _pair, _triple
-import warnings
+from .modules.utils import _pair
+from .modules.utils import _single
+from .modules.utils import _triple
 
 
 def _grad_input_padding(

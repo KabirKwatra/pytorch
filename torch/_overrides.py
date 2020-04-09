@@ -14,12 +14,12 @@ https://www.numpy.org/neps/nep-0018-array-function-protocol.html
 )
 
 """
-
 import __future__
 
 import collections
-import torch
 import types
+
+import torch
 
 
 def get_ignored_functions():

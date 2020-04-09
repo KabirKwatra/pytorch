@@ -2,13 +2,16 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
-from caffe2.python import core, workspace
-from caffe2.python.core import CreatePythonOperator
-import caffe2.python.hypothesis_test_util as hu
-from hypothesis import given
+
 import hypothesis.strategies as st
 import numpy as np
 import six
+from hypothesis import given
+
+import caffe2.python.hypothesis_test_util as hu
+from caffe2.python import core
+from caffe2.python import workspace
+from caffe2.python.core import CreatePythonOperator
 
 
 class CustomError(Exception):

@@ -23,9 +23,13 @@
 #     differentiable subcomponents.
 #
 from __future__ import print_function
-from .utils import CodeTemplate, nested_dict, write, uninplace_api_name
+
 from .gen_autograd import VIEW_FUNCTIONS
 from .gen_autograd_functions import uses_single_grad
+from .utils import CodeTemplate
+from .utils import nested_dict
+from .utils import uninplace_api_name
+from .utils import write
 
 # These functions we don't want to record for tracing, because we always want
 # to trace their constituent parts.  This is a temporary hack in lieue

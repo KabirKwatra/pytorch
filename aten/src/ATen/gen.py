@@ -1,19 +1,18 @@
-from code_template import CodeTemplate
-import gen_backend_select_register
-import function_wrapper
-import preprocess_declarations
-import native_parse
-import nn_parse
-import cwrap_parser
 import argparse
 import os
-
-import yaml
+import sys
 from collections import defaultdict
 from collections import OrderedDict
-
-import sys
 from os import path
+
+import cwrap_parser
+import function_wrapper
+import gen_backend_select_register
+import native_parse
+import nn_parse
+import preprocess_declarations
+import yaml
+from code_template import CodeTemplate
 
 sys.path.append(path.dirname(path.abspath(__file__)))
 

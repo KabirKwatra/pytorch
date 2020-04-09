@@ -5,17 +5,20 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from collections import namedtuple, defaultdict
-from past.builtins import basestring
-
-import logging
 import copy
+import logging
+from collections import defaultdict
+from collections import namedtuple
 
 import numpy as np
+from past.builtins import basestring
 
-from caffe2.python import core, scope, utils, workspace
-from caffe2.python.modeling import parameter_info
 from caffe2.proto import caffe2_pb2
+from caffe2.python import core
+from caffe2.python import scope
+from caffe2.python import utils
+from caffe2.python import workspace
+from caffe2.python.modeling import parameter_info
 
 
 _LEARNING_RATE_INJECTION = "lr_injection"
