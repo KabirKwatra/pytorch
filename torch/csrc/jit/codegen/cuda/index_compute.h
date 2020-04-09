@@ -58,21 +58,21 @@ namespace fuser {
 // Play split/merge/reorder operations backwards to compute indexing into
 // original tensor.
 struct IndexCompute : public TransformIter {
-protected:
-    // Replay overrides which modify indices
-    void replayBackward(Split* expr) override;
-    void replayBackward(Merge* expr) override;
-    void replayBackward(Reorder* expr) override;
+ protected:
+  // Replay overrides which modify indices
+  void replayBackward(Split* expr) override;
+  void replayBackward(Merge* expr) override;
+  void replayBackward(Reorder* expr) override;
 
-    // Axis_map for
-    std::vector<Val*> indices;
+  // Axis_map for
+  std::vector<Val*> indices;
 
-    IndexCompute(const TensorView* tv, std::vector<Val*> _indices);
+  IndexCompute(const TensorView* tv, std::vector<Val*> _indices);
 
-public:
-    static std::vector<Val*> computeIndices(
-        const TensorView* tv,
-        std::vector<Val*> _indices);
+ public:
+  static std::vector<Val*> computeIndices(
+      const TensorView* tv,
+      std::vector<Val*> _indices);
 };
 
 } // namespace fuser

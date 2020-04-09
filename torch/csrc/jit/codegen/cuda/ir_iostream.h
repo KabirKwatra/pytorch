@@ -47,81 +47,81 @@ struct Add;
  */
 
 struct TORCH_CUDA_API IRPrinter : public OptInConstDispatch {
-    std::ostream& os;
-    bool print_inline_ = false;
+  std::ostream& os;
+  bool print_inline_ = false;
 
-    // Track the indentation size for pretty printing
-    int indent_size = 0;
+  // Track the indentation size for pretty printing
+  int indent_size = 0;
 
-    // Indent the generated code
-    void indent() {
-        for (int i = 0; i < indent_size; i++)
-            os << "  ";
-    }
+  // Indent the generated code
+  void indent() {
+    for (int i = 0; i < indent_size; i++)
+      os << "  ";
+  }
 
-    void resetIndent() {
-        indent_size = 0;
-    }
+  void resetIndent() {
+    indent_size = 0;
+  }
 
-    void printHeader(Fusion* fusion, const std::string& kernel_name_);
+  void printHeader(Fusion* fusion, const std::string& kernel_name_);
 
-public:
-    IRPrinter(std::ostream& _os) : os(_os) {}
+ public:
+  IRPrinter(std::ostream& _os) : os(_os) {}
 
-    virtual void handle(Fusion* const f);
+  virtual void handle(Fusion* const f);
 
-    // handle calls some non const fusion ops,
-    // eventhough fusion should remain unchanged.
-    // Need to look into this.
-    virtual void handle(const Fusion* const f) {
-        handle(const_cast<Fusion*>(f));
-    }
-    virtual void handle(Fusion& f) {
-        handle(&f);
-    }
+  // handle calls some non const fusion ops,
+  // eventhough fusion should remain unchanged.
+  // Need to look into this.
+  virtual void handle(const Fusion* const f) {
+    handle(const_cast<Fusion*>(f));
+  }
+  virtual void handle(Fusion& f) {
+    handle(&f);
+  }
 
-    virtual void handle(const Statement* const s) {
-        OptInConstDispatch::handle(s);
-    };
+  virtual void handle(const Statement* const s) {
+    OptInConstDispatch::handle(s);
+  };
 
-    virtual void handle(const Val* const v) {
-        OptInConstDispatch::handle(v);
-    };
-    virtual void handle(const Expr* const e) {
-        OptInConstDispatch::handle(e);
-    };
+  virtual void handle(const Val* const v) {
+    OptInConstDispatch::handle(v);
+  };
+  virtual void handle(const Expr* const e) {
+    OptInConstDispatch::handle(e);
+  };
 
-    virtual void handle(const TensorDomain* const);
-    virtual void handle(const TensorView* const);
-    virtual void handle(const IterDomain* const);
-    virtual void handle(const TensorIndex* const);
-    virtual void handle(const TensorContiguity* const);
+  virtual void handle(const TensorDomain* const);
+  virtual void handle(const TensorView* const);
+  virtual void handle(const IterDomain* const);
+  virtual void handle(const TensorIndex* const);
+  virtual void handle(const TensorContiguity* const);
 
-    virtual void handle(const Float* const);
-    virtual void handle(const Int* const);
-    virtual void handle(const NamedScalar* const);
+  virtual void handle(const Float* const);
+  virtual void handle(const Int* const);
+  virtual void handle(const NamedScalar* const);
 
-    virtual void handle(const UnaryOp* const);
-    virtual void handle(const BinaryOp* const);
+  virtual void handle(const UnaryOp* const);
+  virtual void handle(const BinaryOp* const);
 
-    virtual void handle(const ForLoop* const);
-    virtual void handle(const IfThenElse* const);
-    virtual void handle(const Allocate* const);
+  virtual void handle(const ForLoop* const);
+  virtual void handle(const IfThenElse* const);
+  virtual void handle(const Allocate* const);
 
-    virtual void handle(const Split* const);
-    virtual void handle(const Merge* const);
-    virtual void handle(const Reorder* const);
+  virtual void handle(const Split* const);
+  virtual void handle(const Merge* const);
+  virtual void handle(const Reorder* const);
 
-    void print_inline(const Statement* const stmt) {
-        bool prev = print_inline_;
-        print_inline_ = true;
-        handle(stmt);
-        print_inline_ = prev;
-    }
+  void print_inline(const Statement* const stmt) {
+    bool prev = print_inline_;
+    print_inline_ = true;
+    handle(stmt);
+    print_inline_ = prev;
+  }
 
-    void printKernel(
-        const std::vector<Expr*>& exprs,
-        const std::string& kernel_name);
+  void printKernel(
+      const std::vector<Expr*>& exprs,
+      const std::string& kernel_name);
 };
 
 TORCH_CUDA_API std::ostream& operator<<(
