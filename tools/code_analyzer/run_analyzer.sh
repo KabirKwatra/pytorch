@@ -20,6 +20,6 @@ echo "Analyze: $INPUT"
   -format="$FORMAT" \
   "$EXTRA_ANALYZER_FLAGS" \
   "$INPUT" \
-  > "$OUTPUT"
+  >"$OUTPUT"
 
 echo "Result: $OUTPUT"

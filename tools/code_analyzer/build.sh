@@ -26,7 +26,10 @@
 
 set -ex
 
-SRC_ROOT="$( cd "$(dirname "$0")"/../.. ; pwd -P)"
+SRC_ROOT="$(
+  cd "$(dirname "$0")"/../..
+  pwd -P
+)"
 ANALYZER_SRC_HOME="$SRC_ROOT/tools/code_analyzer"
 
 # Clang/LLVM path
@@ -95,8 +98,8 @@ analyze_torch_mobile() {
     # TODO: invoke llvm-link from cmake directly to avoid this hack.
     # TODO: include *.c.o when there is meaningful fan-out from pure-c code.
     "$LLVM_DIR/bin/llvm-link" -S \
-    "$(find "$TORCH_BUILD_ROOT" -name '*.cpp.o' -o -name '*.cc.o')" \
-    -o "$INPUT"
+      "$(find "$TORCH_BUILD_ROOT" -name '*.cpp.o' -o -name '*.cc.o')" \
+      -o "$INPUT"
   fi
 
   # Analyze dependency
@@ -104,13 +107,13 @@ analyze_torch_mobile() {
 
   if [ -n "$DEPLOY" ]; then
     DEST="$BUILD_ROOT/pt_deps.bzl"
-    cat > "$DEST" <<- EOM
+    cat >"$DEST" <<-EOM
 # Generated for selective build without using static dispatch.
 # Manually run the script to update:
 # ANALYZE_TORCH=1 FORMAT=py DEPLOY=1 tools/code_analyzer/build.sh
 EOM
-    printf "TORCH_DEPS = " >> "$DEST"
-    cat "$OUTPUT" >> "$DEST"
+    printf "TORCH_DEPS = " >>"$DEST"
+    cat "$OUTPUT" >>"$DEST"
     echo "Deployed file at: $DEST"
   fi
 }
@@ -123,9 +126,9 @@ analyze_test_project() {
   # Link into a single module (only need c10 and OpLib srcs)
   # TODO: invoke llvm-link from cmake directly to avoid this hack.
   "$LLVM_DIR/bin/llvm-link" -S \
-  "$(find "$TORCH_BUILD_ROOT" -path '*/c10*' \( -name '*.cpp.o' -o -name '*.cc.o' \))" \
-  "$(find "$TEST_BUILD_ROOT" -path '*/OpLib*' \( -name '*.cpp.o' -o -name '*.cc.o' \))" \
-  -o "$INPUT"
+    "$(find "$TORCH_BUILD_ROOT" -path '*/c10*' \( -name '*.cpp.o' -o -name '*.cc.o' \))" \
+    "$(find "$TEST_BUILD_ROOT" -path '*/OpLib*' \( -name '*.cpp.o' -o -name '*.cc.o' \))" \
+    -o "$INPUT"
 
   # Analyze dependency
   call_analyzer
