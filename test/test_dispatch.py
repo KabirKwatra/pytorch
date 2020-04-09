@@ -31,8 +31,15 @@ class TestDispatch(TestCase):
     # You probably don't want to call this directly; if your constructors
     # don't commute, you can still run commute with a fixed ctor_order
     # so that you can test that the destructors still commute
-    def run_ops(self, name, ops, ctor_order=None, dtor_order=None,
-                results=None, expect_raises=False):
+    def run_ops(
+        self,
+        name,
+        ops,
+        ctor_order=None,
+        dtor_order=None,
+        results=None,
+        expect_raises=False,
+    ):
         """
         Given a list of operator registrations, run the registrations in the
         order specified by ctor_order, and then run the deregistrations in
@@ -75,16 +82,18 @@ class TestDispatch(TestCase):
         def check_invariants(actual_provenance):
             C._dispatch_check_invariants(name)
             # Normalize the test namespace so that expected outputs are stable
-            actual = C._dispatch_dump(
-                "{}::{}".format(test_namespace, name)).replace(test_namespace, "test")
+            actual = C._dispatch_dump("{}::{}".format(test_namespace, name)).replace(
+                test_namespace, "test"
+            )
             expected, expected_provenance = results.setdefault(
-                frozenset(active_ops),
-                (actual, actual_provenance)
+                frozenset(active_ops), (actual, actual_provenance)
             )
             self.assertMultiLineEqual(
-                expected, actual,
-                "expected from {}; actual from {}"
-                .format(expected_provenance, actual_provenance)
+                expected,
+                actual,
+                "expected from {}; actual from {}".format(
+                    expected_provenance, actual_provenance
+                ),
             )
 
         results.setdefault(frozenset(), ("", "hardcoded initial state"))
@@ -96,14 +105,17 @@ class TestDispatch(TestCase):
             active_ops.add(op_ix)
             try:
                 ops[op_ix](refs[op_ix])
-                check_invariants("running ctors {}".format(ctor_order[:i + 1]))
+                check_invariants("running ctors {}".format(ctor_order[: i + 1]))
             except RuntimeError as e:
                 if not expect_raises:
                     raise
                 actual = str(e).replace(test_namespace, "test")
                 expected, expected_provenance = results.setdefault(
                     frozenset(active_ops),
-                    (actual, "error after running ctors {}".format(ctor_order[:i + 1]))
+                    (
+                        actual,
+                        "error after running ctors {}".format(ctor_order[: i + 1]),
+                    ),
                 )
                 self.assertMultiLineEqual(expected, actual, expected_provenance)
                 set_to_report = frozenset(active_ops)
@@ -113,8 +125,8 @@ class TestDispatch(TestCase):
                 check_invariants(
                     "running ctors {} and then failing to run ctor {} "
                     "(did this failure leave the dispatcher in a wedged state? "
-                    "it shouldn't!)"
-                    .format(ctor_order[:i], op_ix))
+                    "it shouldn't!)".format(ctor_order[:i], op_ix)
+                )
                 break
         last_ctor = i
         if expect_raises and len(active_ops) == len(ops):
@@ -124,7 +136,8 @@ class TestDispatch(TestCase):
             self.assertTrue(
                 False,
                 "expected exception to be raised, but nothing was raised "
-                "(after running ctors {})".format(ctor_order))
+                "(after running ctors {})".format(ctor_order),
+            )
         # In the order specified by dtor_order, run deregistrations
         for i, op_ix in enumerate(dtor_order):
             # Trigger a destruction
@@ -136,8 +149,9 @@ class TestDispatch(TestCase):
             else:
                 active_ops.remove(op_ix)
             check_invariants(
-                "running ctors {}, then running dtors {}"
-                .format(ctor_order[:last_ctor + 1], dtor_order[:i + 1])
+                "running ctors {}, then running dtors {}".format(
+                    ctor_order[: last_ctor + 1], dtor_order[: i + 1]
+                )
             )
         return results[set_to_report][0]
 
@@ -169,8 +183,13 @@ class TestDispatch(TestCase):
         def go(ctor_order):
             for dtor_order in itertools.permutations(range(len(ops))):
                 self.run_ops(
-                    name, ops, ctor_order, dtor_order,
-                    results=results, expect_raises=expect_raises)
+                    name,
+                    ops,
+                    ctor_order,
+                    dtor_order,
+                    results=results,
+                    expect_raises=expect_raises,
+                )
 
         if ctor_order is not None:
             go(ctor_order)
@@ -186,98 +205,140 @@ class TestDispatch(TestCase):
         return results[frozenset(range(len(ops)))][0]
 
     def test_def(self):
-        r = self.commute("foo", [
-            # m.def("foo(Tensor x) -> Tensor")
-            lambda m: m.def_("foo(Tensor x) -> Tensor"),
-            # m.impl("test_def", [](const Tensor& x) { return x })
-            lambda m: m.impl_t_t("foo"),
-            # m.impl("test_def", kAutograd, [](const Tensor& x) { return x })
-            lambda m: m.impl_t_t("foo", dispatch="autograd")
-        ])
-        self.assertExpectedInline(r, '''\
+        r = self.commute(
+            "foo",
+            [
+                # m.def("foo(Tensor x) -> Tensor")
+                lambda m: m.def_("foo(Tensor x) -> Tensor"),
+                # m.impl("test_def", [](const Tensor& x) { return x })
+                lambda m: m.impl_t_t("foo"),
+                # m.impl("test_def", kAutograd, [](const Tensor& x) { return x })
+                lambda m: m.impl_t_t("foo", dispatch="autograd"),
+            ],
+        )
+        self.assertExpectedInline(
+            r,
+            """\
 name: test::foo
 schema: test::foo(Tensor x) -> (Tensor)
 alias analysis kind: FROM_SCHEMA
 VariableTensorId: impl_t_t :: (Tensor _0) -> (Tensor _0) [ boxed unboxed ]
 catchall: impl_t_t :: (Tensor _0) -> (Tensor _0) [ boxed unboxed ]
-''')
+""",
+        )
 
     def test_def_impl_schema_mismatch(self):
         # NB: an impl-impl mismatch is not reported eagerly; you'll find out
         # about it because one of them won't match with def
-        r = self.commute("foo", [
-            # m.def("foo(Tensor x, Tensor y) -> Tensor")
-            lambda m: m.def_("foo(Tensor x, Tensor y) -> Tensor"),
-            # m.impl("foo", [](const Tensor & x) { return x })
-            lambda m: m.impl_t_t("foo"),
-        ], expect_raises=True)
-        self.assertExpectedInline(r, '''In registration for test::foo: expected schema of operator to be "test::foo(Tensor x, Tensor y) -> (Tensor)", but got inferred schema "(Tensor _0) -> (Tensor _0)". The number of arguments is different. 2 vs 1.''')  # noqa
+        r = self.commute(
+            "foo",
+            [
+                # m.def("foo(Tensor x, Tensor y) -> Tensor")
+                lambda m: m.def_("foo(Tensor x, Tensor y) -> Tensor"),
+                # m.impl("foo", [](const Tensor & x) { return x })
+                lambda m: m.impl_t_t("foo"),
+            ],
+            expect_raises=True,
+        )
+        self.assertExpectedInline(
+            r,
+            """In registration for test::foo: expected schema of operator to be "test::foo(Tensor x, Tensor y) -> (Tensor)", but got inferred schema "(Tensor _0) -> (Tensor _0)". The number of arguments is different. 2 vs 1.""",
+        )  # noqa
 
     def test_def_with_inference(self):
-        r = self.commute("foo", [
-            # m.def("foo", [](const Tensor & x) { return x })
-            lambda m: m.def_name_t_t("foo"),
-            # m.impl("foo", torch::kAutograd, [](const Tensor & x) { return x })
-            lambda m: m.impl_t_t("foo", "autograd")
-        ])
-        self.assertExpectedInline(r, '''\
+        r = self.commute(
+            "foo",
+            [
+                # m.def("foo", [](const Tensor & x) { return x })
+                lambda m: m.def_name_t_t("foo"),
+                # m.impl("foo", torch::kAutograd, [](const Tensor & x) { return x })
+                lambda m: m.impl_t_t("foo", "autograd"),
+            ],
+        )
+        self.assertExpectedInline(
+            r,
+            """\
 name: test::foo
 schema: test::foo(Tensor _0) -> (Tensor _0)
 alias analysis kind: CONSERVATIVE
 VariableTensorId: impl_t_t :: (Tensor _0) -> (Tensor _0) [ boxed unboxed ]
 catchall: default_def_name_t_t :: (Tensor _0) -> (Tensor _0) [ boxed unboxed ]
-''')
+""",
+        )
 
     def test_def_only(self):
-        r = self.commute("foo", [
-            # m.def("foo(Tensor x, Tensor y) -> Tensor")
-            lambda m: m.def_("foo(Tensor x, Tensor y) -> Tensor"),
-        ])
-        self.assertExpectedInline(r, '''\
+        r = self.commute(
+            "foo",
+            [
+                # m.def("foo(Tensor x, Tensor y) -> Tensor")
+                lambda m: m.def_("foo(Tensor x, Tensor y) -> Tensor"),
+            ],
+        )
+        self.assertExpectedInline(
+            r,
+            """\
 name: test::foo
 schema: test::foo(Tensor x, Tensor y) -> (Tensor)
 alias analysis kind: FROM_SCHEMA
-''')
+""",
+        )
 
     def test_impl_only(self):
-        r = self.commute("foo", [
-            # m.impl("foo", [](const Tensor& x) { return x })
-            lambda m: m.impl_t_t("foo"),
-            # m.impl("foo", torch::kAutograd, [](const Tensor& x) { return x })
-            lambda m: m.impl_t_t("foo", "autograd")
-        ])
-        self.assertExpectedInline(r, '''\
+        r = self.commute(
+            "foo",
+            [
+                # m.impl("foo", [](const Tensor& x) { return x })
+                lambda m: m.impl_t_t("foo"),
+                # m.impl("foo", torch::kAutograd, [](const Tensor& x) { return x })
+                lambda m: m.impl_t_t("foo", "autograd"),
+            ],
+        )
+        self.assertExpectedInline(
+            r,
+            """\
 name: test::foo
 schema: (none)
 VariableTensorId: impl_t_t :: (Tensor _0) -> (Tensor _0) [ boxed unboxed ]
 catchall: impl_t_t :: (Tensor _0) -> (Tensor _0) [ boxed unboxed ]
-''')
+""",
+        )
 
     # Can't do this yet for BC reasons
     @unittest.expectedFailure
     def test_multiple_def_error(self):
-        r = self.commute("foo", [
-            # m.def("foo(Tensor x, Tensor y) -> Tensor")
-            lambda m: m.def_("foo(Tensor x, Tensor y) -> Tensor"),
-            # m.def("foo(Tensor x, Tensor y) -> Tensor")
-            lambda m: m.def_("foo(Tensor x, Tensor y) -> Tensor"),
-        ], expect_raises=True)
+        r = self.commute(
+            "foo",
+            [
+                # m.def("foo(Tensor x, Tensor y) -> Tensor")
+                lambda m: m.def_("foo(Tensor x, Tensor y) -> Tensor"),
+                # m.def("foo(Tensor x, Tensor y) -> Tensor")
+                lambda m: m.def_("foo(Tensor x, Tensor y) -> Tensor"),
+            ],
+            expect_raises=True,
+        )
         # TODO: fill in the error message here
         # self.assertExpectedInline(r, '''''')
 
     def test_def_with_explicit_alias(self):
-        r = self.commute("foo", [
-            # m.def(torch::schema(
-            #   "foo(Tensor x, Tensor y) -> Tensor",
-            #   AliasAnalysisKind::PURE))
-            lambda m: m.def_("foo(Tensor x, Tensor y) -> Tensor",
-                             alias="PURE_FUNCTION")
-        ])
-        self.assertExpectedInline(r, '''\
+        r = self.commute(
+            "foo",
+            [
+                # m.def(torch::schema(
+                #   "foo(Tensor x, Tensor y) -> Tensor",
+                #   AliasAnalysisKind::PURE))
+                lambda m: m.def_(
+                    "foo(Tensor x, Tensor y) -> Tensor", alias="PURE_FUNCTION"
+                )
+            ],
+        )
+        self.assertExpectedInline(
+            r,
+            """\
 name: test::foo
 schema: test::foo(Tensor x, Tensor y) -> (Tensor)
 alias analysis kind: PURE_FUNCTION
-''')
+""",
+        )
 
     # TODO: get rid of this test when multiple defs are wrong
     def test_multiple_def_schema_mismatch(self):
@@ -290,11 +351,11 @@ alias analysis kind: PURE_FUNCTION
         ]
         self.assertExpectedInline(
             self.commute("foo", ops, ctor_order=(0, 1), expect_raises=True),
-            '''Tried to register multiple operators with the same name and the same overload name but different schemas: test::foo(Tensor x) -> (Tensor) vs test::foo(Tensor x, Tensor y) -> (Tensor)'''  # noqa
+            """Tried to register multiple operators with the same name and the same overload name but different schemas: test::foo(Tensor x) -> (Tensor) vs test::foo(Tensor x, Tensor y) -> (Tensor)""",  # noqa
         )
         self.assertExpectedInline(
             self.commute("foo", ops, ctor_order=(1, 0), expect_raises=True),
-            '''Tried to register multiple operators with the same name and the same overload name but different schemas: test::foo(Tensor x, Tensor y) -> (Tensor) vs test::foo(Tensor x) -> (Tensor)'''  # noqa
+            """Tried to register multiple operators with the same name and the same overload name but different schemas: test::foo(Tensor x, Tensor y) -> (Tensor) vs test::foo(Tensor x) -> (Tensor)""",  # noqa
         )
 
     def test_multiple_def_alias_defaulting(self):
@@ -308,11 +369,11 @@ alias analysis kind: PURE_FUNCTION
         ]
         self.assertExpectedInline(
             self.commute("foo", ops, ctor_order=(0, 1)),
-            '''\
+            """\
 name: test::foo
 schema: test::foo(Tensor x) -> (Tensor)
 alias analysis kind: PURE_FUNCTION
-'''
+""",
         )
         # NB: When run with ctor order (1, 0), the destructors are NOT
         # COMMUTATIVE.  THIS IS A BUG, however we are purposely leaving the bug
@@ -333,11 +394,11 @@ alias analysis kind: PURE_FUNCTION
         ]
         self.assertExpectedInline(
             self.commute("foo", ops, ctor_order=(0, 1), expect_raises=True),
-            '''Tried to define the schema for test::foo with different alias analysis kinds: PURE_FUNCTION vs CONSERVATIVE'''  # noqa
+            """Tried to define the schema for test::foo with different alias analysis kinds: PURE_FUNCTION vs CONSERVATIVE""",  # noqa
         )
         self.assertExpectedInline(
             self.commute("foo", ops, ctor_order=(1, 0), expect_raises=True),
-            '''Tried to define the schema for test::foo with different alias analysis kinds: CONSERVATIVE vs PURE_FUNCTION'''  # noqa
+            """Tried to define the schema for test::foo with different alias analysis kinds: CONSERVATIVE vs PURE_FUNCTION""",  # noqa
         )
 
     def test_overwrite_catchall(self):
@@ -348,14 +409,14 @@ alias analysis kind: PURE_FUNCTION
         # Not commutative
         self.assertExpectedInline(
             self.commute("foo", ops, ctor_order=(0, 1)),
-            '''\
+            """\
 name: test::foo
 schema: (none)
 catchall: fn2 :: (Tensor _0) -> (Tensor _0) [ boxed unboxed ]
 catchall (inactive): fn1 :: (Tensor _0) -> (Tensor _0) [ boxed unboxed ]
-'''
+""",
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     run_tests()

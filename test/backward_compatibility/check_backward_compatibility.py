@@ -17,25 +17,24 @@ from torch._C import parse_schema
 #
 # Whitelist entries can be removed after the date listed on them passes.
 white_list = [
-    ('c10_experimental', datetime.date(2222, 1, 1)),
+    ("c10_experimental", datetime.date(2222, 1, 1)),
     # We export some functions and classes for test_jit.py directly from libtorch.so,
     # it's not important to have BC for them
-    ('_TorchScriptTesting.*', datetime.date(9999, 1, 1)),
-    ('aten::append*', datetime.date(2020, 4, 15)),
-    ('aten::real*', datetime.date(2020, 4, 15)),
-    ('aten::imag*', datetime.date(2020, 4, 15)),
-    ('aten::quantize_per_tensor', datetime.date(2020, 4, 15)),
-    ('aten::index_put', datetime.date(2020, 4, 10)),
-    ('aten::index', datetime.date(2020, 4, 10)),
-    ('aten::_index_put_impl', datetime.date(2020, 4, 10)),
-    ('aten::index_put_', datetime.date(2020, 4, 10)),
+    ("_TorchScriptTesting.*", datetime.date(9999, 1, 1)),
+    ("aten::append*", datetime.date(2020, 4, 15)),
+    ("aten::real*", datetime.date(2020, 4, 15)),
+    ("aten::imag*", datetime.date(2020, 4, 15)),
+    ("aten::quantize_per_tensor", datetime.date(2020, 4, 15)),
+    ("aten::index_put", datetime.date(2020, 4, 10)),
+    ("aten::index", datetime.date(2020, 4, 10)),
+    ("aten::_index_put_impl", datetime.date(2020, 4, 10)),
+    ("aten::index_put_", datetime.date(2020, 4, 10)),
 ]
 
 
 # The nightly will fail to parse newly added syntax to schema declarations
 # Add new schemas that will fail the nightly here
-dont_parse_list = [
-]
+dont_parse_list = []
 
 
 def white_listed(schema, white_list):
@@ -74,34 +73,38 @@ def check_bc(new_schema_dict):
                 found = True
                 break
         if not found:
-            print('Can NOT find backward compatible schemas after changes '
-                  'for schema {} from the following candidates:\n[\n{}\n]'
-                  .format(
-                      str(existing_schema),
-                      "\n\t".join(str(s) for s in new_schemas)))
+            print(
+                "Can NOT find backward compatible schemas after changes "
+                "for schema {} from the following candidates:\n[\n{}\n]".format(
+                    str(existing_schema), "\n\t".join(str(s) for s in new_schemas)
+                )
+            )
             # TODO Print out more details about why candidates don't match.
             broken_ops.append(str(existing_schema))
             is_bc = False
     if is_bc:
-        print('Found backward compatible schemas for all existing schemas')
+        print("Found backward compatible schemas for all existing schemas")
     else:
-        print('The PR is introducing backward incompatible changes to the '
-              'operator library. Please contact PyTorch team to confirm '
-              'whether this change is wanted or not. \n\nBroken ops: '
-              '[\n\t{}\n]'.format("\n\t".join(broken_ops)))
+        print(
+            "The PR is introducing backward incompatible changes to the "
+            "operator library. Please contact PyTorch team to confirm "
+            "whether this change is wanted or not. \n\nBroken ops: "
+            "[\n\t{}\n]".format("\n\t".join(broken_ops))
+        )
     return is_bc
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Process some integers.')
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Process some integers.")
     parser.add_argument(
-        '--new-schemas',
-        help='filename to load new schemas',
+        "--new-schemas",
+        help="filename to load new schemas",
         type=str,
-        default='schemas.txt')
+        default="schemas.txt",
+    )
     args = parser.parse_args()
     new_schema_dict = dict()
-    with open(args.new_schemas, 'r') as f:
+    with open(args.new_schemas, "r") as f:
         while True:
             line = f.readline()
             if not line:
