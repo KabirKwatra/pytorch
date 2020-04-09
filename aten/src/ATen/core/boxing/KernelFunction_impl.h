@@ -6,17 +6,17 @@
 namespace c10 {
 
 inline KernelFunction::KernelFunction()
-: functorFactory_()
-, functor_(nullptr)
-, boxed_kernel_func_(nullptr)
-, unboxed_kernel_func_(nullptr)
+    : functorFactory_()
+    , functor_(nullptr)
+    , boxed_kernel_func_(nullptr)
+    , unboxed_kernel_func_(nullptr)
 {}
 
 inline KernelFunction::KernelFunction(std::function<std::unique_ptr<OperatorKernel>()> functorFactory, std::unique_ptr<OperatorKernel> functor, InternalBoxedKernelFunction* boxed_kernel_func, void* unboxed_kernel_func)
-: functorFactory_(std::move(functorFactory))
-, functor_(std::move(functor))
-, boxed_kernel_func_(boxed_kernel_func)
-, unboxed_kernel_func_(unboxed_kernel_func)
+    : functorFactory_(std::move(functorFactory))
+    , functor_(std::move(functor))
+    , boxed_kernel_func_(boxed_kernel_func)
+    , unboxed_kernel_func_(unboxed_kernel_func)
 {}
 
 template<KernelFunction::BoxedKernelFunction* func>
@@ -27,7 +27,7 @@ inline void KernelFunction::make_boxed_function(OperatorKernel*, const OperatorH
 inline OperatorKernel* KernelFunction::getFunctor_() const {
     if (functor_.get() == nullptr) {
         if (!functorFactory_) {
-        return nullptr;
+            return nullptr;
         }
         functor_ = functorFactory_();
     }
@@ -76,20 +76,20 @@ inline Return KernelFunction::callUnboxed(const OperatorHandle& opHandle, Args..
 template<KernelFunction::BoxedKernelFunction* func>
 inline KernelFunction KernelFunction::makeFromBoxedFunction() {
     return KernelFunction(
-        nullptr,  // no functorFactory_, this can only be called in a boxed way.
-        nullptr,  // no functor_ object either
-        &make_boxed_function<func>,
-        nullptr  // no unboxed function pointer
-    );
+               nullptr,  // no functorFactory_, this can only be called in a boxed way.
+               nullptr,  // no functor_ object either
+               &make_boxed_function<func>,
+               nullptr  // no unboxed function pointer
+           );
 }
 
 inline KernelFunction KernelFunction::makeFallthrough() {
     return KernelFunction(
-        nullptr,  // no functorFactory_, this can only be called in a boxed way.
-        nullptr,  // no functor_ object either
-        &fallthrough_kernel,
-        nullptr  // no unboxed function pointer
-    );
+               nullptr,  // no functorFactory_, this can only be called in a boxed way.
+               nullptr,  // no functor_ object either
+               &fallthrough_kernel,
+               nullptr  // no unboxed function pointer
+           );
 }
 
 template<bool AllowLegacyTypes, class KernelFunctor>
@@ -98,11 +98,11 @@ inline KernelFunction KernelFunction::makeFromUnboxedFunctor(std::unique_ptr<Ope
     static_assert(std::is_base_of<OperatorKernel, KernelFunctor>::value, "Tried to call KernelFunction::makeFromUnboxedFunctor<KernelFunctor>, but the functor doesn't inherit from c10::OperatorKernel. Please have the functor inherit from it.");
 
     return KernelFunction(
-        nullptr, // no functorFactory_ because we already have the functor_
-        std::move(kernelFunctor),
-        &impl::make_boxed_from_unboxed_functor<KernelFunctor, AllowLegacyTypes>::call,
-        reinterpret_cast<void*>(&impl::wrap_kernel_functor_unboxed<KernelFunctor>::call)
-    );
+               nullptr, // no functorFactory_ because we already have the functor_
+               std::move(kernelFunctor),
+               &impl::make_boxed_from_unboxed_functor<KernelFunctor, AllowLegacyTypes>::call,
+               reinterpret_cast<void*>(&impl::wrap_kernel_functor_unboxed<KernelFunctor>::call)
+           );
 }
 
 template<class KernelFunctor, bool AllowLegacyTypes>
@@ -111,11 +111,11 @@ inline KernelFunction KernelFunction::makeFromUnboxedFunctorFactory(std::functio
     static_assert(std::is_base_of<OperatorKernel, KernelFunctor>::value, "Tried to call KernelFunction::makeFromUnboxedFunctor<KernelFunctor>, but the functor doesn't inherit from c10::OperatorKernel. Please have the functor inherit from it.");
 
     return KernelFunction(
-        std::move(kernelFunctorFactory),
-        nullptr, // delay creation of functor_ (it will be created by calling functorFactory_ later)
-        &impl::make_boxed_from_unboxed_functor<KernelFunctor, AllowLegacyTypes>::call,
-        reinterpret_cast<void*>(&impl::wrap_kernel_functor_unboxed<KernelFunctor>::call)
-    );
+               std::move(kernelFunctorFactory),
+               nullptr, // delay creation of functor_ (it will be created by calling functorFactory_ later)
+               &impl::make_boxed_from_unboxed_functor<KernelFunctor, AllowLegacyTypes>::call,
+               reinterpret_cast<void*>(&impl::wrap_kernel_functor_unboxed<KernelFunctor>::call)
+           );
 }
 
 template<class KernelFunctor>
@@ -127,11 +127,11 @@ inline KernelFunction KernelFunction::makeFromUnboxedOnlyFunctor(std::unique_ptr
     static_assert(std::is_base_of<OperatorKernel, KernelFunctor>::value, "Tried to call KernelFunction::makeFromUnboxedFunctor<KernelFunctor>, but the functor doesn't inherit from c10::OperatorKernel. Please have the functor inherit from it.");
 
     return KernelFunction(
-        nullptr, // no functorFactory_ because we already have the functor_
-        std::move(kernelFunctor),
-        nullptr, // Don't create a boxed kernel for this
-        reinterpret_cast<void*>(&impl::wrap_kernel_functor_unboxed<KernelFunctor>::call)
-    );
+               nullptr, // no functorFactory_ because we already have the functor_
+               std::move(kernelFunctor),
+               nullptr, // Don't create a boxed kernel for this
+               reinterpret_cast<void*>(&impl::wrap_kernel_functor_unboxed<KernelFunctor>::call)
+           );
 }
 
 template<class FuncType, FuncType* func, bool AllowLegacyTypes>
@@ -141,8 +141,8 @@ inline KernelFunction KernelFunction::makeFromUnboxedFunction() {
     static_assert(func != nullptr, "Kernel function cannot be nullptr");
 
     return makeFromUnboxedFunctor<AllowLegacyTypes, typename impl::WrapFunctionIntoFunctor<FuncType, func>::type>(
-        guts::make_unique_base<OperatorKernel, typename impl::WrapFunctionIntoFunctor<FuncType, func>::type>()
-    );
+               guts::make_unique_base<OperatorKernel, typename impl::WrapFunctionIntoFunctor<FuncType, func>::type>()
+           );
 }
 
 template<class FuncType, FuncType* func>
@@ -155,8 +155,8 @@ inline KernelFunction KernelFunction::makeFromUnboxedOnlyFunction() {
     static_assert(func != nullptr, "Kernel function cannot be nullptr");
 
     return makeFromUnboxedOnlyFunctor<typename impl::WrapFunctionIntoFunctor<FuncType, func>::type> (
-        guts::make_unique_base<OperatorKernel, typename impl::WrapFunctionIntoFunctor<FuncType, func>::type>()
-    );
+               guts::make_unique_base<OperatorKernel, typename impl::WrapFunctionIntoFunctor<FuncType, func>::type>()
+           );
 }
 
 template<bool AllowLegacyTypes, class FuncType>
@@ -166,8 +166,8 @@ inline KernelFunction KernelFunction::makeFromUnboxedRuntimeFunction(FuncType* f
     TORCH_INTERNAL_ASSERT(func != nullptr, "Kernel function cannot be nullptr");
 
     return makeFromUnboxedFunctor<AllowLegacyTypes, impl::WrapFunctionIntoRuntimeFunctor<std::decay_t<FuncType>>>(
-        guts::make_unique_base<OperatorKernel, impl::WrapFunctionIntoRuntimeFunctor<std::decay_t<FuncType>>>(func)
-    );
+               guts::make_unique_base<OperatorKernel, impl::WrapFunctionIntoRuntimeFunctor<std::decay_t<FuncType>>>(func)
+           );
 }
 
 template<class FuncType>
@@ -177,8 +177,8 @@ inline KernelFunction KernelFunction::makeFromUnboxedOnlyRuntimeFunction(FuncTyp
     TORCH_INTERNAL_ASSERT(func != nullptr, "Kernel function cannot be nullptr");
 
     return makeFromUnboxedOnlyFunctor<impl::WrapFunctionIntoRuntimeFunctor<std::decay_t<FuncType>>>(
-        guts::make_unique_base<OperatorKernel, impl::WrapFunctionIntoRuntimeFunctor<std::decay_t<FuncType>>>(func)
-    );
+               guts::make_unique_base<OperatorKernel, impl::WrapFunctionIntoRuntimeFunctor<std::decay_t<FuncType>>>(func)
+           );
 }
 
 template<bool AllowLegacyTypes, class Lambda>
@@ -186,8 +186,8 @@ inline KernelFunction KernelFunction::makeFromUnboxedLambda(Lambda&& lambda) {
     static_assert(guts::is_functor<std::decay_t<Lambda>>::value, "Tried to call KernelFunction::makeFromUnboxedLambda with a non-lambda type.");
 
     return makeFromUnboxedFunctor<AllowLegacyTypes, impl::WrapFunctionIntoRuntimeFunctor<std::decay_t<Lambda>>>(
-        guts::make_unique_base<OperatorKernel, impl::WrapFunctionIntoRuntimeFunctor<std::decay_t<Lambda>>>(std::forward<Lambda>(lambda))
-    );
+               guts::make_unique_base<OperatorKernel, impl::WrapFunctionIntoRuntimeFunctor<std::decay_t<Lambda>>>(std::forward<Lambda>(lambda))
+           );
 }
 
 inline void KernelFunction::setManuallyBoxedKernel_(InternalBoxedKernelFunction* func) {

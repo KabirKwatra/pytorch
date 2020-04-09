@@ -27,26 +27,26 @@ struct Fusion;
 // Search through "within" and replace all instances of "instance" with the
 // value "with".
 struct TORCH_CUDA_API ReplaceAll : public OptOutMutator {
- private:
-  // Will look in fusion and if we're replacing an input or output we register
-  // those changes
-  void replaceInpOut();
+private:
+    // Will look in fusion and if we're replacing an input or output we register
+    // those changes
+    void replaceInpOut();
 
-  ReplaceAll(Val* _instance, Val* _with) {
-    registerMutation(_instance, _with);
-  }
-  ReplaceAll(std::unordered_map<Val*, Val*> _replacement_map) {
-    for (auto it : _replacement_map)
-      registerMutation(it.first, it.second);
-  }
+    ReplaceAll(Val* _instance, Val* _with) {
+        registerMutation(_instance, _with);
+    }
+    ReplaceAll(std::unordered_map<Val*, Val*> _replacement_map) {
+        for (auto it : _replacement_map)
+            registerMutation(it.first, it.second);
+    }
 
- public:
-  static void instancesOf(Val* instance, Val* with);
-  static void instancesOf(std::unordered_map<Val*, Val*> replacement_map);
-  static void instancesWithin(Val* instance, Val* with, Expr* within);
-  static void instancesWithin(
-      std::unordered_map<Val*, Val*> replacement_map,
-      Expr* within);
+public:
+    static void instancesOf(Val* instance, Val* with);
+    static void instancesOf(std::unordered_map<Val*, Val*> replacement_map);
+    static void instancesWithin(Val* instance, Val* with, Expr* within);
+    static void instancesWithin(
+        std::unordered_map<Val*, Val*> replacement_map,
+        Expr* within);
 };
 
 } // namespace fuser

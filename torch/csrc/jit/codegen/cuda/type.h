@@ -15,51 +15,51 @@ namespace fuser {
 
 // Order of strength
 enum class ValType {
-  TensorIndex,
-  TensorDomain,
-  IterDomain,
-  TensorView,
-  Scalar,
-  NamedScalar
+    TensorIndex,
+    TensorDomain,
+    IterDomain,
+    TensorView,
+    Scalar,
+    NamedScalar
 };
 
 enum class DataType { Float, Int, Null };
 
 enum class ExprType {
-  UnaryOp,
-  BinaryOp,
-  ForLoop,
-  IfThenElse,
-  Allocate,
-  Split,
-  Merge,
-  Reorder
+    UnaryOp,
+    BinaryOp,
+    ForLoop,
+    IfThenElse,
+    Allocate,
+    Split,
+    Merge,
+    Reorder
 };
 
 enum class UnaryOpType { Neg, Cast };
 
 enum class BinaryOpType {
-  Add,
-  Sub,
-  Mul,
-  Div,
-  // Int operations, leave position oif Mod we depend on its location of first
-  Mod,
-  LT,
-  CeilDiv,
-  And
+    Add,
+    Sub,
+    Mul,
+    Div,
+    // Int operations, leave position oif Mod we depend on its location of first
+    Mod,
+    LT,
+    CeilDiv,
+    And
 };
 
 enum class ParallelType {
-  BIDz,
-  BIDy,
-  BIDx,
-  TIDz,
-  TIDy,
-  TIDx,
-  Vectorize,
-  Unroll,
-  Serial
+    BIDz,
+    BIDy,
+    BIDx,
+    TIDz,
+    TIDy,
+    TIDx,
+    Vectorize,
+    Unroll,
+    Serial
 };
 
 ValType promote_type(const ValType& t1, const ValType& t2);

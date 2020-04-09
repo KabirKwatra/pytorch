@@ -31,32 +31,32 @@ namespace fuser {
  *   4) split/merge/reorder
  */
 struct TORCH_CUDA_API UnaryOp : public Expr {
-  ~UnaryOp() = default;
-  UnaryOp(UnaryOpType _type, Val* _out, Val* _in);
+    ~UnaryOp() = default;
+    UnaryOp(UnaryOpType _type, Val* _out, Val* _in);
 
-  UnaryOp(const UnaryOp& other) = delete;
-  UnaryOp& operator=(const UnaryOp& other) = delete;
+    UnaryOp(const UnaryOp& other) = delete;
+    UnaryOp& operator=(const UnaryOp& other) = delete;
 
-  UnaryOp(UnaryOp&& other) = delete;
-  UnaryOp& operator=(UnaryOp&& other) = delete;
+    UnaryOp(UnaryOp&& other) = delete;
+    UnaryOp& operator=(UnaryOp&& other) = delete;
 
-  Val* out() const noexcept {
-    return out_;
-  }
-  Val* in() const noexcept {
-    return in_;
-  }
+    Val* out() const noexcept {
+        return out_;
+    }
+    Val* in() const noexcept {
+        return in_;
+    }
 
-  UnaryOpType getUnaryOpType() const noexcept {
-    return unary_op_type_;
-  }
+    UnaryOpType getUnaryOpType() const noexcept {
+        return unary_op_type_;
+    }
 
-  bool sameAs(const UnaryOp* const other) const;
+    bool sameAs(const UnaryOp* const other) const;
 
- private:
-  const UnaryOpType unary_op_type_;
-  Val* const out_;
-  Val* const in_;
+private:
+    const UnaryOpType unary_op_type_;
+    Val* const out_;
+    Val* const in_;
 };
 
 /*
@@ -66,36 +66,36 @@ struct TORCH_CUDA_API UnaryOp : public Expr {
  *  2) LT (A < B)
  */
 struct TORCH_CUDA_API BinaryOp : public Expr {
-  ~BinaryOp() = default;
-  BinaryOp(BinaryOpType _type, Val* _out, Val* _lhs, Val* _rhs);
+    ~BinaryOp() = default;
+    BinaryOp(BinaryOpType _type, Val* _out, Val* _lhs, Val* _rhs);
 
-  BinaryOp(const BinaryOp& other) = delete;
-  BinaryOp& operator=(const BinaryOp& other) = delete;
+    BinaryOp(const BinaryOp& other) = delete;
+    BinaryOp& operator=(const BinaryOp& other) = delete;
 
-  BinaryOp(BinaryOp&& other) = delete;
-  BinaryOp& operator=(BinaryOp&& other) = delete;
+    BinaryOp(BinaryOp&& other) = delete;
+    BinaryOp& operator=(BinaryOp&& other) = delete;
 
-  Val* out() const noexcept {
-    return out_;
-  }
-  Val* lhs() const noexcept {
-    return lhs_;
-  }
-  Val* rhs() const noexcept {
-    return rhs_;
-  }
+    Val* out() const noexcept {
+        return out_;
+    }
+    Val* lhs() const noexcept {
+        return lhs_;
+    }
+    Val* rhs() const noexcept {
+        return rhs_;
+    }
 
-  BinaryOpType getBinaryOpType() const noexcept {
-    return binary_op_type_;
-  }
+    BinaryOpType getBinaryOpType() const noexcept {
+        return binary_op_type_;
+    }
 
-  bool sameAs(const BinaryOp* other) const;
+    bool sameAs(const BinaryOp* other) const;
 
- private:
-  const BinaryOpType binary_op_type_;
-  Val* const out_;
-  Val* const lhs_;
-  Val* const rhs_;
+private:
+    const BinaryOpType binary_op_type_;
+    Val* const out_;
+    Val* const lhs_;
+    Val* const rhs_;
 };
 
 /*
@@ -104,112 +104,112 @@ struct TORCH_CUDA_API BinaryOp : public Expr {
  * set parallization strategies on IterDomains.
  */
 struct TORCH_CUDA_API IterDomain : public Val {
-  ~IterDomain() = default;
+    ~IterDomain() = default;
 
-  IterDomain() = delete;
+    IterDomain() = delete;
 
-  IterDomain(
-      Val* int_size,
-      ParallelType _parallel_method = ParallelType::Serial,
-      bool _reduction_domain = false);
+    IterDomain(
+        Val* int_size,
+        ParallelType _parallel_method = ParallelType::Serial,
+        bool _reduction_domain = false);
 
-  bool sameAs(const IterDomain* const other) const;
+    bool sameAs(const IterDomain* const other) const;
 
-  bool isReduction() const noexcept {
-    return is_reduction_domain_;
-  }
-
-  bool isParallelized() const {
-    return parallel_method_ != ParallelType::Serial;
-  }
-
-  // Return if this iter domain is mapped to a grid dimension
-  bool isBlockDim() const {
-    return (
-        parallel_method_ == ParallelType::BIDz ||
-        parallel_method_ == ParallelType::BIDy ||
-        parallel_method_ == ParallelType::BIDx);
-  }
-
-  // Return if this iter domain is mapped to a block dimension
-  bool isThreadDim() const {
-    return (
-        parallel_method_ == ParallelType::TIDz ||
-        parallel_method_ == ParallelType::TIDy ||
-        parallel_method_ == ParallelType::TIDx);
-  }
-
-  // Return if this iter domain is either mapped to a block or grid dimension
-  bool isThread() const {
-    return (isBlockDim() || isThreadDim());
-  }
-
-  void parallelize(ParallelType t) {
-    parallel_method_ = t;
-    if (isBlockDim()) {
-      TORCH_CHECK(
-          !isReduction(),
-          "Cannot parallelize reductions across a block dimension.");
-      if (isThreadDim())
-        TORCH_CHECK(
-            !isReduction(),
-            "Thread parallelized reductions not yet supported.");
-      TORCH_CHECK(
-          t != ParallelType::Vectorize, "Vectorization not yet supported.");
-      if (t == ParallelType::Unroll)
-        TORCH_CHECK(false, "Unrolling not yet supported.");
+    bool isReduction() const noexcept {
+        return is_reduction_domain_;
     }
-  }
 
-  ParallelType parallel_method() const noexcept {
-    return parallel_method_;
-  }
+    bool isParallelized() const {
+        return parallel_method_ != ParallelType::Serial;
+    }
 
-  Val* size() const;
+    // Return if this iter domain is mapped to a grid dimension
+    bool isBlockDim() const {
+        return (
+                   parallel_method_ == ParallelType::BIDz ||
+                   parallel_method_ == ParallelType::BIDy ||
+                   parallel_method_ == ParallelType::BIDx);
+    }
 
-  IterDomain(const IterDomain& other) = delete;
-  IterDomain& operator=(const IterDomain& other) = delete;
+    // Return if this iter domain is mapped to a block dimension
+    bool isThreadDim() const {
+        return (
+                   parallel_method_ == ParallelType::TIDz ||
+                   parallel_method_ == ParallelType::TIDy ||
+                   parallel_method_ == ParallelType::TIDx);
+    }
 
-  IterDomain(IterDomain&& other) = delete;
-  IterDomain& operator=(IterDomain&& other) = delete;
+    // Return if this iter domain is either mapped to a block or grid dimension
+    bool isThread() const {
+        return (isBlockDim() || isThreadDim());
+    }
 
- private:
-  Val* const size_;
-  ParallelType parallel_method_ = ParallelType::Serial;
-  bool is_reduction_domain_;
+    void parallelize(ParallelType t) {
+        parallel_method_ = t;
+        if (isBlockDim()) {
+            TORCH_CHECK(
+                !isReduction(),
+                "Cannot parallelize reductions across a block dimension.");
+            if (isThreadDim())
+                TORCH_CHECK(
+                    !isReduction(),
+                    "Thread parallelized reductions not yet supported.");
+            TORCH_CHECK(
+                t != ParallelType::Vectorize, "Vectorization not yet supported.");
+            if (t == ParallelType::Unroll)
+                TORCH_CHECK(false, "Unrolling not yet supported.");
+        }
+    }
+
+    ParallelType parallel_method() const noexcept {
+        return parallel_method_;
+    }
+
+    Val* size() const;
+
+    IterDomain(const IterDomain& other) = delete;
+    IterDomain& operator=(const IterDomain& other) = delete;
+
+    IterDomain(IterDomain&& other) = delete;
+    IterDomain& operator=(IterDomain&& other) = delete;
+
+private:
+    Val* const size_;
+    ParallelType parallel_method_ = ParallelType::Serial;
+    bool is_reduction_domain_;
 };
 
 // A list of IterDomains representing how to iterate across a given Tensor.
 struct TORCH_CUDA_API TensorDomain : public Val {
-  ~TensorDomain() = default;
+    ~TensorDomain() = default;
 
-  TensorDomain(const TensorDomain& other) = delete;
-  TensorDomain& operator=(const TensorDomain& other) = delete;
+    TensorDomain(const TensorDomain& other) = delete;
+    TensorDomain& operator=(const TensorDomain& other) = delete;
 
-  TensorDomain(TensorDomain&& other) = delete;
-  TensorDomain& operator=(TensorDomain&& other) = delete;
+    TensorDomain(TensorDomain&& other) = delete;
+    TensorDomain& operator=(TensorDomain&& other) = delete;
 
-  TensorDomain(std::vector<IterDomain*> _domain)
-      : Val(ValType::TensorDomain), domain_(_domain) {}
+    TensorDomain(std::vector<IterDomain*> _domain)
+        : Val(ValType::TensorDomain), domain_(_domain) {}
 
-  std::vector<IterDomain*>::size_type size() const {
-    return domain_.size();
-  }
+    std::vector<IterDomain*>::size_type size() const {
+        return domain_.size();
+    }
 
-  bool sameAs(const TensorDomain* const other) const;
+    bool sameAs(const TensorDomain* const other) const;
 
-  const std::vector<IterDomain*>& domain() const noexcept {
-    return domain_;
-  }
+    const std::vector<IterDomain*>& domain() const noexcept {
+        return domain_;
+    }
 
-  TensorDomain* noReductions() const;
+    TensorDomain* noReductions() const;
 
-  // i here is int, as we want to accept negative value and ::size_type can be a
-  // uint.
-  IterDomain* axis(int i) const;
+    // i here is int, as we want to accept negative value and ::size_type can be a
+    // uint.
+    IterDomain* axis(int i) const;
 
- private:
-  std::vector<IterDomain*> domain_;
+private:
+    std::vector<IterDomain*> domain_;
 };
 
 /*
@@ -218,36 +218,36 @@ struct TORCH_CUDA_API TensorDomain : public Val {
  * TODO: Implement split by nparts
  */
 struct TORCH_CUDA_API Split : public Expr {
-  ~Split() = default;
+    ~Split() = default;
 
-  Split(const Split& other) = delete;
-  Split& operator=(const Split& other) = delete;
+    Split(const Split& other) = delete;
+    Split& operator=(const Split& other) = delete;
 
-  Split(Split&& other) = delete;
-  Split& operator=(Split&& other) = delete;
+    Split(Split&& other) = delete;
+    Split& operator=(Split&& other) = delete;
 
-  Split(TensorDomain* _out, TensorDomain* _in, int _axis, Int* _factor);
+    Split(TensorDomain* _out, TensorDomain* _in, int _axis, Int* _factor);
 
-  TensorDomain* out() const noexcept {
-    return out_;
-  }
-  TensorDomain* in() const noexcept {
-    return in_;
-  }
+    TensorDomain* out() const noexcept {
+        return out_;
+    }
+    TensorDomain* in() const noexcept {
+        return in_;
+    }
 
-  int axis() const noexcept {
-    return axis_;
-  }
-  Int* factor() const noexcept {
-    return factor_;
-  }
-  bool sameAs(const Split* const other) const;
+    int axis() const noexcept {
+        return axis_;
+    }
+    Int* factor() const noexcept {
+        return factor_;
+    }
+    bool sameAs(const Split* const other) const;
 
- private:
-  TensorDomain* const out_;
-  TensorDomain* const in_;
-  const int axis_;
-  Int* const factor_;
+private:
+    TensorDomain* const out_;
+    TensorDomain* const in_;
+    const int axis_;
+    Int* const factor_;
 };
 
 /*
@@ -257,31 +257,31 @@ struct TORCH_CUDA_API Split : public Expr {
  * TODO: Should this be a unary op type?
  */
 struct TORCH_CUDA_API Merge : public Expr {
-  ~Merge() = default;
-  Merge(TensorDomain* _out, TensorDomain* _in, int _axis);
+    ~Merge() = default;
+    Merge(TensorDomain* _out, TensorDomain* _in, int _axis);
 
-  Merge(const Merge& other) = delete;
-  Merge& operator=(const Merge& other) = delete;
+    Merge(const Merge& other) = delete;
+    Merge& operator=(const Merge& other) = delete;
 
-  Merge(Merge&& other) = delete;
-  Merge& operator=(Merge&& other) = delete;
+    Merge(Merge&& other) = delete;
+    Merge& operator=(Merge&& other) = delete;
 
-  TensorDomain* out() const noexcept {
-    return out_;
-  }
-  TensorDomain* in() const noexcept {
-    return in_;
-  }
-  int axis() const noexcept {
-    return axis_;
-  }
+    TensorDomain* out() const noexcept {
+        return out_;
+    }
+    TensorDomain* in() const noexcept {
+        return in_;
+    }
+    int axis() const noexcept {
+        return axis_;
+    }
 
-  bool sameAs(const Merge* const other) const;
+    bool sameAs(const Merge* const other) const;
 
- private:
-  TensorDomain* const out_;
-  TensorDomain* const in_;
-  int axis_;
+private:
+    TensorDomain* const out_;
+    TensorDomain* const in_;
+    int axis_;
 };
 
 /*
@@ -289,31 +289,31 @@ struct TORCH_CUDA_API Merge : public Expr {
  * pos2axis[new_position] = old_position
  */
 struct TORCH_CUDA_API Reorder : public Expr {
-  ~Reorder() = default;
-  Reorder(TensorDomain* _out, TensorDomain* _in, std::vector<int> _pos2axis);
+    ~Reorder() = default;
+    Reorder(TensorDomain* _out, TensorDomain* _in, std::vector<int> _pos2axis);
 
-  Reorder(const Reorder& other) = delete;
-  Reorder& operator=(const Reorder& other) = delete;
+    Reorder(const Reorder& other) = delete;
+    Reorder& operator=(const Reorder& other) = delete;
 
-  Reorder(Reorder&& other) = delete;
-  Reorder& operator=(Reorder&& other) = delete;
+    Reorder(Reorder&& other) = delete;
+    Reorder& operator=(Reorder&& other) = delete;
 
-  TensorDomain* out() const noexcept {
-    return out_;
-  }
-  TensorDomain* in() const noexcept {
-    return in_;
-  }
-  const std::vector<int>& pos2axis() const noexcept {
-    return pos2axis_;
-  }
+    TensorDomain* out() const noexcept {
+        return out_;
+    }
+    TensorDomain* in() const noexcept {
+        return in_;
+    }
+    const std::vector<int>& pos2axis() const noexcept {
+        return pos2axis_;
+    }
 
-  bool sameAs(const Reorder* const other) const;
+    bool sameAs(const Reorder* const other) const;
 
- private:
-  TensorDomain* const out_;
-  TensorDomain* const in_;
-  const std::vector<int> pos2axis_;
+private:
+    TensorDomain* const out_;
+    TensorDomain* const in_;
+    const std::vector<int> pos2axis_;
 };
 
 /*
@@ -326,48 +326,48 @@ struct TORCH_CUDA_API Reorder : public Expr {
  * to Fusion where we can do proper dependency analysis.
  */
 struct TORCH_CUDA_API ForLoop : public Expr {
-  ~ForLoop() = default;
-  ForLoop(
-      Val* _index,
-      IterDomain* _range,
-      const std::vector<Expr*>& _body = {},
-      Expr* parent_scope = nullptr);
+    ~ForLoop() = default;
+    ForLoop(
+        Val* _index,
+        IterDomain* _range,
+        const std::vector<Expr*>& _body = {},
+        Expr* parent_scope = nullptr);
 
-  ForLoop(const ForLoop& other) = delete;
-  ForLoop& operator=(const ForLoop& other) = delete;
+    ForLoop(const ForLoop& other) = delete;
+    ForLoop& operator=(const ForLoop& other) = delete;
 
-  ForLoop(ForLoop&& other) = delete;
-  ForLoop& operator=(ForLoop&& other) = delete;
+    ForLoop(ForLoop&& other) = delete;
+    ForLoop& operator=(ForLoop&& other) = delete;
 
-  Val* index() const noexcept {
-    return index_;
-  }
+    Val* index() const noexcept {
+        return index_;
+    }
 
-  IterDomain* range() const noexcept {
-    return range_;
-  }
+    IterDomain* range() const noexcept {
+        return range_;
+    }
 
-  Scope& body() noexcept {
-    return body_;
-  }
+    Scope& body() noexcept {
+        return body_;
+    }
 
-  const Scope& constBody() const noexcept {
-    return body_;
-  }
+    const Scope& constBody() const noexcept {
+        return body_;
+    }
 
-  bool sameAs(const ForLoop* other) const;
-  Expr* parentScope() const noexcept {
-    return parent_scope_;
-  }
-  bool hasParentScope() const noexcept {
-    return parent_scope_ == nullptr;
-  }
+    bool sameAs(const ForLoop* other) const;
+    Expr* parentScope() const noexcept {
+        return parent_scope_;
+    }
+    bool hasParentScope() const noexcept {
+        return parent_scope_ == nullptr;
+    }
 
- private:
-  Val* const index_;
-  IterDomain* const range_;
-  Scope body_;
-  Expr* parent_scope_;
+private:
+    Val* const index_;
+    IterDomain* const range_;
+    Scope body_;
+    Expr* parent_scope_;
 };
 
 /*
@@ -380,54 +380,54 @@ struct TORCH_CUDA_API ForLoop : public Expr {
  * to Fusion where we can do proper dependency analysis.
  */
 struct TORCH_CUDA_API IfThenElse : public Expr {
-  ~IfThenElse() = default;
-  IfThenElse(
-      Int* _cond,
-      const std::vector<Expr*>& _if_body = {},
-      const std::vector<Expr*>& _else_body = {},
-      Expr* _parent_scope = nullptr);
+    ~IfThenElse() = default;
+    IfThenElse(
+        Int* _cond,
+        const std::vector<Expr*>& _if_body = {},
+        const std::vector<Expr*>& _else_body = {},
+        Expr* _parent_scope = nullptr);
 
-  IfThenElse(const IfThenElse& other) = delete;
-  IfThenElse& operator=(const IfThenElse& other) = delete;
+    IfThenElse(const IfThenElse& other) = delete;
+    IfThenElse& operator=(const IfThenElse& other) = delete;
 
-  IfThenElse(IfThenElse&& other) = delete;
-  IfThenElse& operator=(IfThenElse&& other) = delete;
+    IfThenElse(IfThenElse&& other) = delete;
+    IfThenElse& operator=(IfThenElse&& other) = delete;
 
-  Int* cond() const noexcept {
-    return cond_;
-  }
+    Int* cond() const noexcept {
+        return cond_;
+    }
 
-  const Scope& constBody() const noexcept {
-    return body_;
-  }
+    const Scope& constBody() const noexcept {
+        return body_;
+    }
 
-  const Scope& constElseBody() const noexcept {
-    return else_body_;
-  }
+    const Scope& constElseBody() const noexcept {
+        return else_body_;
+    }
 
-  Scope& body() noexcept {
-    return body_;
-  }
+    Scope& body() noexcept {
+        return body_;
+    }
 
-  Scope& elseBody() noexcept {
-    return else_body_;
-  }
+    Scope& elseBody() noexcept {
+        return else_body_;
+    }
 
-  bool hasElse() const noexcept {
-    return !else_body_.empty();
-  }
+    bool hasElse() const noexcept {
+        return !else_body_.empty();
+    }
 
-  bool sameAs(const IfThenElse* other) const;
+    bool sameAs(const IfThenElse* other) const;
 
-  Expr* parentScope() const noexcept {
-    return parent_scope_;
-  }
+    Expr* parentScope() const noexcept {
+        return parent_scope_;
+    }
 
- private:
-  Int* const cond_;
-  Scope body_;
-  Scope else_body_;
-  Expr* parent_scope_;
+private:
+    Int* const cond_;
+    Scope body_;
+    Scope else_body_;
+    Expr* parent_scope_;
 };
 
 /*
@@ -436,49 +436,49 @@ struct TORCH_CUDA_API IfThenElse : public Expr {
  * stride information.
  */
 struct TORCH_CUDA_API TensorIndex : public Val {
-  ~TensorIndex() = default;
+    ~TensorIndex() = default;
 
-  TensorIndex(const TensorIndex& other) = delete;
-  TensorIndex& operator=(const TensorIndex& other) = delete;
+    TensorIndex(const TensorIndex& other) = delete;
+    TensorIndex& operator=(const TensorIndex& other) = delete;
 
-  TensorIndex(TensorIndex&& other) = delete;
-  TensorIndex& operator=(TensorIndex&& other) = delete;
+    TensorIndex(TensorIndex&& other) = delete;
+    TensorIndex& operator=(TensorIndex&& other) = delete;
 
-  TensorIndex(const TensorView* const _view, std::vector<Val*> _indices)
-      : Val(ValType::TensorIndex), view_(_view), indices_(_indices) {
-    TORCH_INTERNAL_ASSERT(
-        std::all_of(
-            _indices.begin(),
-            _indices.end(),
-            [](Val* v) {
-              return (v->getValType() == ValType::Scalar ||
-                      v->getValType() == ValType::NamedScalar) &&
-                  v->getDataType() == DataType::Int;
-            }),
+    TensorIndex(const TensorView* const _view, std::vector<Val*> _indices)
+        : Val(ValType::TensorIndex), view_(_view), indices_(_indices) {
+        TORCH_INTERNAL_ASSERT(
+            std::all_of(
+                _indices.begin(),
+                _indices.end(),
+        [](Val* v) {
+            return (v->getValType() == ValType::Scalar ||
+                    v->getValType() == ValType::NamedScalar) &&
+                   v->getDataType() == DataType::Int;
+        }),
         "Cannot index with a value other than an int.");
-  }
+    }
 
-  std::vector<Val*>::size_type size() const {
-    return indices_.size();
-  }
+    std::vector<Val*>::size_type size() const {
+        return indices_.size();
+    }
 
-  // i here is int, as we want to accept negative value and ::size_type can be a
-  // uint.
-  Val* index(int i) const;
+    // i here is int, as we want to accept negative value and ::size_type can be a
+    // uint.
+    Val* index(int i) const;
 
-  const std::vector<Val*>& indices() const noexcept {
-    return indices_;
-  }
+    const std::vector<Val*>& indices() const noexcept {
+        return indices_;
+    }
 
-  const TensorView* view() const noexcept {
-    return view_;
-  }
+    const TensorView* view() const noexcept {
+        return view_;
+    }
 
-  bool sameAs(const TensorIndex* const other) const;
+    bool sameAs(const TensorIndex* const other) const;
 
- private:
-  const TensorView* view_;
-  std::vector<Val*> indices_;
+private:
+    const TensorView* view_;
+    std::vector<Val*> indices_;
 };
 
 /*
@@ -491,29 +491,29 @@ struct TORCH_CUDA_API TensorIndex : public Val {
  * the the assocated TensorView.  Perhaps that is more appropriate?
  */
 struct TORCH_CUDA_API Allocate : public Expr {
-  ~Allocate() = default;
+    ~Allocate() = default;
 
-  Allocate(const Allocate& other) = delete;
-  Allocate& operator=(const Allocate& other) = delete;
+    Allocate(const Allocate& other) = delete;
+    Allocate& operator=(const Allocate& other) = delete;
 
-  Allocate(Allocate&& other) = delete;
-  Allocate& operator=(Allocate&& other) = delete;
+    Allocate(Allocate&& other) = delete;
+    Allocate& operator=(Allocate&& other) = delete;
 
-  Allocate(TensorView* _tv, Val* size);
+    Allocate(TensorView* _tv, Val* size);
 
-  DataType buf_type() const;
-  Val* extent() const noexcept {
-    return extent_;
-  }
-  TensorView* buffer() const noexcept {
-    return buffer_;
-  }
+    DataType buf_type() const;
+    Val* extent() const noexcept {
+        return extent_;
+    }
+    TensorView* buffer() const noexcept {
+        return buffer_;
+    }
 
-  bool sameAs(const Allocate* other) const;
+    bool sameAs(const Allocate* other) const;
 
- private:
-  TensorView* buffer_;
-  Val* extent_;
+private:
+    TensorView* buffer_;
+    Val* extent_;
 };
 
 /*
@@ -524,28 +524,28 @@ struct TORCH_CUDA_API Allocate : public Expr {
  * - T3.stride[2]
  */
 struct TORCH_CUDA_API NamedScalar : public Val {
-  ~NamedScalar() = default;
-  NamedScalar() = delete;
+    ~NamedScalar() = default;
+    NamedScalar() = delete;
 
-  NamedScalar(std::string _name, DataType dtype)
-      : Val(ValType::NamedScalar, dtype), name_(_name) {}
+    NamedScalar(std::string _name, DataType dtype)
+        : Val(ValType::NamedScalar, dtype), name_(_name) {}
 
-  NamedScalar(const NamedScalar& other) = delete;
-  NamedScalar& operator=(const NamedScalar& other) = delete;
+    NamedScalar(const NamedScalar& other) = delete;
+    NamedScalar& operator=(const NamedScalar& other) = delete;
 
-  NamedScalar(NamedScalar&& other) = delete;
-  NamedScalar& operator=(NamedScalar&& other) = delete;
+    NamedScalar(NamedScalar&& other) = delete;
+    NamedScalar& operator=(NamedScalar&& other) = delete;
 
-  const std::string& name() const noexcept {
-    return name_;
-  }
+    const std::string& name() const noexcept {
+        return name_;
+    }
 
-  bool sameAs(const NamedScalar* const other) const {
-    return other->name().compare(name()) == 0;
-  }
+    bool sameAs(const NamedScalar* const other) const {
+        return other->name().compare(name()) == 0;
+    }
 
- private:
-  std::string name_;
+private:
+    std::string name_;
 };
 
 } // namespace fuser
