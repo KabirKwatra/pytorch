@@ -33,13 +33,13 @@ class TestDispatch(TestCase):
     # don't commute, you can still run commute with a fixed ctor_order
     # so that you can test that the destructors still commute
     def run_ops(
-        self,
-        name,
-        ops,
-        ctor_order=None,
-        dtor_order=None,
-        results=None,
-        expect_raises=False,
+            self,
+            name,
+            ops,
+            ctor_order=None,
+            dtor_order=None,
+            results=None,
+            expect_raises=False,
     ):
         """
         Given a list of operator registrations, run the registrations in the
@@ -83,18 +83,15 @@ class TestDispatch(TestCase):
         def check_invariants(actual_provenance):
             C._dispatch_check_invariants(name)
             # Normalize the test namespace so that expected outputs are stable
-            actual = C._dispatch_dump("{}::{}".format(test_namespace, name)).replace(
-                test_namespace, "test"
-            )
+            actual = C._dispatch_dump("{}::{}".format(
+                test_namespace, name)).replace(test_namespace, "test")
             expected, expected_provenance = results.setdefault(
-                frozenset(active_ops), (actual, actual_provenance)
-            )
+                frozenset(active_ops), (actual, actual_provenance))
             self.assertMultiLineEqual(
                 expected,
                 actual,
                 "expected from {}; actual from {}".format(
-                    expected_provenance, actual_provenance
-                ),
+                    expected_provenance, actual_provenance),
             )
 
         results.setdefault(frozenset(), ("", "hardcoded initial state"))
@@ -106,7 +103,7 @@ class TestDispatch(TestCase):
             active_ops.add(op_ix)
             try:
                 ops[op_ix](refs[op_ix])
-                check_invariants("running ctors {}".format(ctor_order[: i + 1]))
+                check_invariants("running ctors {}".format(ctor_order[:i + 1]))
             except RuntimeError as e:
                 if not expect_raises:
                     raise
@@ -115,10 +112,12 @@ class TestDispatch(TestCase):
                     frozenset(active_ops),
                     (
                         actual,
-                        "error after running ctors {}".format(ctor_order[: i + 1]),
+                        "error after running ctors {}".format(
+                            ctor_order[:i + 1]),
                     ),
                 )
-                self.assertMultiLineEqual(expected, actual, expected_provenance)
+                self.assertMultiLineEqual(expected, actual,
+                                          expected_provenance)
                 set_to_report = frozenset(active_ops)
                 active_ops.remove(op_ix)
                 # NB: this finally test asserts that if a registrations fails,
@@ -126,8 +125,7 @@ class TestDispatch(TestCase):
                 check_invariants(
                     "running ctors {} and then failing to run ctor {} "
                     "(did this failure leave the dispatcher in a wedged state? "
-                    "it shouldn't!)".format(ctor_order[:i], op_ix)
-                )
+                    "it shouldn't!)".format(ctor_order[:i], op_ix))
                 break
         last_ctor = i
         if expect_raises and len(active_ops) == len(ops):
@@ -149,11 +147,8 @@ class TestDispatch(TestCase):
                 active_ops.discard(op_ix)
             else:
                 active_ops.remove(op_ix)
-            check_invariants(
-                "running ctors {}, then running dtors {}".format(
-                    ctor_order[: last_ctor + 1], dtor_order[: i + 1]
-                )
-            )
+            check_invariants("running ctors {}, then running dtors {}".format(
+                ctor_order[:last_ctor + 1], dtor_order[:i + 1]))
         return results[set_to_report][0]
 
     # Operator registrations are commutative (as static initializers can
@@ -327,9 +322,8 @@ catchall: impl_t_t :: (Tensor _0) -> (Tensor _0) [ boxed unboxed ]
                 # m.def(torch::schema(
                 #   "foo(Tensor x, Tensor y) -> Tensor",
                 #   AliasAnalysisKind::PURE))
-                lambda m: m.def_(
-                    "foo(Tensor x, Tensor y) -> Tensor", alias="PURE_FUNCTION"
-                )
+                lambda m: m.def_("foo(Tensor x, Tensor y) -> Tensor",
+                                 alias="PURE_FUNCTION")
             ],
         )
         self.assertExpectedInline(

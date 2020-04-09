@@ -141,27 +141,20 @@ def from_ivalue(arg, value):
     return FROM_IVALUE[typ].format(value)
 
 
-CALL_UNBOXED_KERNEL = CodeTemplate(
-    """\
+CALL_UNBOXED_KERNEL = CodeTemplate("""\
 auto result_ = callUnboxedKernel<${return_type}${formals_types_with_leading_comma}>(unboxedKernel${args_with_leading_comma});
-"""
-)
-CALL_NAMESPACE = CodeTemplate(
-    """\
+""")
+CALL_NAMESPACE = CodeTemplate("""\
 auto result_ = at::${name}(
     ${args}
 );
-"""
-)
-CALL_METHOD = CodeTemplate(
-    """\
+""")
+CALL_METHOD = CodeTemplate("""\
 auto result_ = (${first}).${name}(
     ${args}
 );
-"""
-)
-CALL_NAMESPACE_WITH_TENSOR_OPTIONS = CodeTemplate(
-    """\
+""")
+CALL_NAMESPACE_WITH_TENSOR_OPTIONS = CodeTemplate("""\
 const auto options = TensorOptions()
         .dtype(${dtype})
         .layout(${layout})
@@ -172,21 +165,17 @@ const auto options = TensorOptions()
 #else
     auto result_ = torch::${name}(${args_with_tensor_options});
 #endif
-"""
-)
-CALL_METHOD_WITH_TENSOR_OPTIONS = CodeTemplate(
-    """\
+""")
+CALL_METHOD_WITH_TENSOR_OPTIONS = CodeTemplate("""\
 const auto options = TensorOptions()
         .dtype(${dtype})
         .layout(${layout})
         .device(${device})
         .pinned_memory(${pin_memory});
 auto result_ = (${first}).${name}(${args_with_tensor_options});
-"""
-)
+""")
 
-CONSTRUCTOR = CodeTemplate(
-    """\
+CONSTRUCTOR = CodeTemplate("""\
 [](OperatorKernel* unboxedKernel, const OperatorHandle&, Stack* stack) {
     using namespace at;
     ${lvalues}
@@ -194,11 +183,9 @@ CONSTRUCTOR = CodeTemplate(
     drop(*stack, ${num_inputs});
     pack(*stack, std::move(result_));
 }
-"""
-)
+""")
 
-CONSTRUCTOR_JITONLY = CodeTemplate(
-    """\
+CONSTRUCTOR_JITONLY = CodeTemplate("""\
 [](Stack* stack) {
     using namespace at;
     ${lvalues}
@@ -207,23 +194,17 @@ CONSTRUCTOR_JITONLY = CodeTemplate(
     pack(*stack, std::move(result_));
     return 0;
 }
-"""
-)
+""")
 
-OPERATOR = CodeTemplate(
-    """\
+OPERATOR = CodeTemplate("""\
   .op("${signature}",
     ${op})
-"""
-)
+""")
 
-OPERATOR_JITONLY = CodeTemplate(
-    """\
+OPERATOR_JITONLY = CodeTemplate("""\
   .jitOnlyOp("${signature}",
     ${op})
-"""
-)
-
+""")
 
 blacklisted_types = {
     "Storage",
@@ -256,17 +237,14 @@ def is_jit_op(decl):
     arguments = decl["arguments"]
 
     # there must be a single out variant
-    if (
-        is_out_variant(decl)
-        and sum([not not arg.get("output") for arg in arguments]) > 1
-    ):
+    if (is_out_variant(decl)
+            and sum([not not arg.get("output") for arg in arguments]) > 1):
         return False
 
     return (
         ("namespace" in decl["method_of"] or "Tensor" in decl["method_of"])
         and all(is_jit_arg(i, arg) for i, arg in enumerate(decl["arguments"]))
-        and all(is_jit_arg(i, arg) for i, arg in enumerate(decl["returns"]))
-    )
+        and all(is_jit_arg(i, arg) for i, arg in enumerate(decl["returns"])))
 
 
 def is_tensor_arg(arg):
@@ -280,13 +258,8 @@ def is_sized_intlist_arg(arg):
 
 def base_name(decl):
     name = decl["name"]
-    return (
-        name[:-1]
-        if decl.get("inplace", False)
-        else name[:-4]
-        if name.endswith("_out")
-        else name
-    )
+    return (name[:-1] if decl.get("inplace", False) else
+            name[:-4] if name.endswith("_out") else name)
 
 
 def is_view(decl):
@@ -318,7 +291,8 @@ def is_backward_op(decl):
 # aten::my_arg(Tensor y, Tensor z, Tensor x) # the order in schema
 # used to move 'out' arguments to the end of the list
 def argument_order(decl):
-    return decl.get("jit_argument_order") or list(range(len(decl["arguments"])))
+    return decl.get("jit_argument_order") or list(range(len(
+        decl["arguments"])))
 
 
 def load_op_list(path):
@@ -327,12 +301,13 @@ def load_op_list(path):
     return op_list
 
 
-def gen_jit_dispatch(
-    declarations, out, template_path, disable_autograd=False, selected_op_list_path=None
-):
-    REGISTER_ATEN_OPS_CPP = CodeTemplate.from_file(
-        template_path + "/register_aten_ops.cpp"
-    )
+def gen_jit_dispatch(declarations,
+                     out,
+                     template_path,
+                     disable_autograd=False,
+                     selected_op_list_path=None):
+    REGISTER_ATEN_OPS_CPP = CodeTemplate.from_file(template_path +
+                                                   "/register_aten_ops.cpp")
 
     ops = []
 
@@ -349,11 +324,9 @@ def gen_jit_dispatch(
             layout = args[tensor_options_arg_index + 1]
             device = args[tensor_options_arg_index + 2]
             pin_memory = args[tensor_options_arg_index + 3]
-            args_with_tensor_options = (
-                args[:tensor_options_arg_index]
-                + ["options"]
-                + args[(tensor_options_arg_index + 4) :]
-            )
+            args_with_tensor_options = (args[:tensor_options_arg_index] +
+                                        ["options"] +
+                                        args[(tensor_options_arg_index + 4):])
             if is_namespace_function:
                 return CALL_NAMESPACE_WITH_TENSOR_OPTIONS.substitute(
                     name=decl["name"],
@@ -361,7 +334,8 @@ def gen_jit_dispatch(
                     layout=layout,
                     device=device,
                     pin_memory=pin_memory,
-                    args_with_tensor_options=pack_arguments(args_with_tensor_options),
+                    args_with_tensor_options=pack_arguments(
+                        args_with_tensor_options),
                 )
             else:
                 return CALL_METHOD_WITH_TENSOR_OPTIONS.substitute(
@@ -371,8 +345,7 @@ def gen_jit_dispatch(
                     device=device,
                     pin_memory=pin_memory,
                     args_with_tensor_options=pack_arguments(
-                        args_with_tensor_options[1:]
-                    ),
+                        args_with_tensor_options[1:]),
                     first=args_with_tensor_options[0],
                     num_inputs=num_inputs,
                 )
@@ -383,26 +356,23 @@ def gen_jit_dispatch(
         # arguments), we set them to 'unboxed_only' and they follow the old behavior of having register_aten_ops.cpp
         # register the jit op.
         elif decl[
-            "use_c10_dispatcher"
-        ] == "with_codegenerated_unboxing_wrapper" and not needs_hacked_twin(decl):
+                "use_c10_dispatcher"] == "with_codegenerated_unboxing_wrapper" and not needs_hacked_twin(
+                    decl):
             if len(decl["returns"]) == 0:
                 return_type = "void"
             elif len(decl["returns"]) == 1:
                 return_type = decl["returns"][0]["type"]
             else:
-                return_type = "std::tuple<{}>".format(
-                    ", ".join([r["type"] for r in decl["returns"]])
-                )
+                return_type = "std::tuple<{}>".format(", ".join(
+                    [r["type"] for r in decl["returns"]]))
             for a in decl["arguments"]:
                 if "type" not in a:
                     raise Exception(decl)
             argument_types_with_leading_comma = ", ".join(
-                [a["type"] for a in decl["arguments"]]
-            )
+                [a["type"] for a in decl["arguments"]])
             if argument_types_with_leading_comma != "":
                 argument_types_with_leading_comma = (
-                    ", " + argument_types_with_leading_comma
-                )
+                    ", " + argument_types_with_leading_comma)
             args_with_leading_comma = pack_arguments(args)
             if args_with_leading_comma != "":
                 args_with_leading_comma = ", " + args_with_leading_comma
@@ -411,7 +381,8 @@ def gen_jit_dispatch(
                 args_with_leading_comma=args_with_leading_comma,
                 num_inputs=num_inputs,
                 return_type=return_type,
-                formals_types_with_leading_comma=argument_types_with_leading_comma,
+                formals_types_with_leading_comma=
+                argument_types_with_leading_comma,
             )
         else:
             assert decl["use_c10_dispatcher"] in [
@@ -419,9 +390,9 @@ def gen_jit_dispatch(
                 "full",
             ] or needs_hacked_twin(decl)
             if is_namespace_function:
-                return CALL_NAMESPACE.substitute(
-                    name=decl["name"], args=pack_arguments(args), num_inputs=num_inputs
-                )
+                return CALL_NAMESPACE.substitute(name=decl["name"],
+                                                 args=pack_arguments(args),
+                                                 num_inputs=num_inputs)
             else:
                 return CALL_METHOD.substitute(
                     name=decl["name"],
@@ -436,7 +407,8 @@ def gen_jit_dispatch(
 
     def emit_decl_variant(decl):
         if "emit_dummy_placeholder" in decl:
-            if decl["use_c10_dispatcher"] == "unboxed_only" or needs_hacked_twin(decl):
+            if decl["use_c10_dispatcher"] == "unboxed_only" or needs_hacked_twin(
+                    decl):
                 return "DUMMY_OPERATION_JITONLY"
             else:
                 return "DUMMY_OPERATION"
@@ -453,8 +425,8 @@ def gen_jit_dispatch(
         order = argument_order(decl)
         for i, arg in enumerate(decl["arguments"]):
             value = from_ivalue(
-                arg, "(std::move(peek(*stack, {}, {})))".format(order[i], num_inputs)
-            )
+                arg, "(std::move(peek(*stack, {}, {})))".format(
+                    order[i], num_inputs))
             if requires_lvalue(arg):
                 lvalues.append("auto {} = {};\n".format(arg["name"], value))
                 value = arg["name"]
@@ -464,7 +436,8 @@ def gen_jit_dispatch(
 
         returns = decl["returns"]
 
-        if decl["use_c10_dispatcher"] == "unboxed_only" or needs_hacked_twin(decl):
+        if decl["use_c10_dispatcher"] == "unboxed_only" or needs_hacked_twin(
+                decl):
             # Ops taking TensorOptions aren't supported in this mechanism yet because boxed dispatch doesn't
             # work for them. They use the old mechanism of registering a jitonly op for now.
             # TODO We should get rid of this once TensorOptions are supported.
@@ -476,7 +449,8 @@ def gen_jit_dispatch(
                 op_capture=op_capture,
                 lvalues=lvalues,
             )
-        elif decl["use_c10_dispatcher"] == "with_codegenerated_unboxing_wrapper":
+        elif decl[
+                "use_c10_dispatcher"] == "with_codegenerated_unboxing_wrapper":
             constructor = CONSTRUCTOR.substitute(
                 name=decl["name"],
                 call=call,
@@ -495,10 +469,8 @@ def gen_jit_dispatch(
         for decl in jit_decls:
             if disable_autograd and is_backward_op(decl):
                 continue
-            if (
-                selected_op_list
-                and signature_without_args(decl) not in selected_op_list
-            ):
+            if (selected_op_list
+                    and signature_without_args(decl) not in selected_op_list):
                 decl["emit_dummy_placeholder"] = True
             result.append(decl)
         return result
@@ -518,44 +490,49 @@ def gen_jit_dispatch(
             args = decl["arguments"]
             result = 0
             for i in range(len(args)):
-                result += (3 ** i) * (1 if args[i]["simple_type"] == "Tensor" else 2)
+                result += (3**i) * (1 if args[i]["simple_type"] == "Tensor"
+                                    else 2)
             return result
 
         # NB: itertools.groupby requires the list be sorted.
         sorted_decls = sorted(jit_decls, key=lambda decl: decl["name"])
         grouped_decls = [
-            list(g) for _, g in groupby(sorted_decls, key=lambda decl: decl["name"])
+            list(g)
+            for _, g in groupby(sorted_decls, key=lambda decl: decl["name"])
         ]
         return [sorted(g, key=declkey) for g in grouped_decls]
 
     # We need to add methods implemented manually in TensorImpl
     # TODO: This seems to claim sizes() returns an int64_t.  Really?
-    tensor_impl_methods = [
-        {
-            "name": name,
-            "api_name": name,
-            "schema_string": schema_string,
-            "overload_name": "",
-            "method_of": ["Tensor"],
-            "arguments": [{"name": "self", "simple_type": "Tensor"}],
-            "returns": [
-                {
-                    "name": "result",
-                    "type": "int64_t",
-                    "dynamic_type": "int64_t",
-                    "simple_type": "int64_t",
-                }
-            ],
-            "use_c10_dispatcher": "unboxed_only",
-        }
-        for name, schema_string in [
-            ("sizes", "aten::sizes(Tensor self) -> int"),
-            ("strides", "aten::strides(Tensor self) -> int"),
-            ("dim", "aten::dim(Tensor self) -> int"),
-            ("numel", "aten::numel(Tensor self) -> int"),
-            ("element_size", "aten::element_size(Tensor self) -> int"),
-        ]
-    ]
+    tensor_impl_methods = [{
+        "name":
+        name,
+        "api_name":
+        name,
+        "schema_string":
+        schema_string,
+        "overload_name":
+        "",
+        "method_of": ["Tensor"],
+        "arguments": [{
+            "name": "self",
+            "simple_type": "Tensor"
+        }],
+        "returns": [{
+            "name": "result",
+            "type": "int64_t",
+            "dynamic_type": "int64_t",
+            "simple_type": "int64_t",
+        }],
+        "use_c10_dispatcher":
+        "unboxed_only",
+    } for name, schema_string in [
+        ("sizes", "aten::sizes(Tensor self) -> int"),
+        ("strides", "aten::strides(Tensor self) -> int"),
+        ("dim", "aten::dim(Tensor self) -> int"),
+        ("numel", "aten::numel(Tensor self) -> int"),
+        ("element_size", "aten::element_size(Tensor self) -> int"),
+    ]]
 
     aten_decls = load_aten_declarations(declarations) + tensor_impl_methods
     jit_decls = [d for d in aten_decls if is_jit_op(d)]
@@ -572,13 +549,26 @@ def gen_jit_dispatch(
             # If you change this, you also need to update [TensorOptions in script]
             # in the tracer code.
             # dtype is specified as an int64_t of at::ScalarType
-            {"name": "dtype", "simple_type": "ScalarType"},
+            {
+                "name": "dtype",
+                "simple_type": "ScalarType"
+            },
             # layout is specified as an int64_t of at::Layout
-            {"name": "layout", "simple_type": "Layout"},
+            {
+                "name": "layout",
+                "simple_type": "Layout"
+            },
             # device is specified as an IntArrayRef of { at::Device::Type, device_id }
-            {"name": "device", "simple_type": "Device"},
+            {
+                "name": "device",
+                "simple_type": "Device"
+            },
             # pin_memory is specified as a boolean
-            {"name": "pin_memory", "simple_type": "bool", "default": False},
+            {
+                "name": "pin_memory",
+                "simple_type": "bool",
+                "default": False
+            },
         ]
         # TODO: Don't repack this into TensorOptions. Needs various changes in downstream code.
         if "default" in arg:
@@ -596,8 +586,7 @@ def gen_jit_dispatch(
 
     for decl in jit_decls:
         decl["arguments"] = [
-            a
-            for i, arg in enumerate(decl["arguments"])
+            a for i, arg in enumerate(decl["arguments"])
             for a in expand_options(decl, i, arg)
         ]
         if is_out_variant(decl):
@@ -606,9 +595,8 @@ def gen_jit_dispatch(
             additional_jit_decls.append(hacked_twin(decl))
 
     jit_decls.extend(additional_jit_decls)
-    selected_op_list = (
-        load_op_list(selected_op_list_path) if selected_op_list_path else None
-    )
+    selected_op_list = (load_op_list(selected_op_list_path)
+                        if selected_op_list_path else None)
     jit_decls = filter_decls(jit_decls, disable_autograd, selected_op_list)
 
     # generation is deterministic
@@ -627,18 +615,17 @@ def gen_jit_dispatch(
     for group in jit_decl_groups:
         x = sum(ord(c) for c in group[0]["name"]) % num_shards
         for decl in group:
-            if decl["use_c10_dispatcher"] == "unboxed_only" or needs_hacked_twin(decl):
+            if decl["use_c10_dispatcher"] == "unboxed_only" or needs_hacked_twin(
+                    decl):
                 shards[x].append(
                     OPERATOR_JITONLY.substitute(
-                        signature=decl["schema_string"], op=emit_decl_variant(decl)
-                    )
-                )
-            elif decl["use_c10_dispatcher"] == "with_codegenerated_unboxing_wrapper":
+                        signature=decl["schema_string"],
+                        op=emit_decl_variant(decl)))
+            elif decl[
+                    "use_c10_dispatcher"] == "with_codegenerated_unboxing_wrapper":
                 shards[x].append(
-                    OPERATOR.substitute(
-                        signature=decl["schema_string"], op=emit_decl_variant(decl)
-                    )
-                )
+                    OPERATOR.substitute(signature=decl["schema_string"],
+                                        op=emit_decl_variant(decl)))
             else:
                 assert decl["use_c10_dispatcher"] == "full"
 
@@ -682,7 +669,8 @@ NEEDS_HACKED_TWIN_NAMES = [
 
 def needs_hacked_twin(decl):
     schema_string = decl["schema_string"]
-    return any([schema_string.startswith(name) for name in NEEDS_HACKED_TWIN_NAMES])
+    return any(
+        [schema_string.startswith(name) for name in NEEDS_HACKED_TWIN_NAMES])
 
 
 def hacked_twin(decl):
@@ -695,14 +683,12 @@ def hacked_twin(decl):
         new_overload_name = old_overload_name + "_hacked_twin"
         decl_copy["overload_name"] = new_overload_name
         decl_copy["schema_string"] = schema_string.replace(
-            name + "." + old_overload_name, name + "." + new_overload_name
-        )
+            name + "." + old_overload_name, name + "." + new_overload_name)
     else:
         new_overload_name = "hacked_twin"
         decl_copy["overload_name"] = new_overload_name
         decl_copy["schema_string"] = schema_string.replace(
-            name, name + "." + new_overload_name
-        )
+            name, name + "." + new_overload_name)
     for arg in decl_copy["arguments"]:
         if arg["simple_type"] == "TensorList" and arg.get("is_nullable"):
             arg["is_nullable"] = False
@@ -711,21 +697,20 @@ def hacked_twin(decl):
 
 def signature_without_args(decl):
     name = decl["name"] if not is_out_variant(decl) else decl["name"][:-4]
-    overload_name = (
-        "." + decl["overload_name"] if not decl["overload_name"] == "" else ""
-    )
+    overload_name = ("." + decl["overload_name"]
+                     if not decl["overload_name"] == "" else "")
     return "aten::{}{}".format(name, overload_name)
 
 
 def main():
     parser = argparse.ArgumentParser(description="Generate JIT op dispatch")
-    parser.add_argument(
-        "declarations", metavar="DECL", help="path to Declarations.yaml"
-    )
+    parser.add_argument("declarations",
+                        metavar="DECL",
+                        help="path to Declarations.yaml")
     parser.add_argument("out", metavar="OUT", help="path to output directory")
-    parser.add_argument(
-        "template_path", metavar="TEMPLATE_PATH", help="path to templates directory"
-    )
+    parser.add_argument("template_path",
+                        metavar="TEMPLATE_PATH",
+                        help="path to templates directory")
     args = parser.parse_args()
     gen_jit_dispatch(args.declarations, args.out, args.template_path)
 

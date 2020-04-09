@@ -61,16 +61,16 @@ class PythonOpTest(hu.HypothesisTestCase):
 
     def test_exception(self):
         op = CreatePythonOperator(MainOpFunctionThatThrowsCustomError, [], [])
-        with six.assertRaisesRegex(
-            self, CustomError, "This is an intentional exception."
-        ):
+        with six.assertRaisesRegex(self, CustomError,
+                                   "This is an intentional exception."):
             workspace.RunOperatorOnce(op)
 
     def test_exception_builder(self):
-        op = CreatePythonOperator(MainOpFunctionThatThrowsCustomErrorInBuilder, [], [])
+        op = CreatePythonOperator(MainOpFunctionThatThrowsCustomErrorInBuilder,
+                                  [], [])
         with six.assertRaisesRegex(
-            self, CustomError, "This is an intentional exception in builder."
-        ):
+                self, CustomError,
+                "This is an intentional exception in builder."):
             workspace.RunOperatorOnce(op)
 
     @given(x=hu.tensor())
@@ -196,7 +196,8 @@ class PythonOpTest(hu.HypothesisTestCase):
             grad_input.reshape(grad_output.shape)
             grad_input.data[...] = grad_output.data * 2
 
-        op = CreatePythonOperator(f, ["x"], ["x" if in_place else "y"], grad_f=grad_f)
+        op = CreatePythonOperator(f, ["x"], ["x" if in_place else "y"],
+                                  grad_f=grad_f)
         self.assertGradientChecks(gc, op, [x], 0, [0])
         self.assertDeviceChecks(dc, op, [x], [0])
 

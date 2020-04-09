@@ -19,6 +19,5 @@ from pt import qtensor_method_test
 from pt import quantization_test
 from pt import qunary_test
 
-
 if __name__ == "__main__":
     op_bench.benchmark_runner.main()
