@@ -20,6 +20,7 @@ import unittest
 #   - Internal state of Dispatcher makes sense.  This is indirectly
 #     tested by the invariant testing
 
+
 class TestDispatch(TestCase):
     namespace_index = 0
 
@@ -354,6 +355,7 @@ catchall: fn2 :: (Tensor _0) -> (Tensor _0) [ boxed unboxed ]
 catchall (inactive): fn1 :: (Tensor _0) -> (Tensor _0) [ boxed unboxed ]
 '''
         )
+
 
 if __name__ == '__main__':
     run_tests()

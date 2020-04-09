@@ -45,6 +45,7 @@ class Optimizer(object):
     Or by 'param' being a BlobReference and 'grad' being a BlobReference for its
     gradient.
     '''
+
     def __call__(self, net, param_init_net, param, grad=None):
         if grad is None:
             assert isinstance(param, parameter_info.ParameterInfo), (
@@ -220,10 +221,10 @@ class Optimizer(object):
 
     def create_lars_inputs(self, param_init_net, weight_decay, trust, lr_max):
         wd = param_init_net.ConstantFill([], "weight_decay",
-            shape=[1], value=weight_decay)
+                                         shape=[1], value=weight_decay)
         trust = param_init_net.ConstantFill([], "trust", shape=[1], value=trust)
         lr_max = param_init_net.ConstantFill([], "lr_max", shape=[1],
-            value=lr_max)
+                                             value=lr_max)
         return wd, trust, lr_max
 
 
@@ -266,7 +267,7 @@ class SgdOptimizer(Optimizer):
             self._add_local_lr_multiplier(
                 lr_lars_multiplier,
                 is_gpu_blob=(current_scope is not None
-                    and core.IsGPUDeviceType(current_scope.device_type)),
+                             and core.IsGPUDeviceType(current_scope.device_type)),
             )
 
         # We need negative sign for LR when used directly with WeightedSum
@@ -348,7 +349,7 @@ class MultiPrecisionSgdOptimizer(SgdOptimizer):
     def _run(self, net, param_init_net, param_info):
         param = param_info.blob
         param_fp32 = param_info.blob_copy[core.DataType.FLOAT] \
-                if param_info.blob_copy is not None else None
+            if param_info.blob_copy is not None else None
 
         # If we have a straight fp32 parameter, run the base class
         if param_fp32 is None:
@@ -697,8 +698,7 @@ class AdagradOptimizer(Optimizer):
                                                                     value=False, dtype=core.DataType.BOOL, shape=[1])
             elif self.prune_delays:
                 last_mask_updated_iter = param_init_net.ConstantFill([], [str(param) + "_last_mask_updated_iter"],
-                                                                     value=-1, dtype=core.DataType.INT64 , shape=[1])
-
+                                                                     value=-1, dtype=core.DataType.INT64, shape=[1])
 
                 if isinstance(grad, core.GradientSlice):
                     AssertionError(
@@ -867,7 +867,7 @@ class WngradOptimizer(Optimizer):
             self._add_local_lr_multiplier(
                 lr_lars_multiplier,
                 is_gpu_blob=(current_scope is not None
-                    and core.IsGPUDeviceType(current_scope.device_type)),
+                             and core.IsGPUDeviceType(current_scope.device_type)),
             )
 
         lr, _ = self.build_lr(

@@ -4,7 +4,7 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import operator_benchmark as op_bench
-from pt import ( # noqa
+from pt import (  # noqa
     qactivation_test,
     qarithmetic_test,
     qbatchnorm_test,

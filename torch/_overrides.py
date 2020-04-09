@@ -21,6 +21,7 @@ import collections
 import torch
 import types
 
+
 def get_ignored_functions():
     """Return public functions that cannot be overrided by __torch_function__
 
@@ -135,6 +136,7 @@ def get_ignored_functions():
         torch.autocast_decrement_nesting,
         torch.nn.functional.hardswish,
     )
+
 
 def get_testing_overrides():
     """Return a dict containing dummy overrides for all overridable functions
@@ -638,6 +640,7 @@ def get_testing_overrides():
         torch.zeros_like: lambda input, dtype=None, layout=None, device=None, requires_grad=False: -1,
     }
 
+
 def _get_overloaded_args(relevant_args):
     """Returns a list of arguments on which to call __torch_function__.
 
@@ -750,6 +753,7 @@ def handle_torch_function(
                     '__torch_function__: {}'
                     .format(func_name, list(map(type, overloaded_args))))
 
+
 def has_torch_function(relevant_args):
     """Check for __torch_function__ implementations in the elements of an iterable
 
@@ -764,6 +768,7 @@ def has_torch_function(relevant_args):
     implementations, False otherwise.
     """
     return any(hasattr(a, '__torch_function__') for a in relevant_args)
+
 
 def get_overridable_functions():
     """List functions that are overridable via __torch_function__

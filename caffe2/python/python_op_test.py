@@ -22,8 +22,10 @@ def SubFunctionThatThrowsCustomError():
 def MainOpFunctionThatThrowsCustomError(inputs, _):
     return SubFunctionThatThrowsCustomError()
 
+
 def MainOpFunctionThatThrowsCustomErrorInBuilder(inputs, _):
     raise CustomError("This is an intentional exception in builder.")
+
 
 def op_builder(name, index, extra):
     iterations = [0]
