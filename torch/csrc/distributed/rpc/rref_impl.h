@@ -30,18 +30,18 @@ constexpr int RFD_TUPLE_SIZE = 7; // number of RRefForkData fields in py::tuple
 
 // Represents fork of an RRef to be sent over the wire.
 struct TORCH_API RRefForkData {
-  const worker_id_t ownerId_;
-  const RRefId rrefId_;
-  const ForkId forkId_;
-  const worker_id_t parent_;
-  const std::string typeStr_;
+    const worker_id_t ownerId_;
+    const RRefId rrefId_;
+    const ForkId forkId_;
+    const worker_id_t parent_;
+    const std::string typeStr_;
 
-  RRefForkData(
-      worker_id_t ownerId,
-      const RRefId& rrefId,
-      const ForkId& forkId,
-      worker_id_t parent,
-      std::string typeStr);
+    RRefForkData(
+        worker_id_t ownerId,
+        const RRefId& rrefId,
+        const ForkId& forkId,
+        worker_id_t parent,
+        std::string typeStr);
 };
 
 // Note [RRef Protocol]
@@ -188,58 +188,58 @@ struct TORCH_API RRefForkData {
 // ``RRef`` is the base type for both ``UserRRef`` and ``OwnerRRef``.
 // Each ``RRef`` has a globally unique ``RRefId``.
 class TORCH_API RRef : public RRefInterface {
- public:
-  // RRef is made NOT copyable NOT movable to prevent messing up reference
-  // counting.
-  explicit RRef(const RRef& other) = delete;
-  explicit RRef(RRef&& other) = delete;
-  RRef& operator=(RRef&& other) = delete;
+public:
+    // RRef is made NOT copyable NOT movable to prevent messing up reference
+    // counting.
+    explicit RRef(const RRef& other) = delete;
+    explicit RRef(RRef&& other) = delete;
+    RRef& operator=(RRef&& other) = delete;
 
-  virtual ~RRef() = default;
+    virtual ~RRef() = default;
 
-  // returns the worker id of the owner
-  inline worker_id_t owner() const override {
-    return ownerId_;
-  }
+    // returns the worker id of the owner
+    inline worker_id_t owner() const override {
+        return ownerId_;
+    }
 
-  // returns the worker name of the owner
-  inline std::string ownerName() const override {
-    return RpcAgent::getCurrentRpcAgent()->getWorkerInfo(ownerId_).name_;
-  }
+    // returns the worker name of the owner
+    inline std::string ownerName() const override {
+        return RpcAgent::getCurrentRpcAgent()->getWorkerInfo(ownerId_).name_;
+    }
 
-  // Returns the globally unique RRefId of this RRef
-  inline const RRefId& rrefId() const {
-    return rrefId_;
-  }
+    // Returns the globally unique RRefId of this RRef
+    inline const RRefId& rrefId() const {
+        return rrefId_;
+    }
 
-  inline bool isPyObj() {
-    return type_ == PyObjectType::get();
-  }
-  inline const TypePtr type() const override {
-    return type_;
-  }
+    inline bool isPyObj() {
+        return type_ == PyObjectType::get();
+    }
+    inline const TypePtr type() const override {
+        return type_;
+    }
 
-  // Send delete UserRRef request to Owner,
-  // if the request hasn't been sent yet.
-  // There are 2 cases to call it,
-  // 1, Python GC decides end of UserRRef lifetime, calling destructor.
-  // 2, RPC module graceful shutdown calls it on all UserRRefs tracked
-  //    in the RRefContext.
-  virtual void tryDel() {}
+    // Send delete UserRRef request to Owner,
+    // if the request hasn't been sent yet.
+    // There are 2 cases to call it,
+    // 1, Python GC decides end of UserRRef lifetime, calling destructor.
+    // 2, RPC module graceful shutdown calls it on all UserRRefs tracked
+    //    in the RRefContext.
+    virtual void tryDel() {}
 
- protected:
-  friend class RRefContext;
+protected:
+    friend class RRefContext;
 
-  RRef(worker_id_t ownerId, const RRefId& rrefId, TypePtr type);
+    RRef(worker_id_t ownerId, const RRefId& rrefId, TypePtr type);
 
-  virtual RRefForkData fork() const;
+    virtual RRefForkData fork() const;
 
-  const worker_id_t ownerId_;
-  const RRefId rrefId_;
+    const worker_id_t ownerId_;
+    const RRefId rrefId_;
 
-  // type field to denote the type of the element that the RRef is holding
-  // it could be any TypePtr that JIT support, including PyObjectType
-  const TypePtr type_;
+    // type field to denote the type of the element that the RRef is holding
+    // it could be any TypePtr that JIT support, including PyObjectType
+    const TypePtr type_;
 };
 
 // ``UserRRef`` represents a user of an RRef. Besides the ``RRefId``, each user
@@ -247,120 +247,120 @@ class TORCH_API RRef : public RRefInterface {
 // never owns the real value, the only way to get the value of the ``RRef`` is
 // to call ``to_here()`` and get a copy..
 class TORCH_API UserRRef final : public RRef {
- public:
-  UserRRef(const UserRRef& other) = delete;
-  UserRRef(UserRRef&& other) = delete;
-  UserRRef& operator=(const UserRRef& other) = delete;
-  UserRRef& operator=(UserRRef&& other) = delete;
+public:
+    UserRRef(const UserRRef& other) = delete;
+    UserRRef(UserRRef&& other) = delete;
+    UserRRef& operator=(const UserRRef& other) = delete;
+    UserRRef& operator=(UserRRef&& other) = delete;
 
-  UserRRef(
-      worker_id_t ownerId,
-      const RRefId& rrefId,
-      const ForkId& forkId,
-      TypePtr type);
+    UserRRef(
+        worker_id_t ownerId,
+        const RRefId& rrefId,
+        const ForkId& forkId,
+        TypePtr type);
 
-  inline bool isOwner() const override {
-    return false;
-  }
+    inline bool isOwner() const override {
+        return false;
+    }
 
-  inline bool confirmedByOwner() const override {
-    return confirmedByOwner_;
-  }
+    inline bool confirmedByOwner() const override {
+        return confirmedByOwner_;
+    }
 
-  // Returns the globally unique ForkId of this RRef
-  const ForkId& forkId() const;
+    // Returns the globally unique ForkId of this RRef
+    const ForkId& forkId() const;
 
-  // Get of copy of the value from the ``OwnerRRef``. If the value is not ready
-  // yet, this call will block.
-  IValue toHere();
+    // Get of copy of the value from the ``OwnerRRef``. If the value is not ready
+    // yet, this call will block.
+    IValue toHere();
 
-  void tryDel() override;
+    void tryDel() override;
 
-  // Will be called when refcount reaches 0.
-  // Upon destruction, this ``UserRRef`` will tell the owner to deref.
-  void release_resources() override;
+    // Will be called when refcount reaches 0.
+    // Upon destruction, this ``UserRRef`` will tell the owner to deref.
+    void release_resources() override;
 
-  // Will be called when both refcount and weakcount reach 0. See
-  // https://github.com/pytorch/pytorch/blob/9116f02bebf3a5260feef5732d36c54ecb3b4033/c10/util/intrusive_ptr.h#L204
-  // This is called on destructing the wrapping intrusive_ptr_target instance
-  // and it's data members. We don't need to implement anything here.
-  ~UserRRef() = default;
+    // Will be called when both refcount and weakcount reach 0. See
+    // https://github.com/pytorch/pytorch/blob/9116f02bebf3a5260feef5732d36c54ecb3b4033/c10/util/intrusive_ptr.h#L204
+    // This is called on destructing the wrapping intrusive_ptr_target instance
+    // and it's data members. We don't need to implement anything here.
+    ~UserRRef() = default;
 
- private:
-  friend class RRefContext;
+private:
+    friend class RRefContext;
 
-  RRefForkData fork() const override;
-  inline void confirm() {
-    confirmedByOwner_ = true;
-  }
+    RRefForkData fork() const override;
+    inline void confirm() {
+        confirmedByOwner_ = true;
+    }
 
-  const ForkId forkId_;
+    const ForkId forkId_;
 
-  // Indicates if this user has sent delete message to it's owner.
-  // Note, thread safety is needed because delete message could be sent by
-  // either the destructor called by Python garbage collection or RRefContext
-  // proactive cleanup on RPC graceful shutdown.
-  std::mutex deletedOnOwnerMutex_;
-  bool deletedOnOwner_{false};
-  // Indicating whether this UserRRef has been confirmed by its owner.
-  std::atomic<bool> confirmedByOwner_;
+    // Indicates if this user has sent delete message to it's owner.
+    // Note, thread safety is needed because delete message could be sent by
+    // either the destructor called by Python garbage collection or RRefContext
+    // proactive cleanup on RPC graceful shutdown.
+    std::mutex deletedOnOwnerMutex_;
+    bool deletedOnOwner_{false};
+    // Indicating whether this UserRRef has been confirmed by its owner.
+    std::atomic<bool> confirmedByOwner_;
 };
 
 // Keep the template only on the derived class because ``RRefContext`` needs to
 // erase the type on ``RRef`` and keep them in one map.
 class TORCH_API OwnerRRef final : public RRef {
- public:
-  OwnerRRef(const OwnerRRef& other) = delete;
-  OwnerRRef(OwnerRRef&& other) = delete;
-  OwnerRRef& operator=(const OwnerRRef& other) = delete;
-  OwnerRRef& operator=(OwnerRRef&& other) = delete;
+public:
+    OwnerRRef(const OwnerRRef& other) = delete;
+    OwnerRRef(OwnerRRef&& other) = delete;
+    OwnerRRef& operator=(const OwnerRRef& other) = delete;
+    OwnerRRef& operator=(OwnerRRef&& other) = delete;
 
-  OwnerRRef(worker_id_t ownerId, const RRefId& rrefId, TypePtr type)
-      : OwnerRRef(ownerId, rrefId, type, {}) {}
+    OwnerRRef(worker_id_t ownerId, const RRefId& rrefId, TypePtr type)
+        : OwnerRRef(ownerId, rrefId, type, {}) {}
 
-  OwnerRRef(
-      worker_id_t ownerId,
-      const RRefId& rrefId,
-      TypePtr type,
-      c10::optional<IValue> value)
-      : RRef(ownerId, rrefId, std::move(type)) {
-    value_ = std::move(value);
-  }
+    OwnerRRef(
+        worker_id_t ownerId,
+        const RRefId& rrefId,
+        TypePtr type,
+        c10::optional<IValue> value)
+        : RRef(ownerId, rrefId, std::move(type)) {
+        value_ = std::move(value);
+    }
 
-  inline bool isOwner() const override {
-    return true;
-  }
+    inline bool isOwner() const override {
+        return true;
+    }
 
-  // OwnerRRef is always confirmed, while UserRRef is only confirmed when the
-  // owner knows about it.
-  inline bool confirmedByOwner() const override {
-    return true;
-  }
+    // OwnerRRef is always confirmed, while UserRRef is only confirmed when the
+    // owner knows about it.
+    inline bool confirmedByOwner() const override {
+        return true;
+    }
 
-  // Get a constant reference of the real value. This method will block if the
-  // value is not ready. This method does not need GIL as it does not create
-  // any new py::object. It will throw if there is an error.
-  const IValue& getValue() const;
+    // Get a constant reference of the real value. This method will block if the
+    // value is not ready. This method does not need GIL as it does not create
+    // any new py::object. It will throw if there is an error.
+    const IValue& getValue() const;
 
-  // Set the value of this ``OwnerRRef``. This method does not need GIL as it
-  // does not create any new py::object.
-  void setValue(IValue&& value);
-  // Sets the value of this ``OwnerRRef`` to contain an exception.
-  void setError(const std::string& err);
+    // Set the value of this ``OwnerRRef``. This method does not need GIL as it
+    // does not create any new py::object.
+    void setValue(IValue&& value);
+    // Sets the value of this ``OwnerRRef`` to contain an exception.
+    void setError(const std::string& err);
 
-  // Has a value or error been set?
-  bool hasValue() const;
-  // Gets a future that is satisfied when the value or error is set.
-  std::shared_ptr<FutureMessage> getFuture();
+    // Has a value or error been set?
+    bool hasValue() const;
+    // Gets a future that is satisfied when the value or error is set.
+    std::shared_ptr<FutureMessage> getFuture();
 
- private:
-  friend class RRefContext;
+private:
+    friend class RRefContext;
 
-  c10::optional<IValue> value_;
-  c10::optional<std::string> error_;
-  mutable std::mutex mutex_;
-  mutable std::condition_variable valueCV_;
-  std::shared_ptr<FutureMessage> future_;
+    c10::optional<IValue> value_;
+    c10::optional<std::string> error_;
+    mutable std::mutex mutex_;
+    mutable std::condition_variable valueCV_;
+    std::shared_ptr<FutureMessage> future_;
 };
 
 } // namespace rpc
