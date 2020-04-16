@@ -92,7 +92,6 @@ else
 fi
 export PYTORCH_BUILD_NUMBER=1
 
-
 JAVA_HOME=
 BUILD_JNI=OFF
 if [[ "$PACKAGE_TYPE" == libtorch ]]; then
@@ -100,8 +99,8 @@ if [[ "$PACKAGE_TYPE" == libtorch ]]; then
   POSSIBLE_JAVA_HOMES+=(/usr/local)
   POSSIBLE_JAVA_HOMES+=(/usr/lib/jvm/java-8-openjdk-amd64)
   POSSIBLE_JAVA_HOMES+=(/Library/Java/JavaVirtualMachines/*.jdk/Contents/Home)
-  for JH in "${POSSIBLE_JAVA_HOMES[@]}" ; do
-    if [[ -e "$JH/include/jni.h" ]] ; then
+  for JH in "${POSSIBLE_JAVA_HOMES[@]}"; do
+    if [[ -e "$JH/include/jni.h" ]]; then
       echo "Found jni.h under $JH"
       JAVA_HOME="$JH"
       BUILD_JNI=ON
@@ -164,9 +163,9 @@ export CIRCLE_BRANCH="$CIRCLE_BRANCH"
 # =================== The above code will be executed inside Docker container ===================
 EOL
 
-echo 'retry () {' >> "$envfile"
-echo '    $*  || (sleep 1 && $*) || (sleep 2 && $*) || (sleep 4 && $*) || (sleep 8 && $*)' >> "$envfile"
-echo '}' >> "$envfile"
-echo 'export -f retry' >> "$envfile"
+echo 'retry () {' >>"$envfile"
+echo '    $*  || (sleep 1 && $*) || (sleep 2 && $*) || (sleep 4 && $*) || (sleep 8 && $*)' >>"$envfile"
+echo '}' >>"$envfile"
+echo 'export -f retry' >>"$envfile"
 
 cat "$envfile"

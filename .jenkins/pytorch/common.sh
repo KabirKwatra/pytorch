@@ -4,7 +4,7 @@
 
 # NB: define this function before set -x, so that we don't
 # pollute the log with a premature EXITED_USER_LAND ;)
-function cleanup {
+function cleanup() {
   # Note that if you've exited user land, then CI will conclude that
   # any failure is the CI's fault.  So we MUST only output this
   # string
@@ -18,7 +18,10 @@ function cleanup {
 set -ex
 
 # Save the SCRIPT_DIR absolute path in case later we chdir (as occurs in the gpu perf test)
-SCRIPT_DIR="$( cd "$(dirname "${BASH_SOURCE[0]}")" ; pwd -P )"
+SCRIPT_DIR="$(
+  cd "$(dirname "${BASH_SOURCE[0]}")"
+  pwd -P
+)"
 
 # Required environment variables:
 #   $BUILD_ENVIRONMENT (should be set by your Docker image)
@@ -48,7 +51,10 @@ export IS_PYTORCH_CI=1
 
 log() { printf '%s\n' "$*"; }
 error() { log "ERROR: $*" >&2; }
-fatal() { error "$@"; exit 1; }
+fatal() {
+  error "$@"
+  exit 1
+}
 
 # appends a command to a trap
 #
@@ -56,19 +62,20 @@ fatal() { error "$@"; exit 1; }
 # - remaining args:  names of traps to modify
 #
 trap_add() {
-    trap_add_cmd=$1; shift || fatal "$FUNCNAME usage error"
-    for trap_add_name in "$@"; do
-        trap -- "$(
-            # helper fn to get existing trap command from output
-            # of trap -p
-            extract_trap_cmd() { printf '%s\n' "$3"; }
-            # print existing trap command with newline
-            eval "extract_trap_cmd $(trap -p "$trap_add_name")"
-            # print the new trap command
-            printf '%s\n' "$trap_add_cmd"
-        )" "$trap_add_name" \
-            || fatal "unable to add to trap $trap_add_name"
-    done
+  trap_add_cmd=$1
+  shift || fatal "$FUNCNAME usage error"
+  for trap_add_name in "$@"; do
+    trap -- "$(
+      # helper fn to get existing trap command from output
+      # of trap -p
+      extract_trap_cmd() { printf '%s\n' "$3"; }
+      # print existing trap command with newline
+      eval "extract_trap_cmd $(trap -p "$trap_add_name")"
+      # print the new trap command
+      printf '%s\n' "$trap_add_cmd"
+    )" "$trap_add_name" ||
+      fatal "unable to add to trap $trap_add_name"
+  done
 }
 # set the trace attribute for the above function.  this is
 # required to modify DEBUG or RETURN traps because functions don't
@@ -78,20 +85,20 @@ declare -f -t trap_add
 trap_add cleanup EXIT
 
 function assert_git_not_dirty() {
-    # TODO: we should add an option to `build_amd.py` that reverts the repo to
-    #       an unmodified state.
-    if ([[ "$BUILD_ENVIRONMENT" != *rocm* ]] && [[ "$BUILD_ENVIRONMENT" != *xla* ]]) ; then
-        git_status=$(git status --porcelain)
-        if [[ $git_status ]]; then
-            echo "Build left local git repository checkout dirty"
-            echo "git status --porcelain:"
-            echo "$git_status"
-            exit 1
-        fi
+  # TODO: we should add an option to `build_amd.py` that reverts the repo to
+  #       an unmodified state.
+  if ([[ "$BUILD_ENVIRONMENT" != *rocm* ]] && [[ "$BUILD_ENVIRONMENT" != *xla* ]]); then
+    git_status=$(git status --porcelain)
+    if [[ $git_status ]]; then
+      echo "Build left local git repository checkout dirty"
+      echo "git status --porcelain:"
+      echo "$git_status"
+      exit 1
     fi
+  fi
 }
 
-if which sccache > /dev/null; then
+if which sccache >/dev/null; then
   # Save sccache logs to file
   sccache --stop-server || true
   rm ~/sccache_error.log || true
@@ -111,7 +118,7 @@ if which sccache > /dev/null; then
   trap_add sccache_epilogue EXIT
 fi
 
-if which ccache > /dev/null; then
+if which ccache >/dev/null; then
   # Report ccache stats for easier debugging
   ccache --zero-stats
   ccache --show-stats
@@ -130,9 +137,9 @@ if [ -z "$COMPACT_JOB_NAME" ]; then
   exit 1
 fi
 
-if [[ "$BUILD_ENVIRONMENT" == *pytorch-linux-xenial-cuda10.1-cudnn7-py3* ]] || \
-   [[ "$BUILD_ENVIRONMENT" == *pytorch-linux-trusty-py3.6-gcc7* ]] || \
-   [[ "$BUILD_ENVIRONMENT" == *pytorch_macos* ]]; then
+if [[ "$BUILD_ENVIRONMENT" == *pytorch-linux-xenial-cuda10.1-cudnn7-py3* ]] ||
+  [[ "$BUILD_ENVIRONMENT" == *pytorch-linux-trusty-py3.6-gcc7* ]] ||
+  [[ "$BUILD_ENVIRONMENT" == *pytorch_macos* ]]; then
   BUILD_TEST_LIBTORCH=1
 else
   BUILD_TEST_LIBTORCH=0
@@ -142,9 +149,9 @@ fi
 # min version (3.5 for xenial and 3.10 for bionic),
 # so we only do it in three builds that we know should use conda.
 # Linux bionic cannot find conda mkl with cmake 3.10, so we need a newer cmake from conda.
-if [[ "$BUILD_ENVIRONMENT" == *pytorch-xla-linux-bionic* ]] || \
-   [[ "$BUILD_ENVIRONMENT" == *pytorch-linux-xenial-cuda9-cudnn7-py2* ]] || \
-   [[ "$BUILD_ENVIRONMENT" == *pytorch-linux-xenial-cuda10.1-cudnn7-py3* ]]; then
+if [[ "$BUILD_ENVIRONMENT" == *pytorch-xla-linux-bionic* ]] ||
+  [[ "$BUILD_ENVIRONMENT" == *pytorch-linux-xenial-cuda9-cudnn7-py2* ]] ||
+  [[ "$BUILD_ENVIRONMENT" == *pytorch-linux-xenial-cuda10.1-cudnn7-py3* ]]; then
   if ! which conda; then
     echo "Expected $BUILD_ENVIRONMENT to use conda, but 'which conda' returns empty"
     exit 1
@@ -156,8 +163,8 @@ fi
 function pip_install() {
   # retry 3 times
   # old versions of pip don't have the "--progress-bar" flag
-  pip install --progress-bar off "$@" || pip install --progress-bar off "$@" || pip install --progress-bar off "$@" ||\
-  pip install "$@" || pip install "$@" || pip install "$@"
+  pip install --progress-bar off "$@" || pip install --progress-bar off "$@" || pip install --progress-bar off "$@" ||
+    pip install "$@" || pip install "$@" || pip install "$@"
 }
 
 function pip_uninstall() {
@@ -165,8 +172,8 @@ function pip_uninstall() {
   pip uninstall -y "$@" || pip uninstall -y "$@"
 }
 
-retry () {
-  "$@"  || (sleep 1 && "$@") || (sleep 2 && "$@")
+retry() {
+  "$@" || (sleep 1 && "$@") || (sleep 2 && "$@")
 }
 
 function get_exit_code() {
@@ -182,7 +189,7 @@ function file_diff_from_base() {
   set +e
   git fetch origin master --quiet
   set -e
-  git diff --name-only "$(git merge-base origin master HEAD)" > "$1"
+  git diff --name-only "$(git merge-base origin master HEAD)" >"$1"
 }
 
 function get_bazel() {

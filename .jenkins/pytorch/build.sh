@@ -83,8 +83,8 @@ if [[ "$BUILD_ENVIRONMENT" == *libtorch* ]]; then
   POSSIBLE_JAVA_HOMES+=(/usr/local)
   POSSIBLE_JAVA_HOMES+=(/usr/lib/jvm/java-8-openjdk-amd64)
   POSSIBLE_JAVA_HOMES+=(/Library/Java/JavaVirtualMachines/*.jdk/Contents/Home)
-  for JH in "${POSSIBLE_JAVA_HOMES[@]}" ; do
-    if [[ -e "$JH/include/jni.h" ]] ; then
+  for JH in "${POSSIBLE_JAVA_HOMES[@]}"; do
+    if [[ -e "$JH/include/jni.h" ]]; then
       echo "Found jni.h under $JH"
       export JAVA_HOME="$JH"
       export BUILD_JNI=ON
@@ -135,7 +135,7 @@ if [[ "$BUILD_ENVIRONMENT" == *rocm* ]]; then
       (
         echo "#!/bin/sh"
         echo "exec $SCCACHE $(which "$compiler") \"\$@\""
-      ) > "./sccache/$compiler"
+      ) >"./sccache/$compiler"
       chmod +x "./sccache/$compiler"
     done
 
@@ -157,7 +157,7 @@ fi
 # sccache will fail for CUDA builds if all cores are used for compiling
 # gcc 7 with sccache seems to have intermittent OOM issue if all cores are used
 if [ -z "$MAX_JOBS" ]; then
-  if ([[ "$BUILD_ENVIRONMENT" == *cuda* ]] || [[ "$BUILD_ENVIRONMENT" == *gcc7* ]]) && which sccache > /dev/null; then
+  if ([[ "$BUILD_ENVIRONMENT" == *cuda* ]] || [[ "$BUILD_ENVIRONMENT" == *gcc7* ]]) && which sccache >/dev/null; then
     export MAX_JOBS=$(($(nproc) - 1))
   fi
 fi
@@ -191,16 +191,16 @@ if [[ "$BUILD_ENVIRONMENT" == *-bazel-* ]]; then
 else
   # check that setup.py would fail with bad arguments
   echo "The next three invocations are expected to fail with invalid command error messages."
-  ( ! get_exit_code python setup.py bad_argument )
-  ( ! get_exit_code python setup.py clean] )
-  ( ! get_exit_code python setup.py clean bad_argument )
+  (! get_exit_code python setup.py bad_argument)
+  (! get_exit_code python setup.py clean])
+  (! get_exit_code python setup.py clean bad_argument)
 
   if [[ "$BUILD_ENVIRONMENT" != *libtorch* ]]; then
 
     # ppc64le build fails when WERROR=1
     # set only when building other architectures
     # only use for "python setup.py install" line
-    if [[ "$BUILD_ENVIRONMENT" != *ppc64le*  && "$BUILD_ENVIRONMENT" != *clang* ]]; then
+    if [[ "$BUILD_ENVIRONMENT" != *ppc64le* && "$BUILD_ENVIRONMENT" != *clang* ]]; then
       WERROR=1 python setup.py install
     else
       python setup.py install
@@ -209,7 +209,7 @@ else
     # TODO: I'm not sure why, but somehow we lose verbose commands
     set -x
 
-    if which sccache > /dev/null; then
+    if which sccache >/dev/null; then
       echo 'PyTorch Build Statistics'
       sccache --show-stats
     fi
