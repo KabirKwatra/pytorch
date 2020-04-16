@@ -5,13 +5,13 @@
 # need to set it yourself.
 
 # shellcheck disable=SC2034
-COMPACT_JOB_NAME="${BUILD_ENVIRONMENT}"
+COMPACT_JOB_NAME="$BUILD_ENVIRONMENT"
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 echo "Testing pytorch"
 
-if [ -n "${IN_CIRCLECI}" ]; then
+if [ -n "$IN_CIRCLECI" ]; then
   # TODO move this to docker
   pip_install unittest-xml-reporting
 
@@ -54,7 +54,7 @@ if [[ "$BUILD_ENVIRONMENT" != *ppc64le* ]] && [[ "$BUILD_ENVIRONMENT" != *-bazel
 
   # TODO: move this to Docker
   PYTHON_VERSION=$(python -c 'import platform; print(platform.python_version())'|cut -c1)
-  echo $PYTHON_VERSION
+  echo "$PYTHON_VERSION"
   # if [[ $PYTHON_VERSION == "2" ]]; then
   #   pip_install --user https://s3.amazonaws.com/ossci-linux/wheels/tensorboard-1.14.0a0-py2-none-any.whl
   # else
@@ -77,7 +77,7 @@ fi
 if [[ "$BUILD_ENVIRONMENT" == *asan* ]]; then
     # Suppress vptr violations arising from multiple copies of pybind11
     export ASAN_OPTIONS=detect_leaks=0:symbolize=1:strict_init_order=true
-    export UBSAN_OPTIONS=print_stacktrace=1:suppressions=$PWD/ubsan.supp
+    export UBSAN_OPTIONS=print_stacktrace=1:suppressions="$PWD"/ubsan.supp
     export PYTORCH_TEST_WITH_ASAN=1
     export PYTORCH_TEST_WITH_UBSAN=1
     # TODO: Figure out how to avoid hard-coding these paths
@@ -169,10 +169,10 @@ test_aten() {
       SUDO=sudo
     fi
 
-    ${SUDO} ln -s "$TORCH_LIB_PATH"/libc10* build/bin
-    ${SUDO} ln -s "$TORCH_LIB_PATH"/libcaffe2* build/bin
-    ${SUDO} ln -s "$TORCH_LIB_PATH"/libmkldnn* build/bin
-    ${SUDO} ln -s "$TORCH_LIB_PATH"/libnccl* build/bin
+    "$SUDO" ln -s "$TORCH_LIB_PATH"/libc10* build/bin
+    "$SUDO" ln -s "$TORCH_LIB_PATH"/libcaffe2* build/bin
+    "$SUDO" ln -s "$TORCH_LIB_PATH"/libmkldnn* build/bin
+    "$SUDO" ln -s "$TORCH_LIB_PATH"/libnccl* build/bin
 
     ls build/bin
     aten/tools/run_tests.sh build/bin
@@ -272,7 +272,7 @@ test_bazel() {
   tools/bazel test --test_tag_filters=-gpu-required --test_filter=-*_CUDA :all_tests
 }
 
-if ! [[ "${BUILD_ENVIRONMENT}" == *libtorch* || "${BUILD_ENVIRONMENT}" == *-bazel-* ]]; then
+if ! [[ "$BUILD_ENVIRONMENT" == *libtorch* || "$BUILD_ENVIRONMENT" == *-bazel-* ]]; then
   (cd test && python -c "import torch; print(torch.__config__.show())")
   (cd test && python -c "import torch; print(torch.__config__.parallel_info())")
 fi

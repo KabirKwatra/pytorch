@@ -2,7 +2,7 @@
 set -eux -o pipefail
 
 retry () {
-    $*  || (sleep 1 && $*) || (sleep 2 && $*) || (sleep 4 && $*) || (sleep 8 && $*)
+    "$@"  || (sleep 1 && "$@") || (sleep 2 && "$@") || (sleep 4 && "$@") || (sleep 8 && "$@")
 }
 
 
@@ -38,7 +38,7 @@ retry git clone https://github.com/pytorch/pytorch.git "$PYTORCH_ROOT"
 pushd "$PYTORCH_ROOT"
 if [[ -n "${CIRCLE_PR_NUMBER:-}" ]]; then
   # "smoke" binary build on PRs
-  git fetch --force origin "pull/${CIRCLE_PR_NUMBER}/head:remotes/origin/pull/${CIRCLE_PR_NUMBER}"
+  git fetch --force origin "pull/$CIRCLE_PR_NUMBER/head:remotes/origin/pull/$CIRCLE_PR_NUMBER"
   git reset --hard "$CIRCLE_SHA1"
   git checkout -q -B "$CIRCLE_BRANCH"
   git reset --hard "$CIRCLE_SHA1"

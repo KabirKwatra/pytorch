@@ -10,7 +10,7 @@ function cleanup {
   # string
   retcode=$?
   set +x
-  if [ $retcode -eq 0 ]; then
+  if [ "$retcode" -eq 0 ]; then
     echo "EXITED_USER_LAND"
   fi
 }
@@ -56,18 +56,18 @@ fatal() { error "$@"; exit 1; }
 # - remaining args:  names of traps to modify
 #
 trap_add() {
-    trap_add_cmd=$1; shift || fatal "${FUNCNAME} usage error"
+    trap_add_cmd=$1; shift || fatal "$FUNCNAME usage error"
     for trap_add_name in "$@"; do
         trap -- "$(
             # helper fn to get existing trap command from output
             # of trap -p
             extract_trap_cmd() { printf '%s\n' "$3"; }
             # print existing trap command with newline
-            eval "extract_trap_cmd $(trap -p "${trap_add_name}")"
+            eval "extract_trap_cmd $(trap -p "$trap_add_name")"
             # print the new trap command
-            printf '%s\n' "${trap_add_cmd}"
-        )" "${trap_add_name}" \
-            || fatal "unable to add to trap ${trap_add_name}"
+            printf '%s\n' "$trap_add_cmd"
+        )" "$trap_add_name" \
+            || fatal "unable to add to trap $trap_add_name"
     done
 }
 # set the trace attribute for the above function.  this is
@@ -85,7 +85,7 @@ function assert_git_not_dirty() {
         if [[ $git_status ]]; then
             echo "Build left local git repository checkout dirty"
             echo "git status --porcelain:"
-            echo "${git_status}"
+            echo "$git_status"
             exit 1
         fi
     fi
@@ -146,7 +146,7 @@ if [[ "$BUILD_ENVIRONMENT" == *pytorch-xla-linux-bionic* ]] || \
    [[ "$BUILD_ENVIRONMENT" == *pytorch-linux-xenial-cuda9-cudnn7-py2* ]] || \
    [[ "$BUILD_ENVIRONMENT" == *pytorch-linux-xenial-cuda10.1-cudnn7-py3* ]]; then
   if ! which conda; then
-    echo "Expected ${BUILD_ENVIRONMENT} to use conda, but 'which conda' returns empty"
+    echo "Expected $BUILD_ENVIRONMENT to use conda, but 'which conda' returns empty"
     exit 1
   else
     conda install -q -y cmake
@@ -166,7 +166,7 @@ function pip_uninstall() {
 }
 
 retry () {
-  $*  || (sleep 1 && $*) || (sleep 2 && $*)
+  "$@"  || (sleep 1 && "$@") || (sleep 2 && "$@")
 }
 
 function get_exit_code() {
@@ -174,7 +174,7 @@ function get_exit_code() {
   "$@"
   retcode=$?
   set -e
-  return $retcode
+  return "$retcode"
 }
 
 function file_diff_from_base() {

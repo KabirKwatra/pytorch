@@ -6,14 +6,14 @@ tagged_version() {
   # Grabs version from either the env variable CIRCLE_TAG
   # or the pytorch git described version
   if [[ "$OSTYPE" == "msys" ]]; then
-    GIT_DESCRIBE="git --git-dir ${workdir}/p/.git describe"
+    GIT_DESCRIBE="git --git-dir $workdir/p/.git describe"
   else
-    GIT_DESCRIBE="git --git-dir ${workdir}/pytorch/.git describe"
+    GIT_DESCRIBE="git --git-dir $workdir/pytorch/.git describe"
   fi
   if [[ -n "${CIRCLE_TAG:-}" ]]; then
-    echo "${CIRCLE_TAG}"
-  elif ${GIT_DESCRIBE} --exact --tags >/dev/null; then
-    ${GIT_DESCRIBE} --tags
+    echo "$CIRCLE_TAG"
+  elif "$GIT_DESCRIBE" --exact --tags >/dev/null; then
+    "$GIT_DESCRIBE" --tags
   else
     return 1
   fi
@@ -39,7 +39,7 @@ touch "$envfile"
 chmod +x "$envfile"
 
 # Parse the BUILD_ENVIRONMENT to package type, python, and cuda
-configs=($BUILD_ENVIRONMENT)
+configs=("$BUILD_ENVIRONMENT")
 export PACKAGE_TYPE="${configs[0]}"
 export DESIRED_PYTHON="${configs[1]}"
 export DESIRED_CUDA="${configs[2]}"
@@ -57,7 +57,7 @@ if [[ "$PACKAGE_TYPE" == 'libtorch' ]]; then
 fi
 
 # Pick docker image
-export DOCKER_IMAGE=${DOCKER_IMAGE:-}
+export DOCKER_IMAGE="${DOCKER_IMAGE:-}"
 if [[ -z "$DOCKER_IMAGE" ]]; then
   if [[ "$PACKAGE_TYPE" == conda ]]; then
     export DOCKER_IMAGE="pytorch/conda-cuda"
@@ -86,9 +86,9 @@ if tagged_version >/dev/null; then
   BASE_BUILD_VERSION="$(tagged_version | sed -e 's/^v//' -e 's/-.*$//')"
 fi
 if [[ "$(uname)" == 'Darwin' ]] || [[ "$DESIRED_CUDA" == "cu102" ]] || [[ "$PACKAGE_TYPE" == conda ]]; then
-  export PYTORCH_BUILD_VERSION="${BASE_BUILD_VERSION}"
+  export PYTORCH_BUILD_VERSION="$BASE_BUILD_VERSION"
 else
-  export PYTORCH_BUILD_VERSION="${BASE_BUILD_VERSION}+$DESIRED_CUDA"
+  export PYTORCH_BUILD_VERSION="$BASE_BUILD_VERSION+$DESIRED_CUDA"
 fi
 export PYTORCH_BUILD_NUMBER=1
 

@@ -5,7 +5,7 @@
 # need to set it yourself.
 
 # shellcheck disable=SC2034
-COMPACT_JOB_NAME="${BUILD_ENVIRONMENT}"
+COMPACT_JOB_NAME="$BUILD_ENVIRONMENT"
 
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
@@ -121,11 +121,11 @@ if [[ "$BUILD_ENVIRONMENT" == *rocm* ]]; then
 
   # ROCm CI is using Caffe2 docker images, which needs these wrapper
   # scripts to correctly use sccache.
-  if [ -n "${SCCACHE_BUCKET}" ]; then
+  if [ -n "$SCCACHE_BUCKET" ]; then
     mkdir -p ./sccache
 
     SCCACHE="$(which sccache)"
-    if [ -z "${SCCACHE}" ]; then
+    if [ -z "$SCCACHE" ]; then
       echo "Unable to find sccache..."
       exit 1
     fi
@@ -134,7 +134,7 @@ if [[ "$BUILD_ENVIRONMENT" == *rocm* ]]; then
     for compiler in cc c++ gcc g++ clang clang++; do
       (
         echo "#!/bin/sh"
-        echo "exec $SCCACHE $(which $compiler) \"\$@\""
+        echo "exec $SCCACHE $(which "$compiler") \"\$@\""
       ) > "./sccache/$compiler"
       chmod +x "./sccache/$compiler"
     done
@@ -245,7 +245,7 @@ else
     BUILD_LIBTORCH_PY=$PWD/tools/build_libtorch.py
     mkdir -p ../cpp-build/caffe2
     pushd ../cpp-build/caffe2
-    WERROR=1 VERBOSE=1 DEBUG=1 python $BUILD_LIBTORCH_PY
+    WERROR=1 VERBOSE=1 DEBUG=1 python "$BUILD_LIBTORCH_PY"
     popd
   fi
 fi
@@ -267,12 +267,12 @@ if [[ "${BUILD_ENVIRONMENT}" == *xla* ]]; then
   # Install bazels3cache for cloud cache
   sudo npm install -g bazels3cache
   BAZELS3CACHE="$(which bazels3cache)"
-  if [ -z "${BAZELS3CACHE}" ]; then
+  if [ -z "$BAZELS3CACHE" ]; then
     echo "Unable to find bazels3cache..."
     exit 1
   fi
 
-  bazels3cache --bucket=${XLA_CLANG_CACHE_S3_BUCKET_NAME} --maxEntrySizeBytes=0
+  bazels3cache --bucket="$XLA_CLANG_CACHE_S3_BUCKET_NAME" --maxEntrySizeBytes=0
   pushd xla
   export CC=clang-9 CXX=clang++-9
   # Use cloud cache to build when available.
