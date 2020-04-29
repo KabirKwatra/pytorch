@@ -23,6 +23,6 @@ echo "Analyze: $INPUT"
   -torch_library_init_pattern="^.*TORCH_LIBRARY_IMPL_init_([^(]+)_([^_]+)(\(.*)?$" \
   "$EXTRA_ANALYZER_FLAGS" \
   "$INPUT" \
-  > "$OUTPUT"
+  >"$OUTPUT"
 
 echo "Result: $OUTPUT"

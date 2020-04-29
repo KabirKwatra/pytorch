@@ -34,10 +34,10 @@ echo "Running C++ tests.."
 for test in "$(find "$cpp_test_dir" -executable -type f)"; do
   case "$test" in
     # skip tests we know are hanging or bad
-    */mkl_utils_test|*/aten/integer_divider_test)
+    */mkl_utils_test | */aten/integer_divider_test)
       continue
       ;;
-    */scalar_tensor_test|*/basic|*/native_test)
+    */scalar_tensor_test | */basic | */native_test)
       if [[ "$BUILD_ENVIRONMENT" == *rocm* ]]; then
         continue
       else
@@ -59,7 +59,7 @@ for test in "$(find "$cpp_test_dir" -executable -type f)"; do
       # Note: in the future, if we want to use xml test reporter once we switch
       # to all gtest, one can simply do:
       LD_LIBRARY_PATH="$ld_library_path" \
-          "$test" --gtest_output=xml:"$gtest_reports_dir/$(basename "$test").xml"
+        "$test" --gtest_output=xml:"$gtest_reports_dir/$(basename "$test").xml"
       ;;
   esac
 done
@@ -72,15 +72,15 @@ if [[ "$BUILD_ENVIRONMENT" == *cmake* ]]; then
 fi
 
 # if [[ "$BUILD_ENVIRONMENT" == *ubuntu14.04* ]]; then
-  # Hotfix, use hypothesis 3.44.6 on Ubuntu 14.04
-  # See comments on
-  # https://github.com/HypothesisWorks/hypothesis-python/commit/eadd62e467d6cee6216e71b391951ec25b4f5830
-  sudo pip -q uninstall -y hypothesis
-  # "pip install hypothesis==3.44.6" from official server is unreliable on
-  # CircleCI, so we host a copy on S3 instead
-  sudo pip -q install attrs==18.1.0 -f https://s3.amazonaws.com/ossci-linux/wheels/attrs-18.1.0-py2.py3-none-any.whl
-  sudo pip -q install coverage==4.5.1 -f https://s3.amazonaws.com/ossci-linux/wheels/coverage-4.5.1-cp36-cp36m-macosx_10_12_x86_64.whl
-  sudo pip -q install hypothesis==3.44.6 -f https://s3.amazonaws.com/ossci-linux/wheels/hypothesis-3.44.6-py3-none-any.whl
+# Hotfix, use hypothesis 3.44.6 on Ubuntu 14.04
+# See comments on
+# https://github.com/HypothesisWorks/hypothesis-python/commit/eadd62e467d6cee6216e71b391951ec25b4f5830
+sudo pip -q uninstall -y hypothesis
+# "pip install hypothesis==3.44.6" from official server is unreliable on
+# CircleCI, so we host a copy on S3 instead
+sudo pip -q install attrs==18.1.0 -f https://s3.amazonaws.com/ossci-linux/wheels/attrs-18.1.0-py2.py3-none-any.whl
+sudo pip -q install coverage==4.5.1 -f https://s3.amazonaws.com/ossci-linux/wheels/coverage-4.5.1-cp36-cp36m-macosx_10_12_x86_64.whl
+sudo pip -q install hypothesis==3.44.6 -f https://s3.amazonaws.com/ossci-linux/wheels/hypothesis-3.44.6-py3-none-any.whl
 # else
 #   pip install --user --no-cache-dir hypothesis==3.59.0
 # fi
@@ -115,7 +115,7 @@ if [[ "$BUILD_ENVIRONMENT" == *py3* ]]; then
     if locale -a | grep "$loc" >/dev/null 2>&1; then
       export LC_ALL="$loc"
       export LANG="$loc"
-      break;
+      break
     fi
   done
 fi

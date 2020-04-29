@@ -26,7 +26,10 @@
 
 set -ex
 
-SRC_ROOT="$( cd "$(dirname "$0")"/../.. ; pwd -P)"
+SRC_ROOT="$(
+  cd "$(dirname "$0")"/../..
+  pwd -P
+)"
 ANALYZER_SRC_HOME="$SRC_ROOT/tools/code_analyzer"
 
 # Clang/LLVM path
@@ -94,8 +97,8 @@ analyze_torch_mobile() {
     # TODO: invoke llvm-link from cmake directly to avoid this hack.
     # TODO: include *.c.o when there is meaningful fan-out from pure-c code.
     "$LLVM_DIR/bin/llvm-link" -S \
-    "$(find "$TORCH_BUILD_ROOT" -name '*.cpp.o' -o -name '*.cc.o')" \
-    -o "$INPUT"
+      "$(find "$TORCH_BUILD_ROOT" -name '*.cpp.o' -o -name '*.cc.o')" \
+      -o "$INPUT"
   fi
 
   # Analyze dependency
@@ -114,7 +117,7 @@ convert_output_to_bazel() {
 
   if [ -n "$BASE_OPS_FILE" ] && [ -f "$BASE_OPS_FILE" ]; then
     args+=(
-      --base_ops "$(< "$BASE_OPS_FILE")"
+      --base_ops "$(<"$BASE_OPS_FILE")"
     )
   fi
 
@@ -130,9 +133,9 @@ analyze_test_project() {
   # Link into a single module (only need c10 and OpLib srcs)
   # TODO: invoke llvm-link from cmake directly to avoid this hack.
   "$LLVM_DIR/bin/llvm-link" -S \
-  "$(find "$TORCH_BUILD_ROOT" -path '*/c10*' \( -name '*.cpp.o' -o -name '*.cc.o' \))" \
-  "$(find "$TEST_BUILD_ROOT" -path '*/OpLib*' \( -name '*.cpp.o' -o -name '*.cc.o' \))" \
-  -o "$INPUT"
+    "$(find "$TORCH_BUILD_ROOT" -path '*/c10*' \( -name '*.cpp.o' -o -name '*.cc.o' \))" \
+    "$(find "$TEST_BUILD_ROOT" -path '*/OpLib*' \( -name '*.cpp.o' -o -name '*.cc.o' \))" \
+    -o "$INPUT"
 
   # Analyze dependency
   call_analyzer
