@@ -17,12 +17,12 @@ template <typename T>
 void _call_end_callbacks_on_fut(
     const at::Tensor& handle,
     const std::shared_ptr<torch::utils::Future<T>> fut) {
-    // Add a callback onto the future to mark run RecordFunction's end callbacks
-    // when the future is completed.
-    fut->addCallback(
-        // Copy handle by value to persist after the python context manager is
-        // exited.
-    [handle]() {
+  // Add a callback onto the future to mark run RecordFunction's end callbacks
+  // when the future is completed.
+  fut->addCallback(
+      // Copy handle by value to persist after the python context manager is
+      // exited.
+      [handle]() {
         TORCH_INTERNAL_ASSERT(
             handle.defined(),
             "Undefined RecordFunction handle. This can happen if the handle is "
@@ -30,9 +30,8 @@ void _call_end_callbacks_on_fut(
             "realized.");
         auto& rec = getRecordFunctionFromTensor(handle);
         rec._end();
-    });
+      });
 }
-
 
 } // namespace profiler
 } // namespace autograd
