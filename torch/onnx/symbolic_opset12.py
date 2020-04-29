@@ -44,13 +44,16 @@ def nll_loss(g, self, target, weight, reduction, ignore_index):
     ignore_index = sym_help._maybe_get_const(ignore_index, "i")
     if ignore_index == -100:
         if weight.node().mustBeNone():
-            return g.op(
-                "NegativeLogLikelihoodLoss", self, target, reduction_s=reduction
-            )
+            return g.op("NegativeLogLikelihoodLoss",
+                        self,
+                        target,
+                        reduction_s=reduction)
         else:
-            return g.op(
-                "NegativeLogLikelihoodLoss", self, target, weight, reduction_s=reduction
-            )
+            return g.op("NegativeLogLikelihoodLoss",
+                        self,
+                        target,
+                        weight,
+                        reduction_s=reduction)
 
     # if ignore_index is specified, compute nllloss with no reduction and apply the reduction afterwards
     if weight.node().mustBeNone():

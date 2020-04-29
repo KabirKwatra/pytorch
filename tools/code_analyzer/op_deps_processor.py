@@ -14,51 +14,39 @@ import yaml
 
 from ..autograd.utils import CodeTemplate
 
-BAZEL_OUTPUT = CodeTemplate(
-    """\
+BAZEL_OUTPUT = CodeTemplate("""\
 # Generated for selective build without using static dispatch.
 # Manually run the script to update:
 # ANALYZE_TORCH=1 DEPLOY=1 tools/code_analyzer/build.sh
 TORCH_DEPS = {
 ${ops}
 }
-"""
-)
+""")
 
-BAZEL_OP = CodeTemplate(
-    """\
+BAZEL_OP = CodeTemplate("""\
     "${op_name}": [
 ${op_deps}
     ],
-"""
-)
+""")
 
-BAZEL_OP_DEP = CodeTemplate(
-    """\
+BAZEL_OP_DEP = CodeTemplate("""\
         "${dep_name}",
-"""
-)
+""")
 
-DOT_OUTPUT = CodeTemplate(
-    """\
+DOT_OUTPUT = CodeTemplate("""\
 digraph {
     layout="circo";
 ${ops}
 }
-"""
-)
+""")
 
-DOT_OP = CodeTemplate(
-    """\
+DOT_OP = CodeTemplate("""\
 ${op_deps}
-"""
-)
+""")
 
-DOT_OP_DEP = CodeTemplate(
-    """\
+DOT_OP_DEP = CodeTemplate("""\
     "${op_name}" -> "${dep_name}";
-"""
-)
+""")
 
 
 def load_op_deps(fname):
@@ -74,9 +62,12 @@ def process_base_ops(graph, base_ops):
         ]
 
     # add base ops section at the beginning
-    graph.insert(
-        0, {"name": "__BASE__", "depends": [{"name": name} for name in base_ops]}
-    )
+    graph.insert(0, {
+        "name": "__BASE__",
+        "depends": [{
+            "name": name
+        } for name in base_ops]
+    })
 
 
 def convert(fname, graph, output_template, op_template, op_dep_template):
@@ -91,8 +82,7 @@ def convert(fname, graph, output_template, op_template, op_dep_template):
                 # skip itself reference
                 continue
             op_deps.append(
-                op_dep_template.substitute(op_name=op_name, dep_name=dep_name)
-            )
+                op_dep_template.substitute(op_name=op_name, dep_name=dep_name))
 
         if not op_deps:
             # skip ops without any fanout
@@ -106,16 +96,15 @@ def convert(fname, graph, output_template, op_template, op_dep_template):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Util to parse & convert op_deps_pass output"
-    )
+        description="Util to parse & convert op_deps_pass output")
     parser.add_argument(
         "--op_dependency",
         required=True,
         help="input yaml file of op dependency graph produced by op_deps_pass",
     )
-    parser.add_argument(
-        "--format", default="bazel", help="output file format [bazel, dot]"
-    )
+    parser.add_argument("--format",
+                        default="bazel",
+                        help="output file format [bazel, dot]")
     parser.add_argument(
         "--base_ops",
         nargs="*",

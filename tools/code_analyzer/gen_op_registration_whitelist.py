@@ -63,8 +63,7 @@ def gen_transitive_closure(dep_graph, root_ops):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Util to produce transitive dependencies for custom build"
-    )
+        description="Util to produce transitive dependencies for custom build")
     parser.add_argument(
         "--op-dependency",
         help="input yaml file of op dependency graph "

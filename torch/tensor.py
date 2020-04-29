@@ -44,8 +44,7 @@ class Tensor(torch._C._TensorBase):
         if not self.is_leaf:
             raise RuntimeError(
                 "Only Tensors created explicitly by the user "
-                "(graph leaves) support the deepcopy protocol at the moment"
-            )
+                "(graph leaves) support the deepcopy protocol at the moment")
         if id(self) in memo:
             return memo[id(self)]
         with torch.no_grad():
@@ -69,8 +68,8 @@ class Tensor(torch._C._TensorBase):
                         )
                     else:
                         raise RuntimeError(
-                            "Unsupported qscheme {} in deepcopy".format(self.qscheme())
-                        )
+                            "Unsupported qscheme {} in deepcopy".format(
+                                self.qscheme()))
                     new_tensor = torch._utils._rebuild_qtensor(
                         new_storage,
                         self.storage_offset(),
@@ -82,9 +81,8 @@ class Tensor(torch._C._TensorBase):
                     )
                 else:
                     new_tensor = self.new()
-                    new_tensor.set_(
-                        new_storage, self.storage_offset(), self.size(), self.stride()
-                    )
+                    new_tensor.set_(new_storage, self.storage_offset(),
+                                    self.size(), self.stride())
                     new_tensor.requires_grad = self.requires_grad
             memo[id(self)] = new_tensor
             return new_tensor
@@ -130,10 +128,8 @@ class Tensor(torch._C._TensorBase):
                 )
             else:
                 raise RuntimeError(
-                    "Serialization is not supported for tensors of type {}".format(
-                        self.qscheme()
-                    )
-                )
+                    "Serialization is not supported for tensors of type {}".
+                    format(self.qscheme()))
             args = (
                 self.storage(),
                 self.storage_offset(),
@@ -146,11 +142,12 @@ class Tensor(torch._C._TensorBase):
             return (torch._utils._rebuild_qtensor, args)
         elif self.is_sparse:
             if self.layout == torch.sparse_coo:
-                args = (self.layout, (self._indices(), self._values(), self.size()))
+                args = (self.layout, (self._indices(), self._values(),
+                                      self.size()))
             else:
                 raise NotImplementedError(
-                    "sparse tensor __reduce_ex__ for layout `%s`" % (self.layout)
-                )
+                    "sparse tensor __reduce_ex__ for layout `%s`" %
+                    (self.layout))
             return (torch._utils._rebuild_sparse_tensor, args)
         else:
             args = (
@@ -167,7 +164,8 @@ class Tensor(torch._C._TensorBase):
         # Warning: this method is NOT called when you torch.load() a tensor;
         # that is managed by _rebuild_tensor_v2
         if not self.is_leaf:
-            raise RuntimeError("__setstate__ can be only called on leaf Tensors")
+            raise RuntimeError(
+                "__setstate__ can be only called on leaf Tensors")
         if len(state) == 4:
             # legacy serialization of Tensor
             self.set_(*state)
@@ -244,9 +242,8 @@ class Tensor(torch._C._TensorBase):
             >>> h.remove()  # removes the hook
         """
         if not self.requires_grad:
-            raise RuntimeError(
-                "cannot register a hook on a tensor that " "doesn't require gradient"
-            )
+            raise RuntimeError("cannot register a hook on a tensor that "
+                               "doesn't require gradient")
         if self._backward_hooks is None:
             self._backward_hooks = OrderedDict()
             if self.grad_fn is not None:
@@ -260,8 +257,7 @@ class Tensor(torch._C._TensorBase):
             return "\n".join([line.strip() for line in str.split("\n")])
 
         raise RuntimeError(
-            trim(
-                r"""reinforce() was removed.
+            trim(r"""reinforce() was removed.
             Use torch.distributions instead.
             See https://pytorch.org/docs/master/distributions.html
 
@@ -282,9 +278,7 @@ class Tensor(torch._C._TensorBase):
             next_state, reward = env.step(action)
             loss = -m.log_prob(action) * reward
             loss.backward()
-        """
-            )
-        )
+        """))
 
     detach = _add_docstr(
         _C._TensorBase.detach,
@@ -321,8 +315,7 @@ class Tensor(torch._C._TensorBase):
         r"""Enables .grad attribute for non-leaf Tensors."""
         if not self.requires_grad:
             raise RuntimeError(
-                "can't retain_grad on Tensor that has requires_grad=False"
-            )
+                "can't retain_grad on Tensor that has requires_grad=False")
         if self.is_leaf:  # no-op for leaves
             return
         if hasattr(self, "retains_grad"):
@@ -337,7 +330,8 @@ class Tensor(torch._C._TensorBase):
                 if grad.is_sparse:
                     var._grad = grad.clone()
                 else:
-                    var._grad = grad.clone(memory_format=torch.contiguous_format)
+                    var._grad = grad.clone(
+                        memory_format=torch.contiguous_format)
             else:
                 var._grad = var._grad + grad
 
@@ -374,24 +368,24 @@ class Tensor(torch._C._TensorBase):
     def lu(self, pivot=True, get_infos=False):
         r"""See :func:`torch.lu`"""
         # If get_infos is True, then we don't need to check for errors and vice versa
-        LU, pivots, infos = torch._lu_with_info(
-            self, pivot=pivot, check_errors=(not get_infos)
-        )
+        LU, pivots, infos = torch._lu_with_info(self,
+                                                pivot=pivot,
+                                                check_errors=(not get_infos))
         if get_infos:
             return LU, pivots, infos
         else:
             return LU, pivots
 
     def stft(
-        self,
-        n_fft,
-        hop_length=None,
-        win_length=None,
-        window=None,
-        center=True,
-        pad_mode="reflect",
-        normalized=False,
-        onesided=True,
+            self,
+            n_fft,
+            hop_length=None,
+            win_length=None,
+            window=None,
+            center=True,
+            pad_mode="reflect",
+            normalized=False,
+            onesided=True,
     ):
         r"""See :func:`torch.stft`
 
@@ -412,15 +406,15 @@ class Tensor(torch._C._TensorBase):
         )
 
     def istft(
-        self,
-        n_fft,
-        hop_length=None,
-        win_length=None,
-        window=None,
-        center=True,
-        normalized=False,
-        onesided=True,
-        length=None,
+            self,
+            n_fft,
+            hop_length=None,
+            win_length=None,
+            window=None,
+            center=True,
+            normalized=False,
+            onesided=True,
+            length=None,
     ):
         r"""See :func:`torch.istft`"""
         return torch.istft(
@@ -461,7 +455,11 @@ class Tensor(torch._C._TensorBase):
         else:
             return super(Tensor, self).split_with_sizes(split_size, dim)
 
-    def unique(self, sorted=True, return_inverse=False, return_counts=False, dim=None):
+    def unique(self,
+               sorted=True,
+               return_inverse=False,
+               return_counts=False,
+               dim=None):
         r"""Returns the unique elements of the input tensor.
 
         See :func:`torch.unique`
@@ -474,14 +472,18 @@ class Tensor(torch._C._TensorBase):
             dim=dim,
         )
 
-    def unique_consecutive(self, return_inverse=False, return_counts=False, dim=None):
+    def unique_consecutive(self,
+                           return_inverse=False,
+                           return_counts=False,
+                           dim=None):
         r"""Eliminates all but the first element from every consecutive group of equivalent elements.
 
         See :func:`torch.unique_consecutive`
         """
-        return torch.unique_consecutive(
-            self, return_inverse=return_inverse, return_counts=return_counts, dim=dim
-        )
+        return torch.unique_consecutive(self,
+                                        return_inverse=return_inverse,
+                                        return_counts=return_counts,
+                                        dim=dim)
 
     def __rsub__(self, other):
         return _C._VariableFunctions.rsub(self, other)
@@ -507,7 +509,7 @@ class Tensor(torch._C._TensorBase):
 
     @_wrap_type_error_to_not_implemented
     def __rpow__(self, other):
-        return self.new_tensor(other) ** self
+        return self.new_tensor(other)**self
 
     @_wrap_type_error_to_not_implemented
     def __floordiv__(self, other):
@@ -602,8 +604,7 @@ class Tensor(torch._C._TensorBase):
 
         raise RuntimeError(
             "Tensor.__contains__ only supports Tensor or scalar, but you passed in a %s."
-            % type(element)
-        )
+            % type(element))
 
     @property
     def __cuda_array_interface__(self):
@@ -619,15 +620,13 @@ class Tensor(torch._C._TensorBase):
             raise AttributeError(
                 "Can't get __cuda_array_interface__ on non-CUDA tensor type: %s "
                 "If CUDA data is required use tensor.cuda() to copy tensor to device memory."
-                % self.type()
-            )
+                % self.type())
 
         if self.is_sparse:
             raise AttributeError(
                 "Can't get __cuda_array_interface__ on sparse type: %s "
-                "Use Tensor.to_dense() to convert to a dense tensor first."
-                % self.type()
-            )
+                "Use Tensor.to_dense() to convert to a dense tensor first." %
+                self.type())
 
         # RuntimeError, matching tensor.__array__() behavior.
         if self.requires_grad:
@@ -661,7 +660,11 @@ class Tensor(torch._C._TensorBase):
         data_ptr = self.data_ptr() if self.numel() > 0 else 0
         data = (data_ptr, False)  # read-only is false
 
-        return dict(typestr=typestr, shape=shape, strides=strides, data=data, version=2)
+        return dict(typestr=typestr,
+                    shape=shape,
+                    strides=strides,
+                    data=data,
+                    version=2)
 
     def refine_names(self, *names):
         r"""Refines the dimension names of :attr:`self` according to :attr:`names`.
@@ -745,8 +748,7 @@ class Tensor(torch._C._TensorBase):
         if ellipsis_idx is None:
             return super(Tensor, self).align_to(names)
         return super(Tensor, self).align_to(
-            [name for name in names if not is_ellipsis(name)], ellipsis_idx
-        )
+            [name for name in names if not is_ellipsis(name)], ellipsis_idx)
 
     def unflatten(self, dim, namedshape):
         r"""Unflattens the named dimension :attr:`dim`, viewing it in the shape
@@ -831,19 +833,14 @@ class Tensor(torch._C._TensorBase):
         The attribute will then contain the gradients computed and future calls to
         :func:`backward` will accumulate (add) gradients into it.
         """
-        if (
-            self.requires_grad
-            and not hasattr(self, "retains_grad")
-            and not self.is_leaf
-            and self._grad is None
-        ):
+        if (self.requires_grad and not hasattr(self, "retains_grad")
+                and not self.is_leaf and self._grad is None):
             warnings.warn(
                 "The .grad attribute of a Tensor that is not a leaf Tensor is being accessed. Its .grad "
                 "attribute won't be populated during autograd.backward(). If you indeed want the gradient "
                 "for a non-leaf Tensor, use .retain_grad() on the non-leaf Tensor. If you access the "
                 "non-leaf Tensor by mistake, make sure you access the leaf Tensor instead. See "
-                "github.com/pytorch/pytorch/pull/30531 for more informations."
-            )
+                "github.com/pytorch/pytorch/pull/30531 for more informations.")
         return self._grad
 
     @grad.setter

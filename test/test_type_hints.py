@@ -92,7 +92,8 @@ def get_all_examples():
         if docstr and fname not in blacklist:
             e = get_examples_from_docstring(docstr)
             if e:
-                example_file_lines.append("\n\ndef example_torch_{}():".format(fname))
+                example_file_lines.append(
+                    "\n\ndef example_torch_{}():".format(fname))
                 example_file_lines += e
 
     for fname in dir(torch.Tensor):
@@ -102,8 +103,7 @@ def get_all_examples():
             e = get_examples_from_docstring(docstr)
             if e:
                 example_file_lines.append(
-                    "\n\ndef example_torch_tensor_{}():".format(fname)
-                )
+                    "\n\ndef example_torch_tensor_{}():".format(fname))
                 example_file_lines += e
 
     return "\n".join(example_file_lines)
@@ -115,9 +115,8 @@ class TestTypeHints(TestCase):
         """
         Run documentation examples through mypy.
         """
-        fn = os.path.join(
-            os.path.dirname(__file__), "generated_type_hints_smoketest.py"
-        )
+        fn = os.path.join(os.path.dirname(__file__),
+                          "generated_type_hints_smoketest.py")
         with open(fn, "w") as f:
             print(get_all_examples(), file=f)
 
@@ -175,8 +174,7 @@ class TestTypeHints(TestCase):
                 )
             except subprocess.CalledProcessError as e:
                 raise AssertionError(
-                    "mypy failed.  Look above this error for mypy's output."
-                )
+                    "mypy failed.  Look above this error for mypy's output.")
 
     @unittest.skipIf(not HAVE_MYPY, "need mypy")
     def test_type_hint_examples(self):
@@ -203,10 +201,8 @@ class TestTypeHints(TestCase):
                 )
             except subprocess.CalledProcessError as e:
                 raise AssertionError(
-                    "mypy failed for example {}.  Look above this error for mypy's output.".format(
-                        example
-                    )
-                )
+                    "mypy failed for example {}.  Look above this error for mypy's output."
+                    .format(example))
 
     @unittest.skipIf(not HAVE_MYPY, "need mypy")
     def test_run_mypy(self):
@@ -228,7 +224,8 @@ class TestTypeHints(TestCase):
         test_dir = os.path.dirname(os.path.realpath(__file__))
         repo_rootdir = os.path.join(test_dir, "..")
         mypy_inifile = os.path.join(repo_rootdir, "mypy.ini")
-        if not (os.path.exists(mypy_inifile) and is_torch_mypyini(mypy_inifile)):
+        if not (os.path.exists(mypy_inifile)
+                and is_torch_mypyini(mypy_inifile)):
             self.skipTest(True)
 
         cwd = os.getcwd()
@@ -237,8 +234,7 @@ class TestTypeHints(TestCase):
             subprocess.run([sys.executable, "-mmypy"], check=True)
         except subprocess.CalledProcessError as e:
             raise AssertionError(
-                "mypy failed. Look above this error for mypy's output."
-            )
+                "mypy failed. Look above this error for mypy's output.")
         finally:
             os.chdir(cwd)
 
