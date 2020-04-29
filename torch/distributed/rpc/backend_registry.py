@@ -1,14 +1,14 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import collections
-from datetime import timedelta
 import enum
+from datetime import timedelta
 
 import torch.distributed as dist
 import torch.distributed.distributed_c10d as dc10d
 
 from . import constants as rpc_constants
-
 
 BackendValue = collections.namedtuple(
     "BackendValue", ["construct_rpc_backend_options_handler", "init_backend_handler"]

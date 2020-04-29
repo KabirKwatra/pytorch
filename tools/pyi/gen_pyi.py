@@ -1,17 +1,17 @@
 from __future__ import print_function
-import os
+
+import argparse
 import collections
 import glob
-import yaml
+import os
 import re
-import argparse
 
-from ..autograd.utils import YamlLoader, CodeTemplate, write
-from ..autograd.gen_python_functions import (
-    get_py_torch_functions,
-    get_py_variable_methods,
-)
+import yaml
+
 from ..autograd.gen_autograd import load_aten_declarations
+from ..autograd.gen_python_functions import (get_py_torch_functions,
+                                             get_py_variable_methods)
+from ..autograd.utils import CodeTemplate, YamlLoader, write
 
 """
 This module implements generation of type stubs for PyTorch,

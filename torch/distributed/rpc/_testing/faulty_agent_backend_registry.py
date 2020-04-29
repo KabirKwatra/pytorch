@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 
-import torch.distributed as dist
-import torch.distributed.rpc as rpc
-import torch.distributed.distributed_c10d as dc10d
-from torch.distributed.rpc import constants as rpc_constants
-
 from datetime import timedelta
+
+import torch.distributed as dist
+import torch.distributed.distributed_c10d as dc10d
+import torch.distributed.rpc as rpc
+from torch.distributed.rpc import constants as rpc_constants
 
 
 def _faulty_process_group_construct_rpc_backend_options_handler(

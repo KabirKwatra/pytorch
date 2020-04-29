@@ -164,32 +164,29 @@
 
 from __future__ import print_function
 
-from tools.setup_helpers.cmake import CMake
-from tools.setup_helpers.env import (
-    IS_WINDOWS,
-    IS_DARWIN,
-    IS_LINUX,
-    check_env_flag,
-    build_type,
-)
-from tools.build_pytorch_libs import build_caffe2
-import importlib
+import distutils.command.clean
+import distutils.sysconfig
+import filecmp
 import glob
+import importlib
 import json
 import os
 import shutil
 import subprocess
-import filecmp
-import distutils.sysconfig
-import distutils.command.clean
-import setuptools.command.install
-import setuptools.command.build_ext
-from distutils.errors import DistutilsArgError
-from distutils.core import Distribution
-from distutils import core
-from collections import defaultdict
-from setuptools import setup, Extension, distutils, find_packages
 import sys
+from collections import defaultdict
+from distutils import core
+from distutils.core import Distribution
+from distutils.errors import DistutilsArgError
+
+import setuptools.command.build_ext
+import setuptools.command.install
+from setuptools import Extension, distutils, find_packages, setup
+
+from tools.build_pytorch_libs import build_caffe2
+from tools.setup_helpers.cmake import CMake
+from tools.setup_helpers.env import (IS_DARWIN, IS_LINUX, IS_WINDOWS,
+                                     build_type, check_env_flag)
 
 if sys.version_info < (3,):
     raise Exception(

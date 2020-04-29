@@ -2,31 +2,26 @@ import sys
 import threading
 import time
 import unittest
-from enum import Enum
-import torch
 from datetime import timedelta
+from enum import Enum
+
+import torch
 import torch.distributed as dist
 import torch.distributed.autograd as dist_autograd
 import torch.distributed.rpc as rpc
-import torch.testing._internal.dist_utils
+import torch.testing._internal.dist_utils as dist_utils
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.testing._internal.common_utils import IS_MACOS
-import torch.testing._internal.dist_utils as dist_utils
-from torch.testing._internal.dist_utils import (
-    dist_init,
-    get_shutdown_error_regex,
-    initialize_pg,
-    wait_until_node_failure,
-    worker_name,
-)
-from torch.testing._internal.distributed.rpc.rpc_agent_test_fixture import (
-    RpcAgentTestFixture,
-)
-from torch.testing._internal.distributed.rpc.faulty_rpc_agent_test_fixture import (
-    FaultyRpcAgentTestFixture,
-)
-
+from torch.testing._internal.dist_utils import (dist_init,
+                                                get_shutdown_error_regex,
+                                                initialize_pg,
+                                                wait_until_node_failure,
+                                                worker_name)
+from torch.testing._internal.distributed.rpc.faulty_rpc_agent_test_fixture import \
+    FaultyRpcAgentTestFixture
+from torch.testing._internal.distributed.rpc.rpc_agent_test_fixture import \
+    RpcAgentTestFixture
 
 # Right now we test up to 3-layer nested rpc calls.
 # rpc_done[1] and ctx_ids[1] represent rpc is done in prev rank, and context id

@@ -1,13 +1,15 @@
 from __future__ import print_function
-import unittest
-from torch.testing._internal.common_utils import TestCase, run_tests
-import tempfile
-import torch
-import re
-import os
-import sys
-import subprocess
+
 import inspect
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import unittest
+
+import torch
+from torch.testing._internal.common_utils import TestCase, run_tests
 
 try:
     import mypy  # noqa: F401

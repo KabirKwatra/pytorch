@@ -1,77 +1,53 @@
-import sys
-import io
+import copy
 import inspect
+import io
 import math
+import pickle
 import random
 import re
-import copy
-import torch
-import torch.cuda
-import torch.backends.cuda
+import sys
 import tempfile
+import textwrap
+import types
 import unittest
 import warnings
-import types
-import pickle
-import textwrap
-from torch.utils.dlpack import from_dlpack, to_dlpack
-from torch._six import inf, nan, string_classes, istuple
-from itertools import product, combinations, combinations_with_replacement, permutations
 from functools import reduce
-from random import randrange
-from torch import multiprocessing as mp
-from torch.testing._internal.common_methods_invocations import (
-    tri_tests_args,
-    run_additional_tri_tests,
-    _compare_trilu_indices,
-)
-from torch.testing._internal.common_utils import (
-    TestCase,
-    iter_indices,
-    TEST_NUMPY,
-    TEST_SCIPY,
-    TEST_MKL,
-    TEST_LIBROSA,
-    TEST_WITH_ROCM,
-    run_tests,
-    skipIfNoLapack,
-    suppress_warnings,
-    IS_WINDOWS,
-    NO_MULTIPROCESSING_SPAWN,
-    do_test_dtypes,
-    do_test_empty_full,
-    IS_SANDCASTLE,
-    load_tests,
-    slowTest,
-    skipCUDANonDefaultStreamIf,
-    skipCUDAMemoryLeakCheckIf,
-    BytesIOContext,
-    skipIfRocm,
-    torch_to_numpy_dtype_dict,
-)
+from itertools import (combinations, combinations_with_replacement,
+                       permutations, product)
 from multiprocessing.reduction import ForkingPickler
-from torch.testing._internal.common_device_type import (
-    instantiate_device_type_tests,
-    skipCPUIfNoLapack,
-    skipCPUIfNoMkl,
-    skipCUDAIfNoMagma,
-    skipCUDAIfRocm,
-    skipCUDAIfNotRocm,
-    onlyCUDA,
-    onlyCPU,
-    dtypes,
-    dtypesIfCUDA,
-    dtypesIfCPU,
-    deviceCountAtLeast,
-    skipCUDAIf,
-    precisionOverride,
-    PYTORCH_CUDA_MEMCHECK,
-    largeCUDATensorTest,
-    onlyOnCPUAndCUDA,
-)
-import torch.backends.quantized
-import torch.testing._internal.data
+from random import randrange
 
+import torch
+import torch.backends.cuda
+import torch.backends.quantized
+import torch.cuda
+import torch.testing._internal.data
+from torch import multiprocessing as mp
+from torch._six import inf, istuple, nan, string_classes
+from torch.testing._internal.common_device_type import (
+    PYTORCH_CUDA_MEMCHECK, deviceCountAtLeast, dtypes, dtypesIfCPU,
+    dtypesIfCUDA, instantiate_device_type_tests, largeCUDATensorTest, onlyCPU,
+    onlyCUDA, onlyOnCPUAndCUDA, precisionOverride, skipCPUIfNoLapack,
+    skipCPUIfNoMkl, skipCUDAIf, skipCUDAIfNoMagma, skipCUDAIfNotRocm,
+    skipCUDAIfRocm)
+from torch.testing._internal.common_methods_invocations import (
+    _compare_trilu_indices, run_additional_tri_tests, tri_tests_args)
+from torch.testing._internal.common_utils import (IS_SANDCASTLE, IS_WINDOWS,
+                                                  NO_MULTIPROCESSING_SPAWN,
+                                                  TEST_LIBROSA, TEST_MKL,
+                                                  TEST_NUMPY, TEST_SCIPY,
+                                                  TEST_WITH_ROCM,
+                                                  BytesIOContext, TestCase,
+                                                  do_test_dtypes,
+                                                  do_test_empty_full,
+                                                  iter_indices, load_tests,
+                                                  run_tests,
+                                                  skipCUDAMemoryLeakCheckIf,
+                                                  skipCUDANonDefaultStreamIf,
+                                                  skipIfNoLapack, skipIfRocm,
+                                                  slowTest, suppress_warnings,
+                                                  torch_to_numpy_dtype_dict)
+from torch.utils.dlpack import from_dlpack, to_dlpack
 
 # load_tests from torch.testing._internal.common_utils is used to automatically filter tests for
 # sharding on sandcastle. This line silences flake warnings

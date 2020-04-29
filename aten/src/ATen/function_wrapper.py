@@ -2,9 +2,9 @@
 # "what has to be done to add a Operation ..." first!
 
 import re
-from code_template import CodeTemplate
+from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
 
-from typing import Any, Dict, List, Optional, Set, Tuple, NamedTuple
+from code_template import CodeTemplate
 
 try:
     from mypy_extensions import TypedDict

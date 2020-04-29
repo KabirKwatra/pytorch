@@ -1,23 +1,18 @@
-import torch
-import torch._C as _C
-from torch._namedtensor_internals import (
-    update_names,
-    check_serializing_named_tensor,
-    resolve_ellipsis,
-)
-from torch._namedtensor_internals import (
-    unzip_namedshape,
-    single_ellipsis_index,
-    is_ellipsis,
-)
-from collections import OrderedDict
-import torch.utils.hooks as hooks
+import functools
 import warnings
 import weakref
-from torch._six import imap
-from torch._C import _add_docstr
+from collections import OrderedDict
 from numbers import Number
-import functools
+
+import torch
+import torch._C as _C
+import torch.utils.hooks as hooks
+from torch._C import _add_docstr
+from torch._namedtensor_internals import (check_serializing_named_tensor,
+                                          is_ellipsis, resolve_ellipsis,
+                                          single_ellipsis_index,
+                                          unzip_namedshape, update_names)
+from torch._six import imap
 
 
 def _wrap_type_error_to_not_implemented(f):

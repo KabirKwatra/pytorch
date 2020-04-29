@@ -1,9 +1,9 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
 import torch
 import torch.onnx.symbolic_helper as sym_help
 from torch.onnx.symbolic_helper import parse_args
-
 
 # EDITING THIS FILE? READ THIS FIRST!
 # see Note [Edit Symbolic Files] in symbolic_helper.py

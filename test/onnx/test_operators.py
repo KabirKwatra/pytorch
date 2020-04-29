@@ -1,22 +1,21 @@
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import (absolute_import, division, print_function,
+                        unicode_literals)
 
-from test_pytorch_common import TestCase, run_tests, flatten, skipIfNoLapack
-
-import torch
-import torch.onnx
-from torch.autograd import Variable, Function
-from torch.nn import Module, functional
-import torch.nn as nn
-
-import itertools
-import io
-import inspect
 import glob
+import inspect
+import io
+import itertools
 import os
 import shutil
-import torch.testing._internal.common_utils as common
-
 import unittest
+
+import torch
+import torch.nn as nn
+import torch.onnx
+import torch.testing._internal.common_utils as common
+from test_pytorch_common import TestCase, flatten, run_tests, skipIfNoLapack
+from torch.autograd import Function, Variable
+from torch.nn import Module, functional
 
 """Usage: python test/onnx/test_operators.py [--no-onnx] [--produce-onnx-test-data]
           --no-onnx: no onnx python dependence
