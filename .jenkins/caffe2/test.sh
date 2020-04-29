@@ -21,7 +21,7 @@ else
   # For Python builds we install into python
   # cd to /usr first so the python import doesn't get confused by any 'caffe2'
   # directory in cwd
-  python_installation="$(dirname $(dirname $(cd /usr && $PYTHON -c 'import os; import caffe2; print(os.path.realpath(caffe2.__file__))')))"
+  python_installation="$(dirname "$(dirname "$(cd /usr && "$PYTHON" -c 'import os; import caffe2; print(os.path.realpath(caffe2.__file__))')")")"
   caffe2_pypath="$python_installation/caffe2"
   cpp_test_dir="$python_installation/torch/test"
   ld_library_path="$python_installation/torch/lib"
@@ -31,7 +31,7 @@ fi
 # C++ tests #
 ################################################################################
 echo "Running C++ tests.."
-for test in $(find "$cpp_test_dir" -executable -type f); do
+for test in "$(find "$cpp_test_dir" -executable -type f)"; do
   case "$test" in
     # skip tests we know are hanging or bad
     */mkl_utils_test|*/aten/integer_divider_test)
@@ -59,7 +59,7 @@ for test in $(find "$cpp_test_dir" -executable -type f); do
       # Note: in the future, if we want to use xml test reporter once we switch
       # to all gtest, one can simply do:
       LD_LIBRARY_PATH="$ld_library_path" \
-          "$test" --gtest_output=xml:"$gtest_reports_dir/$(basename $test).xml"
+          "$test" --gtest_output=xml:"$gtest_reports_dir/$(basename "$test").xml"
       ;;
   esac
 done
@@ -132,7 +132,7 @@ pip install --user pytest-sugar
   --ignore "$caffe2_pypath/python/operator_test/pack_ops_test.py" \
   --ignore "$caffe2_pypath/python/mkl/mkl_sbn_speed_test.py" \
   --ignore "$caffe2_pypath/python/trt/test_pt_onnx_trt.py" \
-  ${rocm_ignore_test[@]} \
+  "${rocm_ignore_test[@]}" \
   "$caffe2_pypath/python" \
   "${EXTRA_TESTS[@]}"
 
