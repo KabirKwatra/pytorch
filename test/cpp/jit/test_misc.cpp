@@ -70,331 +70,334 @@
 namespace torch {
 namespace jit {
 inline c10::AliasAnalysisKind aliasAnalysisFromSchema() {
-  return c10::AliasAnalysisKind::FROM_SCHEMA;
+    return c10::AliasAnalysisKind::FROM_SCHEMA;
 }
 
 template <typename T>
 std::ostream& operator<<(std::ostream& out, const std::vector<T>& list) {
-  size_t i = 0;
-  out << "{";
-  for (auto&& e : list) {
-    if (i++ > 0)
-      out << ", ";
-    out << e;
-  }
-  out << "}";
-  return out;
+    size_t i = 0;
+    out << "{";
+    for (auto&& e : list) {
+        if (i++ > 0)
+            out << ", ";
+        out << e;
+    }
+    out << "}";
+    return out;
 }
 
 void testInternedStrings() {
-  ASSERT_EQ(prim::Param, Symbol::prim("Param"));
-  ASSERT_EQ(prim::Return, Symbol::prim("Return"));
-  ASSERT_EQ(prim::Return.toUnqualString(), std::string("Return"));
-  ASSERT_EQ(prim::Return.toQualString(), std::string("prim::Return"));
-  Symbol newsym = Symbol::aten("__NEW_SYMBOL");
-  size_t symstart = newsym;
-  ASSERT_EQ(newsym.toQualString(), std::string("aten::__NEW_SYMBOL"));
-  // TODO: This test is a bit too close to the implementation details.
-  ASSERT_EQ(Symbol::aten("What"), symstart + 1);
-  ASSERT_EQ(Symbol::aten("What2"), symstart + 2);
-  ASSERT_EQ(Symbol::aten("What"), symstart + 1);
-  ASSERT_EQ(Symbol::aten("What2"), symstart + 2);
-  ASSERT_EQ(Symbol(symstart + 2).toUnqualString(), std::string("What2"));
+    ASSERT_EQ(prim::Param, Symbol::prim("Param"));
+    ASSERT_EQ(prim::Return, Symbol::prim("Return"));
+    ASSERT_EQ(prim::Return.toUnqualString(), std::string("Return"));
+    ASSERT_EQ(prim::Return.toQualString(), std::string("prim::Return"));
+    Symbol newsym = Symbol::aten("__NEW_SYMBOL");
+    size_t symstart = newsym;
+    ASSERT_EQ(newsym.toQualString(), std::string("aten::__NEW_SYMBOL"));
+    // TODO: This test is a bit too close to the implementation details.
+    ASSERT_EQ(Symbol::aten("What"), symstart + 1);
+    ASSERT_EQ(Symbol::aten("What2"), symstart + 2);
+    ASSERT_EQ(Symbol::aten("What"), symstart + 1);
+    ASSERT_EQ(Symbol::aten("What2"), symstart + 2);
+    ASSERT_EQ(Symbol(symstart + 2).toUnqualString(), std::string("What2"));
 }
 
 void testFromQualString() {
-  ASSERT_EQ(Symbol::fromQualString("prim::Param"), Symbol::prim("Param"));
-  ASSERT_EQ(Symbol::fromQualString("aten::mm"), Symbol::aten("mm"));
-  ASSERT_EQ(Symbol::fromQualString("onnx::LSTM"), Symbol::onnx("LSTM"));
-  ASSERT_EQ(Symbol::fromQualString("attr::value"), Symbol::attr("value"));
-  ASSERT_EQ(Symbol::fromQualString("scope::"), Symbol::scope(""));
-  ASSERT_EQ(Symbol::fromQualString("::").toUnqualString(), std::string(""));
-  ASSERT_EQ(
-      Symbol::fromQualString("::").ns().toQualString(),
-      std::string("namespaces::"));
-  ASSERT_EQ(
-      Symbol::fromQualString("new_ns::param").toUnqualString(),
-      std::string("param"));
-  ASSERT_EQ(
-      Symbol::fromQualString("new_ns::param").ns().toUnqualString(),
-      std::string("new_ns"));
-  ASSERT_EQ(
-      Symbol::fromQualString("new_ns::param").ns(),
-      Symbol::fromQualString("namespaces::new_ns"));
+    ASSERT_EQ(Symbol::fromQualString("prim::Param"), Symbol::prim("Param"));
+    ASSERT_EQ(Symbol::fromQualString("aten::mm"), Symbol::aten("mm"));
+    ASSERT_EQ(Symbol::fromQualString("onnx::LSTM"), Symbol::onnx("LSTM"));
+    ASSERT_EQ(Symbol::fromQualString("attr::value"), Symbol::attr("value"));
+    ASSERT_EQ(Symbol::fromQualString("scope::"), Symbol::scope(""));
+    ASSERT_EQ(Symbol::fromQualString("::").toUnqualString(), std::string(""));
+    ASSERT_EQ(
+        Symbol::fromQualString("::").ns().toQualString(),
+        std::string("namespaces::"));
+    ASSERT_EQ(
+        Symbol::fromQualString("new_ns::param").toUnqualString(),
+        std::string("param"));
+    ASSERT_EQ(
+        Symbol::fromQualString("new_ns::param").ns().toUnqualString(),
+        std::string("new_ns"));
+    ASSERT_EQ(
+        Symbol::fromQualString("new_ns::param").ns(),
+        Symbol::fromQualString("namespaces::new_ns"));
 
-  auto bad_inputs = {"scope", ":", ""};
-  for (auto input : bad_inputs) {
-    try {
-      Symbol::fromQualString(input);
-      ASSERT_TRUE(0);
-    } catch (const std::exception& c) {
+    auto bad_inputs = {"scope", ":", ""};
+    for (auto input : bad_inputs) {
+        try {
+            Symbol::fromQualString(input);
+            ASSERT_TRUE(0);
+        } catch (const std::exception& c) {
+        }
     }
-  }
 }
 
 void testTHNNConv() {
-  std::vector<int64_t> input_size = {4, 3, 15, 17}; // B x C x H x W
-  std::vector<int64_t> kernel_size = {3, 5};
-  std::vector<int64_t> stride = {1, 2};
-  std::vector<int64_t> padding = {2, 1};
-  constexpr int out_channels = 5;
+    std::vector<int64_t> input_size = {4, 3, 15, 17}; // B x C x H x W
+    std::vector<int64_t> kernel_size = {3, 5};
+    std::vector<int64_t> stride = {1, 2};
+    std::vector<int64_t> padding = {2, 1};
+    constexpr int out_channels = 5;
 
-  // make inputs
-  at::Tensor input = torch::randn(input_size);
-  at::Tensor weight = torch::randn(
-      {out_channels, input_size[1], kernel_size[0], kernel_size[1]});
-  at::Tensor bias = torch::randn({out_channels});
+    // make inputs
+    at::Tensor input = torch::randn(input_size);
+    at::Tensor weight = torch::randn(
+    {out_channels, input_size[1], kernel_size[0], kernel_size[1]});
+    at::Tensor bias = torch::randn({out_channels});
 
-  // run forward eagerly
-  at::Tensor output, finput, fgradinput;
-  std::tie(output, finput, fgradinput) = at::thnn_conv2d_forward(
-      input, weight, kernel_size, bias, stride, padding);
+    // run forward eagerly
+    at::Tensor output, finput, fgradinput;
+    std::tie(output, finput, fgradinput) = at::thnn_conv2d_forward(
+            input, weight, kernel_size, bias, stride, padding);
 
-  // make grad_outputs
-  at::Tensor grad_output =
-      torch::randn_like(output, at::MemoryFormat::Preserve);
-  at::Tensor grad_finput =
-      torch::zeros_like(finput, at::MemoryFormat::Preserve);
-  at::Tensor grad_fgradinput =
-      torch::zeros_like(fgradinput, at::MemoryFormat::Preserve);
+    // make grad_outputs
+    at::Tensor grad_output =
+        torch::randn_like(output, at::MemoryFormat::Preserve);
+    at::Tensor grad_finput =
+        torch::zeros_like(finput, at::MemoryFormat::Preserve);
+    at::Tensor grad_fgradinput =
+        torch::zeros_like(fgradinput, at::MemoryFormat::Preserve);
 
-  // run backward eagerly
-  at::Tensor grad_input, grad_weight, grad_bias;
-  std::tie(grad_input, grad_weight, grad_bias) = at::thnn_conv2d_backward(
-      grad_output,
-      input,
-      weight,
-      kernel_size,
-      stride,
-      padding,
-      finput,
-      fgradinput,
-      {true, true, true});
+    // run backward eagerly
+    at::Tensor grad_input, grad_weight, grad_bias;
+    std::tie(grad_input, grad_weight, grad_bias) = at::thnn_conv2d_backward(
+                grad_output,
+                input,
+                weight,
+                kernel_size,
+                stride,
+                padding,
+                finput,
+                fgradinput,
+    {true, true, true});
 
-  // make JIT graph
-  auto graph = std::make_shared<Graph>();
-  auto ksz_val = graph->insertConstant(kernel_size);
-  auto kst_val = graph->insertConstant(stride);
-  auto pad_val = graph->insertConstant(padding);
+    // make JIT graph
+    auto graph = std::make_shared<Graph>();
+    auto ksz_val = graph->insertConstant(kernel_size);
+    auto kst_val = graph->insertConstant(stride);
+    auto pad_val = graph->insertConstant(padding);
 
-  auto inputg = graph->addInput("self");
-  auto weightg = graph->addInput("weight");
-  auto biasg = graph->addInput("bias");
+    auto inputg = graph->addInput("self");
+    auto weightg = graph->addInput("weight");
+    auto biasg = graph->addInput("bias");
 
-  Value* conv = graph->insert(
-      aten::thnn_conv2d_forward,
-      {inputg, weightg, ksz_val, biasg, kst_val, pad_val});
-  auto outputs = conv->node()->outputs();
-  for (auto output : outputs) {
-    graph->registerOutput(output);
-  }
-  LowerAllTuples(graph);
-  graph->lint();
+    Value* conv = graph->insert(
+                      aten::thnn_conv2d_forward,
+    {inputg, weightg, ksz_val, biasg, kst_val, pad_val});
+    auto outputs = conv->node()->outputs();
+    for (auto output : outputs) {
+        graph->registerOutput(output);
+    }
+    LowerAllTuples(graph);
+    graph->lint();
 
-  // differentiate JIT graph
-  EliminateDeadCode(graph); // Tracing of some ops depends on the DCE trick
-  ConstantPropagation(graph);
-  auto grad_spec = differentiate(graph);
-  LowerGradOf(*grad_spec.df);
+    // differentiate JIT graph
+    EliminateDeadCode(graph); // Tracing of some ops depends on the DCE trick
+    ConstantPropagation(graph);
+    auto grad_spec = differentiate(graph);
+    LowerGradOf(*grad_spec.df);
 
-  // prepare JIT inputs / gradients
-  tensor_list tensors_in;
-  tensors_in.push_back(input);
-  tensors_in.push_back(weight);
-  tensors_in.push_back(bias);
+    // prepare JIT inputs / gradients
+    tensor_list tensors_in;
+    tensors_in.push_back(input);
+    tensors_in.push_back(weight);
+    tensors_in.push_back(bias);
 
-  tensor_list tensor_grads_in;
-  tensor_grads_in.push_back(grad_output);
-  tensor_grads_in.push_back(grad_finput);
-  tensor_grads_in.push_back(grad_fgradinput);
+    tensor_list tensor_grads_in;
+    tensor_grads_in.push_back(grad_output);
+    tensor_grads_in.push_back(grad_finput);
+    tensor_grads_in.push_back(grad_fgradinput);
 
-  // Get outputs from the interpreter
-  tensor_list tensors_out, tensor_grads_out;
-  std::tie(tensors_out, tensor_grads_out) =
-      runGradient(grad_spec, tensors_in, tensor_grads_in);
+    // Get outputs from the interpreter
+    tensor_list tensors_out, tensor_grads_out;
+    std::tie(tensors_out, tensor_grads_out) =
+        runGradient(grad_spec, tensors_in, tensor_grads_in);
 
-  // prepare expected structs
-  tensor_list expected_tensors_out, expected_tensor_grads_out;
-  expected_tensors_out.push_back(output);
-  expected_tensors_out.push_back(finput);
-  expected_tensors_out.push_back(fgradinput);
-  expected_tensor_grads_out.push_back(grad_input);
-  expected_tensor_grads_out.push_back(grad_weight);
-  expected_tensor_grads_out.push_back(grad_bias);
+    // prepare expected structs
+    tensor_list expected_tensors_out, expected_tensor_grads_out;
+    expected_tensors_out.push_back(output);
+    expected_tensors_out.push_back(finput);
+    expected_tensors_out.push_back(fgradinput);
+    expected_tensor_grads_out.push_back(grad_input);
+    expected_tensor_grads_out.push_back(grad_weight);
+    expected_tensor_grads_out.push_back(grad_bias);
 
-  // Compare results
-  assertAllClose(tensors_out, expected_tensors_out);
-  assertAllClose(tensor_grads_out, expected_tensor_grads_out);
+    // Compare results
+    assertAllClose(tensors_out, expected_tensors_out);
+    assertAllClose(tensor_grads_out, expected_tensor_grads_out);
 }
 
 void testATenNativeBatchNorm() {
-  // aten::native_batch_norm(Tensor input, Tensor weight, Tensor bias, Tensor
-  // running_mean, Tensor running_var, bool training, float momentum, float eps)
-  // -> (Tensor, Tensor, Tensor)
-  std::vector<int64_t> input_size = {4, 3, 15, 17}; // B x C x H x W
-  bool training = true;
-  float momentum = 0.9;
-  float eps = 1e-5;
+    // aten::native_batch_norm(Tensor input, Tensor weight, Tensor bias, Tensor
+    // running_mean, Tensor running_var, bool training, float momentum, float eps)
+    // -> (Tensor, Tensor, Tensor)
+    std::vector<int64_t> input_size = {4, 3, 15, 17}; // B x C x H x W
+    bool training = true;
+    float momentum = 0.9;
+    float eps = 1e-5;
 
-  // make inputs
-  at::Tensor input = torch::randn(input_size);
-  at::Tensor weight = torch::randn({input_size[1]});
-  at::Tensor bias = torch::randn({input_size[1]});
-  at::Tensor running_mean = torch::randn({input_size[1]});
-  at::Tensor running_var = torch::randn({input_size[1]});
+    // make inputs
+    at::Tensor input = torch::randn(input_size);
+    at::Tensor weight = torch::randn({input_size[1]});
+    at::Tensor bias = torch::randn({input_size[1]});
+    at::Tensor running_mean = torch::randn({input_size[1]});
+    at::Tensor running_var = torch::randn({input_size[1]});
 
-  // running_mean and running_var are changed in-place, so clone and send them
-  at::Tensor running_mean_eager = running_mean.clone();
-  at::Tensor running_var_eager = running_var.clone();
-  at::Tensor running_mean_jit = running_mean.clone();
-  at::Tensor running_var_jit = running_var.clone();
+    // running_mean and running_var are changed in-place, so clone and send them
+    at::Tensor running_mean_eager = running_mean.clone();
+    at::Tensor running_var_eager = running_var.clone();
+    at::Tensor running_mean_jit = running_mean.clone();
+    at::Tensor running_var_jit = running_var.clone();
 
-  // run forward eagerly
-  at::Tensor output, savemean, saveinvstd;
-  std::tie(output, savemean, saveinvstd) = at::native_batch_norm(
-      input,
-      weight,
-      bias,
-      running_mean_eager,
-      running_var_eager,
-      training,
-      momentum,
-      eps);
+    // run forward eagerly
+    at::Tensor output, savemean, saveinvstd;
+    std::tie(output, savemean, saveinvstd) = at::native_batch_norm(
+                input,
+                weight,
+                bias,
+                running_mean_eager,
+                running_var_eager,
+                training,
+                momentum,
+                eps);
 
-  // make grad_outputs
-  at::Tensor grad_output =
-      torch::randn_like(output, at::MemoryFormat::Preserve);
-  at::Tensor grad_savemean =
-      torch::zeros_like(savemean, at::MemoryFormat::Preserve);
-  at::Tensor grad_saveinvstd =
-      torch::zeros_like(saveinvstd, at::MemoryFormat::Preserve);
+    // make grad_outputs
+    at::Tensor grad_output =
+        torch::randn_like(output, at::MemoryFormat::Preserve);
+    at::Tensor grad_savemean =
+        torch::zeros_like(savemean, at::MemoryFormat::Preserve);
+    at::Tensor grad_saveinvstd =
+        torch::zeros_like(saveinvstd, at::MemoryFormat::Preserve);
 
-  // run backward eagerly
-  at::Tensor grad_input, grad_weight, grad_bias;
-  // aten::native_batch_norm_backward(Tensor grad_out, Tensor input, Tensor
-  // weight, Tensor running_mean, Tensor running_var, Tensor save_mean, Tensor
-  // save_invstd, bool train, float eps, bool[3] output_mask) -> (Tensor,
-  // Tensor, Tensor)
-  std::tie(grad_input, grad_weight, grad_bias) = at::native_batch_norm_backward(
-      grad_output,
-      input,
-      weight,
-      running_mean_eager,
-      running_var_eager,
-      savemean,
-      saveinvstd,
-      training,
-      eps,
-      {true, true, true});
+    // run backward eagerly
+    at::Tensor grad_input, grad_weight, grad_bias;
+    // aten::native_batch_norm_backward(Tensor grad_out, Tensor input, Tensor
+    // weight, Tensor running_mean, Tensor running_var, Tensor save_mean, Tensor
+    // save_invstd, bool train, float eps, bool[3] output_mask) -> (Tensor,
+    // Tensor, Tensor)
+    std::tie(grad_input, grad_weight, grad_bias) = at::native_batch_norm_backward(
+                grad_output,
+                input,
+                weight,
+                running_mean_eager,
+                running_var_eager,
+                savemean,
+                saveinvstd,
+                training,
+                eps,
+    {true, true, true});
 
-  // make JIT graph
-  auto graph = std::make_shared<Graph>();
-  auto training_val = graph->insertConstant(IValue(training));
-  auto momentum_val = graph->insertConstant(IValue(momentum));
-  auto eps_val = graph->insertConstant(IValue(eps));
+    // make JIT graph
+    auto graph = std::make_shared<Graph>();
+    auto training_val = graph->insertConstant(IValue(training));
+    auto momentum_val = graph->insertConstant(IValue(momentum));
+    auto eps_val = graph->insertConstant(IValue(eps));
 
-  auto inputg = graph->addInput("self");
-  auto weightg = graph->addInput("weight");
-  auto biasg = graph->addInput("bias");
-  auto running_meang = graph->addInput("running_mean");
-  auto running_varg = graph->addInput("running_var");
+    auto inputg = graph->addInput("self");
+    auto weightg = graph->addInput("weight");
+    auto biasg = graph->addInput("bias");
+    auto running_meang = graph->addInput("running_mean");
+    auto running_varg = graph->addInput("running_var");
 
-  Value* bn = graph->insert(
-      aten::native_batch_norm,
-      {inputg,
-       weightg,
-       biasg,
-       running_meang,
-       running_varg,
-       training_val,
-       momentum_val,
-       eps_val});
-  auto outputs = bn->node()->outputs();
-  for (auto output : outputs) {
-    graph->registerOutput(output);
-  }
-  LowerAllTuples(graph);
-  graph->lint();
+    Value* bn = graph->insert(
+                    aten::native_batch_norm,
+    {   inputg,
+        weightg,
+        biasg,
+        running_meang,
+        running_varg,
+        training_val,
+        momentum_val,
+        eps_val
+    });
+    auto outputs = bn->node()->outputs();
+    for (auto output : outputs) {
+        graph->registerOutput(output);
+    }
+    LowerAllTuples(graph);
+    graph->lint();
 
-  // differentiate JIT graph
-  EliminateDeadCode(graph); // Tracing of some ops depends on the DCE trick
-  ConstantPropagation(graph);
-  auto grad_spec = differentiate(graph);
-  LowerGradOf(*grad_spec.df);
+    // differentiate JIT graph
+    EliminateDeadCode(graph); // Tracing of some ops depends on the DCE trick
+    ConstantPropagation(graph);
+    auto grad_spec = differentiate(graph);
+    LowerGradOf(*grad_spec.df);
 
-  // prepare JIT inputs / gradients
-  tensor_list tensors_in;
-  tensors_in.push_back(input);
-  tensors_in.push_back(weight);
-  tensors_in.push_back(bias);
-  tensors_in.push_back(running_mean_jit);
-  tensors_in.push_back(running_var_jit);
+    // prepare JIT inputs / gradients
+    tensor_list tensors_in;
+    tensors_in.push_back(input);
+    tensors_in.push_back(weight);
+    tensors_in.push_back(bias);
+    tensors_in.push_back(running_mean_jit);
+    tensors_in.push_back(running_var_jit);
 
-  tensor_list tensor_grads_in;
-  tensor_grads_in.push_back(grad_output);
-  tensor_grads_in.push_back(grad_savemean);
-  tensor_grads_in.push_back(grad_saveinvstd);
+    tensor_list tensor_grads_in;
+    tensor_grads_in.push_back(grad_output);
+    tensor_grads_in.push_back(grad_savemean);
+    tensor_grads_in.push_back(grad_saveinvstd);
 
-  // Get outputs from the interpreter
-  tensor_list tensors_out, tensor_grads_out;
-  std::tie(tensors_out, tensor_grads_out) =
-      runGradient(grad_spec, tensors_in, tensor_grads_in);
+    // Get outputs from the interpreter
+    tensor_list tensors_out, tensor_grads_out;
+    std::tie(tensors_out, tensor_grads_out) =
+        runGradient(grad_spec, tensors_in, tensor_grads_in);
 
-  // prepare expected structs
-  tensor_list expected_tensors_out, expected_tensor_grads_out;
-  expected_tensors_out.push_back(output);
-  expected_tensors_out.push_back(savemean);
-  expected_tensors_out.push_back(saveinvstd);
-  expected_tensors_out.push_back(running_mean_eager);
-  expected_tensors_out.push_back(running_var_eager);
-  expected_tensor_grads_out.push_back(grad_input);
-  expected_tensor_grads_out.push_back(grad_weight);
-  expected_tensor_grads_out.push_back(grad_bias);
+    // prepare expected structs
+    tensor_list expected_tensors_out, expected_tensor_grads_out;
+    expected_tensors_out.push_back(output);
+    expected_tensors_out.push_back(savemean);
+    expected_tensors_out.push_back(saveinvstd);
+    expected_tensors_out.push_back(running_mean_eager);
+    expected_tensors_out.push_back(running_var_eager);
+    expected_tensor_grads_out.push_back(grad_input);
+    expected_tensor_grads_out.push_back(grad_weight);
+    expected_tensor_grads_out.push_back(grad_bias);
 
-  tensors_out.push_back(running_mean_jit);
-  tensors_out.push_back(running_var_jit);
+    tensors_out.push_back(running_mean_jit);
+    tensors_out.push_back(running_var_jit);
 
-  // Compare results
-  assertAllClose(tensors_out, expected_tensors_out);
-  assertAllClose(tensor_grads_out, expected_tensor_grads_out);
+    // Compare results
+    assertAllClose(tensors_out, expected_tensors_out);
+    assertAllClose(tensor_grads_out, expected_tensor_grads_out);
 }
 
 void testCustomFusion() {
-  auto graph_string = R"IR(
+    auto graph_string = R"IR(
     graph(%0 : Float(2, 3, 4),
           %1 : Float(2, 3, 4)):
       %2 : Tensor = aten::mul(%0, %1)
       %3 : Tensor = aten::mul(%2, %0)
       return (%3))IR";
-  auto g = std::make_shared<Graph>();
-  torch::jit::parseIR(graph_string, g.get());
+    auto g = std::make_shared<Graph>();
+    torch::jit::parseIR(graph_string, g.get());
 
-  torch::jit::overrideCanFuseOnCPU(true);
-  CustomFuseGraph(
-      g,
-      [](Node* n) { return n->kind() != prim::Param; },
-      Symbol::fromQualString("prim::FusionGroup"));
-  torch::jit::overrideCanFuseOnCPU(false);
+    torch::jit::overrideCanFuseOnCPU(true);
+    CustomFuseGraph(
+        g,
+    [](Node* n) {
+        return n->kind() != prim::Param;
+    },
+    Symbol::fromQualString("prim::FusionGroup"));
+    torch::jit::overrideCanFuseOnCPU(false);
 
-  const auto& nodes = g->nodes();
-  auto fusion_group =
-      std::find_if(nodes.begin(), nodes.end(), [](const Node* node) {
+    const auto& nodes = g->nodes();
+    auto fusion_group =
+    std::find_if(nodes.begin(), nodes.end(), [](const Node* node) {
         return node->kind() == Symbol::fromQualString("prim::FusionGroup");
-      });
-  AT_ASSERT(fusion_group != nodes.end());
+    });
+    AT_ASSERT(fusion_group != nodes.end());
 
-  auto subgraph = fusion_group->g(attr::Subgraph);
-  auto hits = 0;
-  // two multiplications
-  for (const auto& n : subgraph->nodes()) {
-    (void)n;
-    hits++;
-  }
-  AT_ASSERT(hits == 2);
+    auto subgraph = fusion_group->g(attr::Subgraph);
+    auto hits = 0;
+    // two multiplications
+    for (const auto& n : subgraph->nodes()) {
+        (void)n;
+        hits++;
+    }
+    AT_ASSERT(hits == 2);
 }
 
 void testCustomFusionNestedBlocks() {
-  auto graph_string = R"IR(
+    auto graph_string = R"IR(
   graph(%0 : Float(2, 3, 4),
         %1 : Float(2, 3, 4),
         %2 : Float(2, 3, 4)):
@@ -410,28 +413,30 @@ void testCustomFusionNestedBlocks() {
         -> (%8)
     %9 : Tensor = aten::add(%4, %2, %3)
     return (%4))IR";
-  auto g = std::make_shared<Graph>();
-  torch::jit::parseIR(graph_string, g.get());
+    auto g = std::make_shared<Graph>();
+    torch::jit::parseIR(graph_string, g.get());
 
-  CustomFuseGraph(
-      g,
-      [](Node* n) { return n->kind() == aten::mul; },
-      Symbol::fromQualString("prim::FusionGroup"));
+    CustomFuseGraph(
+        g,
+    [](Node* n) {
+        return n->kind() == aten::mul;
+    },
+    Symbol::fromQualString("prim::FusionGroup"));
 
-  // Could be done in more efficient ways, but this is only a test.
-  std::function<bool(const Block*, Symbol)> dfs = [&](const Block* b,
-                                                      Symbol s) {
-    for (auto node : b->nodes()) {
-      if (node->kind() == s)
-        return true;
-      for (auto nested_b : node->blocks())
-        if (dfs(nested_b, s))
-          return true;
-    }
-    return false;
-  };
+    // Could be done in more efficient ways, but this is only a test.
+    std::function<bool(const Block*, Symbol)> dfs = [&](const Block* b,
+    Symbol s) {
+        for (auto node : b->nodes()) {
+            if (node->kind() == s)
+                return true;
+            for (auto nested_b : node->blocks())
+                if (dfs(nested_b, s))
+                    return true;
+        }
+        return false;
+    };
 
-  AT_ASSERT(dfs(g->block(), Symbol::fromQualString("prim::FusionGroup")));
+    AT_ASSERT(dfs(g->block(), Symbol::fromQualString("prim::FusionGroup")));
 }
 
 static const auto cf_examples = R"JIT(
@@ -1231,39 +1236,47 @@ void testInsertAndEliminateRedundantGuards() {
     return d + e
   )JIT";
 
-  auto cu = compile(basic_example);
-  auto& fun = cu->get_function("basic");
-  auto pr = ProfilingRecord::instrumentGraph(fun.graph());
-  auto x = at::randn({2, 3}, at::kCPU);
-  auto y = at::randn({2, 3}, at::kCPU);
-  auto stack = createStack({x, y});
-  // introduce some profiling information
-  Code cd(pr->profiled_graph_, "");
-  InterpreterState is{cd};
-  is.run(stack);
-  auto copy = pr->profiled_graph_->copy();
-  InsertGuards(copy);
-  auto nodes = copy->block()->nodes();
-  auto guard = std::find_if(nodes.begin(), nodes.end(), [](Node* n) {
+auto cu = compile(basic_example);
+auto& fun = cu->get_function("basic");
+auto pr = ProfilingRecord::instrumentGraph(fun.graph());
+auto x = at::randn( {
+    2, 3
+}, at::kCPU);
+auto y = at::randn( {
+    2, 3
+}, at::kCPU);
+auto stack = createStack( {
+    x, y
+});
+// introduce some profiling information
+Code cd(pr->profiled_graph_, "");
+InterpreterState is{cd};
+is.run(stack);
+auto copy = pr->profiled_graph_->copy();
+InsertGuards(copy);
+auto nodes = copy->block()->nodes();
+auto guard = std::find_if(nodes.begin(), nodes.end(), [](Node* n) {
     return n->kind() == prim::Guard;
-  });
-  ASSERT_NE(guard, nodes.end());
-  ASSERT_EQ(
-      guard->input()->type()->expect<TensorType>()->sizes().size(),
-      c10::nullopt);
-  checkShape(*guard, {2, 3}, false);
-  auto is_guard = [](Node* n) { return n->kind() == prim::Guard; };
-  int num_guards = std::count_if(nodes.begin(), nodes.end(), is_guard);
-  ASSERT_EQ(num_guards, 12);
-  // now eliminate as many guards as possible
-  // we should be left with two guards on x and y's defs
-  EliminateRedundantGuards(copy);
-  num_guards = std::count_if(nodes.begin(), nodes.end(), is_guard);
-  ASSERT_EQ(num_guards, 2);
+});
+ASSERT_NE(guard, nodes.end());
+ASSERT_EQ(
+    guard->input()->type()->expect<TensorType>()->sizes().size(),
+    c10::nullopt);
+checkShape(*guard, {2, 3}, false);
+auto is_guard = [](Node* n) {
+    return n->kind() == prim::Guard;
+};
+int num_guards = std::count_if(nodes.begin(), nodes.end(), is_guard);
+ASSERT_EQ(num_guards, 12);
+// now eliminate as many guards as possible
+// we should be left with two guards on x and y's defs
+EliminateRedundantGuards(copy);
+num_guards = std::count_if(nodes.begin(), nodes.end(), is_guard);
+ASSERT_EQ(num_guards, 2);
 }
 
 void testInsertBailOuts() {
-  static const auto basic_example = R"JIT(
+    static const auto basic_example = R"JIT(
   def basic_loop(x, y):
 
       a = x + 1
@@ -1281,79 +1294,89 @@ void testInsertBailOuts() {
       return e
   )JIT";
 
-  auto cu = compile(basic_example);
-  auto& fun = cu->get_function("basic_loop");
-  auto pr = ProfilingRecord::instrumentGraph(fun.graph());
-  auto x = at::randn({2, 3}, at::kCPU);
-  auto y = at::randn({2, 3}, at::kCPU);
-  auto stack = createStack({x, y});
-  // introduce some profiling information
-  Code cd(pr->profiled_graph_, "");
-  InterpreterState is{cd};
-  is.run(stack);
-  auto copy = pr->profiled_graph_->copy();
-  InsertGuards(copy);
-  EliminateRedundantGuards(copy);
-  auto nodes = copy->block()->nodes();
-  auto is_guard = [](Node* n) { return n->kind() == prim::Guard; };
-  auto num_guards = std::count_if(nodes.begin(), nodes.end(), is_guard);
-  ASSERT_EQ(num_guards, 3);
-  InsertBailOuts(copy);
-  auto is_bailout = [](Node* n) { return n->kind() == prim::BailOut; };
-  auto num_bailouts = std::count_if(nodes.begin(), nodes.end(), is_bailout);
-  ASSERT_EQ(num_guards, num_bailouts);
-  std::vector<Node*> bailouts(num_bailouts);
-  std::copy_if(nodes.begin(), nodes.end(), bailouts.begin(), is_bailout);
+    auto cu = compile(basic_example);
+    auto& fun = cu->get_function("basic_loop");
+    auto pr = ProfilingRecord::instrumentGraph(fun.graph());
+    auto x = at::randn({2, 3}, at::kCPU);
+    auto y = at::randn({2, 3}, at::kCPU);
+    auto stack = createStack({x, y});
+    // introduce some profiling information
+    Code cd(pr->profiled_graph_, "");
+    InterpreterState is{cd};
+    is.run(stack);
+    auto copy = pr->profiled_graph_->copy();
+    InsertGuards(copy);
+    EliminateRedundantGuards(copy);
+    auto nodes = copy->block()->nodes();
+    auto is_guard = [](Node* n) {
+        return n->kind() == prim::Guard;
+    };
+    auto num_guards = std::count_if(nodes.begin(), nodes.end(), is_guard);
+    ASSERT_EQ(num_guards, 3);
+    InsertBailOuts(copy);
+    auto is_bailout = [](Node* n) {
+        return n->kind() == prim::BailOut;
+    };
+    auto num_bailouts = std::count_if(nodes.begin(), nodes.end(), is_bailout);
+    ASSERT_EQ(num_guards, num_bailouts);
+    std::vector<Node*> bailouts(num_bailouts);
+    std::copy_if(nodes.begin(), nodes.end(), bailouts.begin(), is_bailout);
 
-  for (auto blo : bailouts) {
-    ASSERT_EQ(blo->inputs().at(0)->node()->kind(), prim::BailoutTemplate);
-  }
+    for (auto blo : bailouts) {
+        ASSERT_EQ(blo->inputs().at(0)->node()->kind(), prim::BailoutTemplate);
+    }
 }
 
 void testProfiler() {
-  constexpr int batch_size = 4;
-  constexpr int input_size = 256;
+    constexpr int batch_size = 4;
+    constexpr int input_size = 256;
 
-  int hidden_size = 2 * input_size;
+    int hidden_size = 2 * input_size;
 
-  auto input = at::randn({batch_size, input_size}, at::kCPU);
-  auto hx = at::randn({batch_size, hidden_size}, at::kCPU);
-  auto cx = at::randn({batch_size, hidden_size}, at::kCPU);
-  auto w_ih = t_def(at::randn({4 * hidden_size, input_size}, at::kCPU));
-  auto w_hh = t_def(at::randn({4 * hidden_size, hidden_size}, at::kCPU));
+    auto input = at::randn({batch_size, input_size}, at::kCPU);
+    auto hx = at::randn({batch_size, hidden_size}, at::kCPU);
+    auto cx = at::randn({batch_size, hidden_size}, at::kCPU);
+    auto w_ih = t_def(at::randn({4 * hidden_size, input_size}, at::kCPU));
+    auto w_hh = t_def(at::randn({4 * hidden_size, hidden_size}, at::kCPU));
 
-  auto g = build_lstm();
-  auto stack = createStack({input, hx, cx, w_ih, w_hh});
+    auto g = build_lstm();
+    auto stack = createStack({input, hx, cx, w_ih, w_hh});
 
-  auto& opt_graph = *g.get();
-  ArgumentSpecCreator arg_spec_creator(opt_graph);
-  ArgumentSpec spec =
-      arg_spec_creator.create(autograd::GradMode::is_enabled(), stack);
-  arg_spec_creator.specializeTypes(opt_graph, spec);
-  auto pr = ProfilingRecord::instrumentGraph(g);
-  Code cd(pr->profiled_graph_, "");
-  InterpreterState is{cd};
-  is.run(stack);
+    auto& opt_graph = *g.get();
+    ArgumentSpecCreator arg_spec_creator(opt_graph);
+    ArgumentSpec spec =
+        arg_spec_creator.create(autograd::GradMode::is_enabled(), stack);
+    arg_spec_creator.specializeTypes(opt_graph, spec);
+    auto pr = ProfilingRecord::instrumentGraph(g);
+    Code cd(pr->profiled_graph_, "");
+    InterpreterState is{cd};
+    is.run(stack);
 
-  auto begin = pr->profiled_graph_->block()->nodes().begin();
-  auto end = pr->profiled_graph_->block()->nodes().end();
-  auto mm =
-      std::find_if(begin, end, [](Node* n) { return n->kind() == aten::mm; });
-  ASSERT_NE(mm, end);
-  std::vector<int64_t> mm_expected{4, 256};
-  std::vector<int64_t> eltwise{4, 512};
-  checkShape(*mm, mm_expected);
-  auto sigmoid_n = std::find_if(
-      begin, end, [](Node* n) { return n->kind() == aten::sigmoid; });
-  ASSERT_NE(sigmoid_n, end);
-  checkShape(*sigmoid_n, eltwise);
-  auto tanh_n =
-      std::find_if(begin, end, [](Node* n) { return n->kind() == aten::tanh; });
-  checkShape(*tanh_n, eltwise);
+    auto begin = pr->profiled_graph_->block()->nodes().begin();
+    auto end = pr->profiled_graph_->block()->nodes().end();
+    auto mm =
+    std::find_if(begin, end, [](Node* n) {
+        return n->kind() == aten::mm;
+    });
+    ASSERT_NE(mm, end);
+    std::vector<int64_t> mm_expected{4, 256};
+    std::vector<int64_t> eltwise{4, 512};
+    checkShape(*mm, mm_expected);
+    auto sigmoid_n = std::find_if(
+    begin, end, [](Node* n) {
+        return n->kind() == aten::sigmoid;
+    });
+    ASSERT_NE(sigmoid_n, end);
+    checkShape(*sigmoid_n, eltwise);
+    auto tanh_n =
+    std::find_if(begin, end, [](Node* n) {
+        return n->kind() == aten::tanh;
+    });
+    checkShape(*tanh_n, eltwise);
 }
 
 void testCallStack() {
-  const auto text = R"(
+    const auto text = R"(
 def ham(x):
     return x/7
 
@@ -1366,70 +1389,70 @@ def baz(x):
 def foo(x):
     return bar(x)*baz(x)*11
   )";
-  auto cu = compile(text);
-  const Function& foo = cu->get_function("foo");
-  for (Node* n : foo.optimized_graph()->nodes()) {
-    if (n->kind() == prim::Constant) {
-      if (!n->hasAttribute(attr::value) ||
-          n->kindOf(attr::value) != AttributeKind::i) {
-        continue;
-      }
-      int v = n->i(attr::value);
-      switch (v) {
-        case 3: {
-          // Const 3 comes from function 'bar', which gets inlined to 'foo'.
-          // The callstack for the corresponding node should contain only the
-          // function 'bar'.
-          ASSERT_TRUE(n->callstack());
-          auto callstack_vector = (*n->callstack())->vec();
-          ASSERT_EQ(callstack_vector.size(), 1);
-          ASSERT_EQ(callstack_vector[0].first, &cu->get_function("bar"));
-          break;
+    auto cu = compile(text);
+    const Function& foo = cu->get_function("foo");
+    for (Node* n : foo.optimized_graph()->nodes()) {
+        if (n->kind() == prim::Constant) {
+            if (!n->hasAttribute(attr::value) ||
+                    n->kindOf(attr::value) != AttributeKind::i) {
+                continue;
+            }
+            int v = n->i(attr::value);
+            switch (v) {
+            case 3: {
+                // Const 3 comes from function 'bar', which gets inlined to 'foo'.
+                // The callstack for the corresponding node should contain only the
+                // function 'bar'.
+                ASSERT_TRUE(n->callstack());
+                auto callstack_vector = (*n->callstack())->vec();
+                ASSERT_EQ(callstack_vector.size(), 1);
+                ASSERT_EQ(callstack_vector[0].first, &cu->get_function("bar"));
+                break;
+            }
+            case 7: {
+                // Const 7 comes from function 'ham', which gets inlined to 'baz',
+                // which is then inlined to 'foo'. The callstack for the corresponding
+                // node should contain these two functions.
+                ASSERT_TRUE(n->callstack());
+                auto callstack_vector = (*n->callstack())->vec();
+                ASSERT_EQ(callstack_vector.size(), 2);
+                ASSERT_EQ(callstack_vector[0].first, &cu->get_function("baz"));
+                ASSERT_EQ(callstack_vector[1].first, &cu->get_function("ham"));
+                break;
+            }
+            case 11: {
+                // Const 11 comes from function 'foo', which is not inlined anywhere
+                // and thus it should not have a callstack.
+                ASSERT_FALSE(n->callstack());
+                break;
+            }
+            }
         }
-        case 7: {
-          // Const 7 comes from function 'ham', which gets inlined to 'baz',
-          // which is then inlined to 'foo'. The callstack for the corresponding
-          // node should contain these two functions.
-          ASSERT_TRUE(n->callstack());
-          auto callstack_vector = (*n->callstack())->vec();
-          ASSERT_EQ(callstack_vector.size(), 2);
-          ASSERT_EQ(callstack_vector[0].first, &cu->get_function("baz"));
-          ASSERT_EQ(callstack_vector[1].first, &cu->get_function("ham"));
-          break;
-        }
-        case 11: {
-          // Const 11 comes from function 'foo', which is not inlined anywhere
-          // and thus it should not have a callstack.
-          ASSERT_FALSE(n->callstack());
-          break;
-        }
-      }
     }
-  }
 
-  // Check that inlining doesn't corrupt callstack of the callee's nodes.
-  const Function& baz = cu->get_function("baz");
-  for (Node* n : baz.optimized_graph()->nodes()) {
-    if (n->kind() == prim::Constant) {
-      if (!n->hasAttribute(attr::value) ||
-          n->kindOf(attr::value) != AttributeKind::i) {
-        continue;
-      }
-      int v = n->i(attr::value);
-      ASSERT_TRUE(v == 7);
-      // Const 7 comes from function 'ham', which gets inlined to 'baz'. 'baz'
-      // was also inlined into 'foo', but when looking at the graph of 'baz' we
-      // should only see a callstack of depth 1 (containing only 'ham').
-      ASSERT_TRUE(n->callstack());
-      auto callstack_vector = (*n->callstack())->vec();
-      ASSERT_EQ(callstack_vector.size(), 1);
-      ASSERT_EQ(callstack_vector[0].first, &cu->get_function("ham"));
+    // Check that inlining doesn't corrupt callstack of the callee's nodes.
+    const Function& baz = cu->get_function("baz");
+    for (Node* n : baz.optimized_graph()->nodes()) {
+        if (n->kind() == prim::Constant) {
+            if (!n->hasAttribute(attr::value) ||
+                    n->kindOf(attr::value) != AttributeKind::i) {
+                continue;
+            }
+            int v = n->i(attr::value);
+            ASSERT_TRUE(v == 7);
+            // Const 7 comes from function 'ham', which gets inlined to 'baz'. 'baz'
+            // was also inlined into 'foo', but when looking at the graph of 'baz' we
+            // should only see a callstack of depth 1 (containing only 'ham').
+            ASSERT_TRUE(n->callstack());
+            auto callstack_vector = (*n->callstack())->vec();
+            ASSERT_EQ(callstack_vector.size(), 1);
+            ASSERT_EQ(callstack_vector[0].first, &cu->get_function("ham"));
+        }
     }
-  }
 }
 
 void testCallStackCaching() {
-  const auto text = R"(
+    const auto text = R"(
 
 def a(x):
     print("a1")
@@ -1448,46 +1471,46 @@ def c(x):
     b(x)
     return x
   )";
-  auto cu = compile(text);
-  const Function& baz = cu->get_function("c");
-  std::unordered_map<std::string, InlinedCallStack*> callstack_objects;
-  for (Node* n : baz.optimized_graph()->nodes()) {
-    if (n->kind() == prim::Constant) {
-      if (!n->hasAttribute(attr::value) ||
-          n->kindOf(attr::value) != AttributeKind::s) {
-        continue;
-      }
-      std::string v = n->s(attr::value);
-      if (n->callstack()) {
-        callstack_objects[v] = n->callstack()->get();
-      }
+    auto cu = compile(text);
+    const Function& baz = cu->get_function("c");
+    std::unordered_map<std::string, InlinedCallStack*> callstack_objects;
+    for (Node* n : baz.optimized_graph()->nodes()) {
+        if (n->kind() == prim::Constant) {
+            if (!n->hasAttribute(attr::value) ||
+                    n->kindOf(attr::value) != AttributeKind::s) {
+                continue;
+            }
+            std::string v = n->s(attr::value);
+            if (n->callstack()) {
+                callstack_objects[v] = n->callstack()->get();
+            }
+        }
     }
-  }
-  // We expect to see nodes prim::Constant[value="a1"] and
-  // prim::Constant[value="a2"] inlined to function 'c'. Their callstacks are
-  // the same (a->b->c), so we want to make sure we're not creating different
-  // callstack entries for them.
-  ASSERT_TRUE(callstack_objects.count("a1") && callstack_objects.count("a2"));
-  ASSERT_TRUE(callstack_objects.at("a1") == callstack_objects.at("a2"));
+    // We expect to see nodes prim::Constant[value="a1"] and
+    // prim::Constant[value="a2"] inlined to function 'c'. Their callstacks are
+    // the same (a->b->c), so we want to make sure we're not creating different
+    // callstack entries for them.
+    ASSERT_TRUE(callstack_objects.count("a1") && callstack_objects.count("a2"));
+    ASSERT_TRUE(callstack_objects.at("a1") == callstack_objects.at("a2"));
 }
 
 void testAutogradSymbols() {
-  Symbol sym = Symbol::fromQualString("aten::test_symbol");
-  Graph graph;
-  auto node = graph.create(sym);
-  TORCH_CHECK(canRunWithAutograd(node));
+    Symbol sym = Symbol::fromQualString("aten::test_symbol");
+    Graph graph;
+    auto node = graph.create(sym);
+    TORCH_CHECK(canRunWithAutograd(node));
 
-  sym = Symbol::fromQualString("prim::test_symbol");
-  node = graph.create(sym);
-  TORCH_CHECK(canRunWithAutograd(node));
+    sym = Symbol::fromQualString("prim::test_symbol");
+    node = graph.create(sym);
+    TORCH_CHECK(canRunWithAutograd(node));
 
-  sym = Symbol::fromQualString("prim::FusionGroup");
-  node = graph.create(sym);
-  TORCH_CHECK(!canRunWithAutograd(node));
+    sym = Symbol::fromQualString("prim::FusionGroup");
+    node = graph.create(sym);
+    TORCH_CHECK(!canRunWithAutograd(node));
 
-  sym = Symbol::fromQualString("custom::test_symbol");
-  node = graph.create(sym);
-  TORCH_CHECK(!canRunWithAutograd(node));
+    sym = Symbol::fromQualString("custom::test_symbol");
+    node = graph.create(sym);
+    TORCH_CHECK(!canRunWithAutograd(node));
 }
 
 } // namespace jit
