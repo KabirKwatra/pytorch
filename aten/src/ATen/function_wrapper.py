@@ -1,8 +1,13 @@
 # HEY! Trying to understand what this file does?  Read
 # "what has to be done to add a Operation ..." first!
-
 import re
-from typing import Any, Dict, List, NamedTuple, Optional, Set, Tuple
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import NamedTuple
+from typing import Optional
+from typing import Set
+from typing import Tuple
 
 from code_template import CodeTemplate
 

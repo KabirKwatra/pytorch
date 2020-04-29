@@ -161,7 +161,6 @@
 #      Use system-provided libraries to satisfy the build dependencies.
 #      When turned on, the following cmake variables will be toggled as well:
 #        USE_SYSTEM_CPUINFO=ON USE_SYSTEM_SLEEF=ON BUILD_CUSTOM_PROTOBUF=OFF
-
 from __future__ import print_function
 
 import distutils.command.clean
@@ -181,12 +180,18 @@ from distutils.errors import DistutilsArgError
 
 import setuptools.command.build_ext
 import setuptools.command.install
-from setuptools import Extension, distutils, find_packages, setup
+from setuptools import distutils
+from setuptools import Extension
+from setuptools import find_packages
+from setuptools import setup
 
 from tools.build_pytorch_libs import build_caffe2
 from tools.setup_helpers.cmake import CMake
-from tools.setup_helpers.env import (IS_DARWIN, IS_LINUX, IS_WINDOWS,
-                                     build_type, check_env_flag)
+from tools.setup_helpers.env import build_type
+from tools.setup_helpers.env import check_env_flag
+from tools.setup_helpers.env import IS_DARWIN
+from tools.setup_helpers.env import IS_LINUX
+from tools.setup_helpers.env import IS_WINDOWS
 
 if sys.version_info < (3,):
     raise Exception(

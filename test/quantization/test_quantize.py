@@ -3,6 +3,9 @@ import io
 import math
 import unittest
 
+from hypothesis import given
+from hypothesis import strategies as st
+
 import torch
 import torch.nn as nn
 import torch.nn.intrinsic as nni
@@ -10,42 +13,76 @@ import torch.nn.intrinsic.qat as nniqat
 import torch.nn.intrinsic.quantized as nniq
 import torch.nn.quantized as nnq
 import torch.testing._internal.hypothesis_utils as hu
-from hypothesis import given
-from hypothesis import strategies as st
 from torch.nn.utils.rnn import PackedSequence
-from torch.quantization import (HistogramObserver, MinMaxDynamicQuantObserver,
-                                MinMaxObserver, MovingAverageMinMaxObserver,
-                                MovingAveragePerChannelMinMaxObserver,
-                                PerChannelMinMaxObserver, QConfig,
-                                QuantWrapper, RecordingObserver, convert,
-                                default_debug_qconfig, default_dynamic_qconfig,
-                                default_eval_fn, default_histogram_observer,
-                                default_observer, default_per_channel_qconfig,
-                                default_per_channel_weight_observer,
-                                default_qat_qconfig, default_qconfig,
-                                default_weight_observer,
-                                float16_dynamic_qconfig, fuse_modules,
-                                get_observer_dict, per_channel_dynamic_qconfig,
-                                prepare, prepare_qat, quantize,
-                                quantize_dynamic, quantize_qat)
-from torch.quantization._quantize_script import (quantize_dynamic_script,
-                                                 quantize_script)
-from torch.testing._internal.common_quantization import (
-    ActivationsQATTestModel, ActivationsTestModel, AnnotatedConvBnModel,
-    AnnotatedConvModel, AnnotatedCustomConfigNestedModel, AnnotatedNestedModel,
-    AnnotatedSingleLayerLinearModel, AnnotatedSkipQuantModel,
-    AnnotatedSubNestedModel, AnnotatedTwoLayerLinearModel, ConvBnModel,
-    ConvModel, LSTMDynamicModel, ManualConvLinearQATModel,
-    ManualLinearQATModel, ModelForFusion, ModelForFusionWithBias,
-    ModelWithFunctionals, ModelWithNoQconfigPropagation,
-    ModelWithSequentialFusion, NestedModel, NormalizationTestModel,
-    QuantizationTestCase, QuantStubModel, ResNetBase,
-    SingleLayerLinearDynamicModel, SingleLayerLinearModel, SkipQuantModel,
-    TwoLayerLinearModel, convert_dynamic, prepare_dynamic, test_only_eval_fn,
-    test_only_train_fn)
+from torch.quantization import convert
+from torch.quantization import default_debug_qconfig
+from torch.quantization import default_dynamic_qconfig
+from torch.quantization import default_eval_fn
+from torch.quantization import default_histogram_observer
+from torch.quantization import default_observer
+from torch.quantization import default_per_channel_qconfig
+from torch.quantization import default_per_channel_weight_observer
+from torch.quantization import default_qat_qconfig
+from torch.quantization import default_qconfig
+from torch.quantization import default_weight_observer
+from torch.quantization import float16_dynamic_qconfig
+from torch.quantization import fuse_modules
+from torch.quantization import get_observer_dict
+from torch.quantization import HistogramObserver
+from torch.quantization import MinMaxDynamicQuantObserver
+from torch.quantization import MinMaxObserver
+from torch.quantization import MovingAverageMinMaxObserver
+from torch.quantization import MovingAveragePerChannelMinMaxObserver
+from torch.quantization import per_channel_dynamic_qconfig
+from torch.quantization import PerChannelMinMaxObserver
+from torch.quantization import prepare
+from torch.quantization import prepare_qat
+from torch.quantization import QConfig
+from torch.quantization import quantize
+from torch.quantization import quantize_dynamic
+from torch.quantization import quantize_qat
+from torch.quantization import QuantWrapper
+from torch.quantization import RecordingObserver
+from torch.quantization._quantize_script import quantize_dynamic_script
+from torch.quantization._quantize_script import quantize_script
+from torch.testing._internal.common_quantization import ActivationsQATTestModel
+from torch.testing._internal.common_quantization import ActivationsTestModel
+from torch.testing._internal.common_quantization import AnnotatedConvBnModel
+from torch.testing._internal.common_quantization import AnnotatedConvModel
+from torch.testing._internal.common_quantization import AnnotatedCustomConfigNestedModel
+from torch.testing._internal.common_quantization import AnnotatedNestedModel
+from torch.testing._internal.common_quantization import AnnotatedSingleLayerLinearModel
+from torch.testing._internal.common_quantization import AnnotatedSkipQuantModel
+from torch.testing._internal.common_quantization import AnnotatedSubNestedModel
+from torch.testing._internal.common_quantization import AnnotatedTwoLayerLinearModel
+from torch.testing._internal.common_quantization import ConvBnModel
+from torch.testing._internal.common_quantization import convert_dynamic
+from torch.testing._internal.common_quantization import ConvModel
+from torch.testing._internal.common_quantization import LSTMDynamicModel
+from torch.testing._internal.common_quantization import ManualConvLinearQATModel
+from torch.testing._internal.common_quantization import ManualLinearQATModel
+from torch.testing._internal.common_quantization import ModelForFusion
+from torch.testing._internal.common_quantization import ModelForFusionWithBias
+from torch.testing._internal.common_quantization import ModelWithFunctionals
+from torch.testing._internal.common_quantization import ModelWithNoQconfigPropagation
+from torch.testing._internal.common_quantization import ModelWithSequentialFusion
+from torch.testing._internal.common_quantization import NestedModel
+from torch.testing._internal.common_quantization import NormalizationTestModel
+from torch.testing._internal.common_quantization import prepare_dynamic
+from torch.testing._internal.common_quantization import QuantizationTestCase
+from torch.testing._internal.common_quantization import QuantStubModel
+from torch.testing._internal.common_quantization import ResNetBase
+from torch.testing._internal.common_quantization import SingleLayerLinearDynamicModel
+from torch.testing._internal.common_quantization import SingleLayerLinearModel
+from torch.testing._internal.common_quantization import SkipQuantModel
+from torch.testing._internal.common_quantization import test_only_eval_fn
+from torch.testing._internal.common_quantization import test_only_train_fn
+from torch.testing._internal.common_quantization import TwoLayerLinearModel
 from torch.testing._internal.common_quantized import override_quantized_engine
-from torch.testing._internal.common_utils import (IS_MACOS, IS_PPC, IS_WINDOWS,
-                                                  TEST_WITH_UBSAN)
+from torch.testing._internal.common_utils import IS_MACOS
+from torch.testing._internal.common_utils import IS_PPC
+from torch.testing._internal.common_utils import IS_WINDOWS
+from torch.testing._internal.common_utils import TEST_WITH_UBSAN
 
 hu.assert_deadline_disabled()
 

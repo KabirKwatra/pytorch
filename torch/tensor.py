@@ -8,10 +8,12 @@ import torch
 import torch._C as _C
 import torch.utils.hooks as hooks
 from torch._C import _add_docstr
-from torch._namedtensor_internals import (check_serializing_named_tensor,
-                                          is_ellipsis, resolve_ellipsis,
-                                          single_ellipsis_index,
-                                          unzip_namedshape, update_names)
+from torch._namedtensor_internals import check_serializing_named_tensor
+from torch._namedtensor_internals import is_ellipsis
+from torch._namedtensor_internals import resolve_ellipsis
+from torch._namedtensor_internals import single_ellipsis_index
+from torch._namedtensor_internals import unzip_namedshape
+from torch._namedtensor_internals import update_names
 from torch._six import imap
 
 

@@ -1,20 +1,27 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import math
 import warnings
-from functools import partial, wraps
+from functools import partial
+from functools import wraps
 
 import numpy
-import torch
-import torch.onnx
+
 import torch.onnx.symbolic_helper as sym_help
+import torch.onnx.utils
+from torch._C import ListType
+from torch._C import OptionalType
+from torch.nn.modules.utils import _pair
+from torch.nn.modules.utils import _single
+from torch.nn.modules.utils import _triple
+from torch.onnx.symbolic_helper import _parse_arg
+from torch.onnx.symbolic_helper import _unimplemented
+from torch.onnx.symbolic_helper import parse_args
 # This import monkey-patches graph manipulation methods on Graph, used for the
 # ONNX symbolics
-import torch.onnx.utils
-from torch._C import ListType, OptionalType
-from torch.nn.modules.utils import _pair, _single, _triple
-from torch.onnx.symbolic_helper import _parse_arg, _unimplemented, parse_args
 
 # EDITING THIS FILE? READ THIS FIRST!
 # see Note [Edit Symbolic Files] in symbolic_helper.py

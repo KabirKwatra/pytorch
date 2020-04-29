@@ -13,11 +13,11 @@ import torch.testing._internal.dist_utils as dist_utils
 from torch.autograd import Function
 from torch.autograd.function import once_differentiable
 from torch.testing._internal.common_utils import IS_MACOS
-from torch.testing._internal.dist_utils import (dist_init,
-                                                get_shutdown_error_regex,
-                                                initialize_pg,
-                                                wait_until_node_failure,
-                                                worker_name)
+from torch.testing._internal.dist_utils import dist_init
+from torch.testing._internal.dist_utils import get_shutdown_error_regex
+from torch.testing._internal.dist_utils import initialize_pg
+from torch.testing._internal.dist_utils import wait_until_node_failure
+from torch.testing._internal.dist_utils import worker_name
 from torch.testing._internal.distributed.rpc.faulty_rpc_agent_test_fixture import \
     FaultyRpcAgentTestFixture
 from torch.testing._internal.distributed.rpc.rpc_agent_test_fixture import \

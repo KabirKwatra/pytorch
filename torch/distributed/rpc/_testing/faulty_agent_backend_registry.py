@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 from datetime import timedelta
 
 import torch.distributed as dist

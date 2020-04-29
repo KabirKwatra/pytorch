@@ -1,5 +1,7 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import glob
 import inspect
@@ -9,13 +11,18 @@ import os
 import shutil
 import unittest
 
-import torch
+from test_pytorch_common import flatten
+from test_pytorch_common import run_tests
+from test_pytorch_common import skipIfNoLapack
+from test_pytorch_common import TestCase
+
 import torch.nn as nn
 import torch.onnx
 import torch.testing._internal.common_utils as common
-from test_pytorch_common import TestCase, flatten, run_tests, skipIfNoLapack
-from torch.autograd import Function, Variable
-from torch.nn import Module, functional
+from torch.autograd import Function
+from torch.autograd import Variable
+from torch.nn import functional
+from torch.nn import Module
 
 """Usage: python test/onnx/test_operators.py [--no-onnx] [--produce-onnx-test-data]
           --no-onnx: no onnx python dependence

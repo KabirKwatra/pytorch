@@ -8,7 +8,6 @@ python -m tools.code_analyzer.op_deps_processor \
   --op-dependency build_code_analyzer/work/torch_result.yaml \
   --output pt_deps.bzl
 """
-
 import argparse
 
 import yaml

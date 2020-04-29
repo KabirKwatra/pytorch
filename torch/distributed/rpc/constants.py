@@ -1,7 +1,8 @@
+from . import _DEFAULT_INIT_METHOD
+from . import _DEFAULT_NUM_SEND_RECV_THREADS
+from . import _DEFAULT_RPC_TIMEOUT_SEC
+from . import _UNSET_RPC_TIMEOUT
 from torch.distributed.constants import default_pg_timeout
-
-from . import (_DEFAULT_INIT_METHOD, _DEFAULT_NUM_SEND_RECV_THREADS,
-               _DEFAULT_RPC_TIMEOUT_SEC, _UNSET_RPC_TIMEOUT)
 
 # For any RpcAgent.
 DEFAULT_RPC_TIMEOUT_SEC = _DEFAULT_RPC_TIMEOUT_SEC

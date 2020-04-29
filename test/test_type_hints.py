@@ -9,7 +9,8 @@ import tempfile
 import unittest
 
 import torch
-from torch.testing._internal.common_utils import TestCase, run_tests
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import TestCase
 
 try:
     import mypy  # noqa: F401

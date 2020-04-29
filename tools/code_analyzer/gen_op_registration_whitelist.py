@@ -7,7 +7,6 @@ ops as the whitelist.
 For custom build with static dispatch, the op dependency graph will be omitted,
 and it will directly output root ops as the whitelist.
 """
-
 import argparse
 from collections import defaultdict
 

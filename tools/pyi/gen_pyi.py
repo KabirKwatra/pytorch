@@ -9,9 +9,11 @@ import re
 import yaml
 
 from ..autograd.gen_autograd import load_aten_declarations
-from ..autograd.gen_python_functions import (get_py_torch_functions,
-                                             get_py_variable_methods)
-from ..autograd.utils import CodeTemplate, YamlLoader, write
+from ..autograd.gen_python_functions import get_py_torch_functions
+from ..autograd.gen_python_functions import get_py_variable_methods
+from ..autograd.utils import CodeTemplate
+from ..autograd.utils import write
+from ..autograd.utils import YamlLoader
 
 """
 This module implements generation of type stubs for PyTorch,

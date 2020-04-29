@@ -1,5 +1,7 @@
-from __future__ import (absolute_import, division, print_function,
-                        unicode_literals)
+from __future__ import absolute_import
+from __future__ import division
+from __future__ import print_function
+from __future__ import unicode_literals
 
 import collections
 import enum
@@ -7,7 +9,6 @@ from datetime import timedelta
 
 import torch.distributed as dist
 import torch.distributed.distributed_c10d as dc10d
-
 from . import constants as rpc_constants
 
 BackendValue = collections.namedtuple(
