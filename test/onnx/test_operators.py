@@ -18,10 +18,10 @@ import torch.testing._internal.common_utils as common
 
 import unittest
 
-'''Usage: python test/onnx/test_operators.py [--no-onnx] [--produce-onnx-test-data]
+"""Usage: python test/onnx/test_operators.py [--no-onnx] [--produce-onnx-test-data]
           --no-onnx: no onnx python dependence
           --produce-onnx-test-data: generate onnx test data
-'''
+"""
 
 _onnx_test = False  # flag to produce onnx test cases.
 _onnx_dep = True  # flag to import onnx package.
@@ -29,12 +29,12 @@ _onnx_dep = True  # flag to import onnx package.
 
 def export_to_pbtxt(model, inputs, *args, **kwargs):
     return torch.onnx.export_to_pretty_string(
-        model, inputs, None, verbose=False, google_printer=True,
-        *args, **kwargs)
+        model, inputs, None, verbose=False, google_printer=True, *args, **kwargs
+    )
 
 
 def export_to_pb(model, inputs, *args, **kwargs):
-    kwargs['operator_export_type'] = torch.onnx.OperatorExportTypes.ONNX
+    kwargs["operator_export_type"] = torch.onnx.OperatorExportTypes.ONNX
     f = io.BytesIO()
     with torch.no_grad():
         torch.onnx.export(model, inputs, f, *args, **kwargs)
@@ -54,7 +54,6 @@ class FuncModule(Module):
 
 
 class TestOperators(TestCase):
-
     def assertONNX(self, f, args, params=None, **kwargs):
         if params is None:
             params = ()
@@ -64,7 +63,7 @@ class TestOperators(TestCase):
             m = FuncModule(f, params)
         m.eval()
         onnx_model_pbtxt = export_to_pbtxt(m, args, **kwargs)
-        subname = kwargs.pop('subname', None)
+        subname = kwargs.pop("subname", None)
         self.assertExpected(onnx_model_pbtxt, subname)
         if _onnx_dep:
             onnx_model_pb = export_to_pb(m, args, **kwargs)
@@ -72,18 +71,23 @@ class TestOperators(TestCase):
             import onnx.checker
             import onnx.numpy_helper
             import test_onnx_common
+
             model_def = onnx.ModelProto.FromString(onnx_model_pb)
             onnx.checker.check_model(model_def)
             if _onnx_test:
                 test_function = inspect.stack()[1][0].f_code.co_name
                 test_name = test_function[0:4] + "_operator" + test_function[4:]
-                output_dir = os.path.join(test_onnx_common.pytorch_operator_dir, test_name)
+                output_dir = os.path.join(
+                    test_onnx_common.pytorch_operator_dir, test_name
+                )
                 # Assume:
                 #     1) the old test should be delete before the test.
                 #     2) only one assertONNX in each test, otherwise will override the data.
-                assert not os.path.exists(output_dir), "{} should not exist!".format(output_dir)
+                assert not os.path.exists(output_dir), "{} should not exist!".format(
+                    output_dir
+                )
                 os.makedirs(output_dir)
-                with open(os.path.join(output_dir, "model.onnx"), 'wb') as file:
+                with open(os.path.join(output_dir, "model.onnx"), "wb") as file:
                     file.write(model_def.SerializeToString())
                 data_dir = os.path.join(output_dir, "test_data_set_0")
                 os.makedirs(data_dir)
@@ -91,14 +95,18 @@ class TestOperators(TestCase):
                     args = (args,)
                 for index, var in enumerate(flatten(args)):
                     tensor = onnx.numpy_helper.from_array(var.data.numpy())
-                    with open(os.path.join(data_dir, "input_{}.pb".format(index)), 'wb') as file:
+                    with open(
+                        os.path.join(data_dir, "input_{}.pb".format(index)), "wb"
+                    ) as file:
                         file.write(tensor.SerializeToString())
                 outputs = m(*args)
                 if isinstance(outputs, Variable):
                     outputs = (outputs,)
                 for index, var in enumerate(flatten(outputs)):
                     tensor = onnx.numpy_helper.from_array(var.data.numpy())
-                    with open(os.path.join(data_dir, "output_{}.pb".format(index)), 'wb') as file:
+                    with open(
+                        os.path.join(data_dir, "output_{}.pb".format(index)), "wb"
+                    ) as file:
                         file.write(tensor.SerializeToString())
 
     def assertONNXRaises(self, err, f, args, params=None, **kwargs):
@@ -179,11 +187,15 @@ class TestOperators(TestCase):
         self.assertONNX(lambda x: x.chunk(2), x)
 
     def test_split(self):
-        x = torch.tensor([[0.0, 1.0, 1.0, 0.0, 2.0, 2.0], [2.0, 3.0, 3.0, 2.0, 1.0, 1.0]])
+        x = torch.tensor(
+            [[0.0, 1.0, 1.0, 0.0, 2.0, 2.0], [2.0, 3.0, 3.0, 2.0, 1.0, 1.0]]
+        )
         self.assertONNX(lambda x: torch.split(x, 2, 1), x)
 
     def test_split_with_sizes(self):
-        x = torch.tensor([[0.0, 1.0, 1.0, 0.0, 2.0, 2.0], [2.0, 3.0, 3.0, 2.0, 1.0, 1.0]])
+        x = torch.tensor(
+            [[0.0, 1.0, 1.0, 0.0, 2.0, 2.0], [2.0, 3.0, 3.0, 2.0, 1.0, 1.0]]
+        )
         self.assertONNX(lambda x: torch.split(x, [2, 1, 3], 1), x)
 
     def test_concat2(self):
@@ -200,27 +212,39 @@ class TestOperators(TestCase):
         m1 = torch.randn(2, 3, requires_grad=True)
         m2 = torch.randn(3, 4, requires_grad=True)
         m3 = torch.randn(4, requires_grad=True)
-        self.assertONNX(lambda x, y, z: torch.addmm(torch.addmm(z, x, y), x, y), (m1, m2, m3))
+        self.assertONNX(
+            lambda x, y, z: torch.addmm(torch.addmm(z, x, y), x, y), (m1, m2, m3)
+        )
 
     def test_permute2(self):
         x = torch.tensor([[[[[[0.0]]]]]], requires_grad=True)
         self.assertONNX(lambda x: x.permute(0, 1, 4, 2, 5, 3), x)
 
     def test_pad(self):
-        x = torch.tensor([[[[0.0, 1.0, 1.0, 1.0], [2.0, 3.0, 7.0, 7.0]]]], requires_grad=True)
+        x = torch.tensor(
+            [[[[0.0, 1.0, 1.0, 1.0], [2.0, 3.0, 7.0, 7.0]]]], requires_grad=True
+        )
         self.assertONNX(nn.ReflectionPad2d((2, 3, 0, 1)), x)
 
     def test_params(self):
         x = torch.tensor([[1.0, 2.0], [3.0, 4.0]], requires_grad=True)
         y = nn.Parameter(torch.tensor([[1.0, 2.0], [3.0, 4.0]], requires_grad=True))
-        self.assertONNX(lambda x, y: -torch.sigmoid(torch.tanh(x * (x + y))), x, params=(y, ),
-                        keep_initializers_as_inputs=True)
+        self.assertONNX(
+            lambda x, y: -torch.sigmoid(torch.tanh(x * (x + y))),
+            x,
+            params=(y,),
+            keep_initializers_as_inputs=True,
+        )
 
     def test_params_onnx_irv4(self):
         x = torch.tensor([[1.0, 2.0], [3.0, 4.0]], requires_grad=True)
         y = nn.Parameter(torch.tensor([[1.0, 2.0], [3.0, 4.0]], requires_grad=True))
-        self.assertONNX(lambda x, y: -torch.sigmoid(torch.tanh(x * (x + y))), x, params=(y, ),
-                        keep_initializers_as_inputs=False)
+        self.assertONNX(
+            lambda x, y: -torch.sigmoid(torch.tanh(x * (x + y))),
+            x,
+            params=(y,),
+            keep_initializers_as_inputs=False,
+        )
 
     def test_symbolic_mismatch(self):
         class MyFun(Function):
@@ -256,12 +280,18 @@ class TestOperators(TestCase):
 
     def test_batchnorm_training(self):
         x = torch.ones(2, 2, 2, 2, requires_grad=True)
-        self.assertONNX(nn.BatchNorm2d(2), x, training=torch.onnx.TrainingMode.TRAINING,
-                        keep_initializers_as_inputs=True)
+        self.assertONNX(
+            nn.BatchNorm2d(2),
+            x,
+            training=torch.onnx.TrainingMode.TRAINING,
+            keep_initializers_as_inputs=True,
+        )
 
     def test_conv(self):
         x = torch.ones(20, 16, 50, 40, requires_grad=True)
-        self.assertONNX(nn.Conv2d(16, 13, 3, bias=False), x, keep_initializers_as_inputs=True)
+        self.assertONNX(
+            nn.Conv2d(16, 13, 3, bias=False), x, keep_initializers_as_inputs=True
+        )
 
     def test_conv_onnx_irv4(self):
         x = torch.ones(20, 16, 50, 40, requires_grad=True)
@@ -275,36 +305,69 @@ class TestOperators(TestCase):
         x = torch.ones(1, 2, 5, 7, requires_grad=True)
         conv_node = nn.Conv2d(2, 4, 3, bias=False)
         conv_node.weight.data.fill_(1.0)
-        self.assertONNX(conv_node, x, opset_version=8, keep_initializers_as_inputs=False)
+        self.assertONNX(
+            conv_node, x, opset_version=8, keep_initializers_as_inputs=False
+        )
 
     def test_conv_variable_length(self):
         x = torch.ones(5, 3, 6, 6, requires_grad=True)
         model = torch.nn.Conv2d(3, 2, 3)
         y = model(x)
 
-        dynamic_axes = {'input_1': [0, 2, 3], 'output_1': {0: 'output_1_variable_dim_0', 1: 'output_1_variable_dim_1'}}
-        model_proto_name = 'conv2d.onnx'
-        torch.onnx.export(model, x, model_proto_name, verbose=True, input_names=["input_1"], output_names=["output_1"],
-                          example_outputs=y, dynamic_axes=dynamic_axes)
+        dynamic_axes = {
+            "input_1": [0, 2, 3],
+            "output_1": {0: "output_1_variable_dim_0", 1: "output_1_variable_dim_1"},
+        }
+        model_proto_name = "conv2d.onnx"
+        torch.onnx.export(
+            model,
+            x,
+            model_proto_name,
+            verbose=True,
+            input_names=["input_1"],
+            output_names=["output_1"],
+            example_outputs=y,
+            dynamic_axes=dynamic_axes,
+        )
 
         import onnx
+
         onnx_model = onnx.load(model_proto_name)
         onnx.checker.check_model(onnx_model)
 
         # Asserting the default dynamic axes names are generated when custom names are not provided
-        assert(onnx_model.graph.input[0].type.tensor_type.shape.dim[0].dim_param == "input_1_dynamic_axes_1")
-        assert(onnx_model.graph.input[0].type.tensor_type.shape.dim[2].dim_param == "input_1_dynamic_axes_2")
-        assert(onnx_model.graph.input[0].type.tensor_type.shape.dim[3].dim_param == "input_1_dynamic_axes_3")
+        assert (
+            onnx_model.graph.input[0].type.tensor_type.shape.dim[0].dim_param
+            == "input_1_dynamic_axes_1"
+        )
+        assert (
+            onnx_model.graph.input[0].type.tensor_type.shape.dim[2].dim_param
+            == "input_1_dynamic_axes_2"
+        )
+        assert (
+            onnx_model.graph.input[0].type.tensor_type.shape.dim[3].dim_param
+            == "input_1_dynamic_axes_3"
+        )
 
         # Asserting the custom names are applied when provided
-        assert(onnx_model.graph.output[0].type.tensor_type.shape.dim[0].dim_param == "output_1_variable_dim_0")
-        assert(onnx_model.graph.output[0].type.tensor_type.shape.dim[1].dim_param == "output_1_variable_dim_1")
+        assert (
+            onnx_model.graph.output[0].type.tensor_type.shape.dim[0].dim_param
+            == "output_1_variable_dim_0"
+        )
+        assert (
+            onnx_model.graph.output[0].type.tensor_type.shape.dim[1].dim_param
+            == "output_1_variable_dim_1"
+        )
 
     def test_convtranspose(self):
         x = torch.ones(2, 3, 4, 5, requires_grad=True)
-        self.assertONNX(nn.ConvTranspose2d(3, 3, 3, stride=3, bias=False,
-                                           padding=1, output_padding=2), x,
-                        keep_initializers_as_inputs=True)
+        self.assertONNX(
+            nn.ConvTranspose2d(
+                3, 3, 3, stride=3, bias=False, padding=1, output_padding=2
+            ),
+            x,
+            keep_initializers_as_inputs=True,
+        )
 
     def test_maxpool(self):
         x = torch.randn(20, 16, 50)
@@ -326,7 +389,6 @@ class TestOperators(TestCase):
         x = torch.randn(3, 4)
 
         class MyFun(Function):
-
             @staticmethod
             def symbolic(g, x):
                 return g.at("add", x, x)
@@ -389,13 +451,21 @@ class TestOperators(TestCase):
 
     def test_mean_dtype(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
-        self.assertONNXRaisesRegex(RuntimeError, 'Couldn\'t export operator aten::mean',
-                                   lambda x: torch.mean(x, dtype=torch.double), x)
+        self.assertONNXRaisesRegex(
+            RuntimeError,
+            "Couldn't export operator aten::mean",
+            lambda x: torch.mean(x, dtype=torch.double),
+            x,
+        )
 
     def test_reduced_mean_dtype(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
-        self.assertONNXRaisesRegex(RuntimeError, 'Couldn\'t export operator aten::mean',
-                                   lambda x: torch.mean(x, dim=0, dtype=torch.double), x)
+        self.assertONNXRaisesRegex(
+            RuntimeError,
+            "Couldn't export operator aten::mean",
+            lambda x: torch.mean(x, dim=0, dtype=torch.double),
+            x,
+        )
 
     def test_sum(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
@@ -403,13 +473,21 @@ class TestOperators(TestCase):
 
     def test_sum_dtype(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
-        self.assertONNXRaisesRegex(RuntimeError, 'Couldn\'t export operator aten::sum',
-                                   lambda x: torch.sum(x, dtype=torch.double), x)
+        self.assertONNXRaisesRegex(
+            RuntimeError,
+            "Couldn't export operator aten::sum",
+            lambda x: torch.sum(x, dtype=torch.double),
+            x,
+        )
 
     def test_reduced_sum_dtype(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
-        self.assertONNXRaisesRegex(RuntimeError, 'Couldn\'t export operator aten::sum',
-                                   lambda x: torch.sum(x, dim=0, dtype=torch.double), x)
+        self.assertONNXRaisesRegex(
+            RuntimeError,
+            "Couldn't export operator aten::sum",
+            lambda x: torch.sum(x, dim=0, dtype=torch.double),
+            x,
+        )
 
     def test_reduced_sum(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
@@ -433,13 +511,21 @@ class TestOperators(TestCase):
 
     def test_prod_dtype(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
-        self.assertONNXRaisesRegex(RuntimeError, 'Couldn\'t export operator aten::prod',
-                                   lambda x: torch.prod(x, dtype=torch.double), x)
+        self.assertONNXRaisesRegex(
+            RuntimeError,
+            "Couldn't export operator aten::prod",
+            lambda x: torch.prod(x, dtype=torch.double),
+            x,
+        )
 
     def test_reduced_prod_dtype(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
-        self.assertONNXRaisesRegex(RuntimeError, 'Couldn\'t export operator aten::prod',
-                                   lambda x: torch.prod(x, dim=0, dtype=torch.double), x)
+        self.assertONNXRaisesRegex(
+            RuntimeError,
+            "Couldn't export operator aten::prod",
+            lambda x: torch.prod(x, dim=0, dtype=torch.double),
+            x,
+        )
 
     def test_sqrt(self):
         x = torch.randn(3, 4, requires_grad=True)
@@ -504,7 +590,7 @@ class TestOperators(TestCase):
 
     def test_slice_dynamic(self):
         x = torch.rand(3, 4, requires_grad=True)
-        self.assertONNX(lambda x: x[x.size(0):, x.size(1) - 3], x, opset_version=10)
+        self.assertONNX(lambda x: x[x.size(0) :, x.size(1) - 3], x, opset_version=10)
 
     def test_sign(self):
         x = torch.rand(3, 4, requires_grad=True)
@@ -531,7 +617,7 @@ class TestOperators(TestCase):
         self.assertONNX(lambda x: torch.flatten(x, 1), x)
 
     def test_isnan(self):
-        x = torch.tensor([1, float('nan'), 2])
+        x = torch.tensor([1, float("nan"), 2])
         self.assertONNX(lambda x: torch.isnan(x), x)
 
     def test_argmax(self):
@@ -573,17 +659,24 @@ class TestOperators(TestCase):
 
     def test_upsample_nearest_scale(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
-        self.assertONNX(lambda x: nn.functional.interpolate(x, scale_factor=2.,
-                                                            mode='nearest', recompute_scale_factor=False), x)
+        self.assertONNX(
+            lambda x: nn.functional.interpolate(
+                x, scale_factor=2.0, mode="nearest", recompute_scale_factor=False
+            ),
+            x,
+        )
 
     def test_upsample_nearest_scale_default_scale_factor(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
-        self.assertONNX(lambda x: nn.functional.interpolate(x, scale_factor=2.,
-                                                            mode='nearest'), x)
+        self.assertONNX(
+            lambda x: nn.functional.interpolate(x, scale_factor=2.0, mode="nearest"), x
+        )
 
     def test_upsample_nearest_size(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
-        self.assertONNX(lambda x: nn.functional.interpolate(x, size=16, mode='nearest'), x)
+        self.assertONNX(
+            lambda x: nn.functional.interpolate(x, size=16, mode="nearest"), x
+        )
 
     def test_unsqueeze(self):
         x = torch.randn(3, 4, requires_grad=True)
@@ -591,8 +684,11 @@ class TestOperators(TestCase):
 
     def test_batchnorm_noaffine(self):
         x = torch.randn(128, 128, 1, 1, requires_grad=True)
-        self.assertONNX(nn.BatchNorm2d(128, affine=False, momentum=0.3), x,
-                        keep_initializers_as_inputs=True)
+        self.assertONNX(
+            nn.BatchNorm2d(128, affine=False, momentum=0.3),
+            x,
+            keep_initializers_as_inputs=True,
+        )
 
     def test_embedding_bags(self):
         emb_bag = nn.EmbeddingBag(10, 8)
@@ -630,8 +726,9 @@ class TestOperators(TestCase):
 
     def test_linear(self):
         x = torch.randn(3, 4)
-        self.assertONNX(torch.nn.Linear(4, 5, bias=True), x,
-                        keep_initializers_as_inputs=True)
+        self.assertONNX(
+            torch.nn.Linear(4, 5, bias=True), x, keep_initializers_as_inputs=True
+        )
 
     def test_empty_like(self):
         x = torch.randn(5, 8, requires_grad=True)
@@ -680,15 +777,25 @@ class TestOperators(TestCase):
 
     def test_dropout_training(self):
         x = torch.randn(3, 4, requires_grad=True)
-        self.assertONNX(lambda x: torch.max(functional.dropout(x)), x, training=torch.onnx.TrainingMode.TRAINING)
+        self.assertONNX(
+            lambda x: torch.max(functional.dropout(x)),
+            x,
+            training=torch.onnx.TrainingMode.TRAINING,
+        )
 
     def test_dropout_training_opset12(self):
         x = torch.randn(3, 4, requires_grad=True)
-        self.assertONNX(lambda x: torch.max(functional.dropout(x)), x,
-                        opset_version=12, training=torch.onnx.TrainingMode.TRAINING)
+        self.assertONNX(
+            lambda x: torch.max(functional.dropout(x)),
+            x,
+            opset_version=12,
+            training=torch.onnx.TrainingMode.TRAINING,
+        )
 
     def test_nonzero(self):
-        x = torch.tensor([[[2., 2.], [1., 0.]], [[0., 0.], [1., 1.]]], requires_grad=True)
+        x = torch.tensor(
+            [[[2.0, 2.0], [1.0, 0.0]], [[0.0, 0.0], [1.0, 1.0]]], requires_grad=True
+        )
         self.assertONNX(lambda x: torch.nonzero(x), x)
 
     def test_gather(self):
@@ -699,20 +806,28 @@ class TestOperators(TestCase):
     def test_gather_opset11(self):
         data = torch.randn(3, 4, 3, requires_grad=True)
         index = torch.tensor([2, 0]).view(1, 2, 1).expand(3, 2, 3)
-        self.assertONNX(lambda data, index: data.gather(1, index), (data, index), opset_version=11)
+        self.assertONNX(
+            lambda data, index: data.gather(1, index), (data, index), opset_version=11
+        )
 
     def test_scatter_add(self):
-        data = torch.tensor([[0., 0., 0.], [0., 0., 0.], [0., 0., 0.]])
+        data = torch.tensor([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
         indices = torch.tensor([[1, 0], [0, 1], [0, 1]], dtype=torch.int64)
         values = torch.tensor([[1.0, 1.1], [2.0, 2.1], [3.0, 3.1]])
-        self.assertONNX(lambda data, index: data.scatter_add(1, indices, values), (data, (indices, values)))
+        self.assertONNX(
+            lambda data, index: data.scatter_add(1, indices, values),
+            (data, (indices, values)),
+        )
 
     def test_scatter_add_opset11(self):
-        data = torch.tensor([[0., 0., 0.], [0., 0., 0.], [0., 0., 0.]])
+        data = torch.tensor([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
         indices = torch.tensor([[1, 0], [0, 1], [0, 1]], dtype=torch.int64)
         values = torch.tensor([[1.0, 1.1], [2.0, 2.1], [3.0, 3.1]])
-        self.assertONNX(lambda data, index: data.scatter_add(1, indices, values),
-                        (data, (indices, values)), opset_version=11)
+        self.assertONNX(
+            lambda data, index: data.scatter_add(1, indices, values),
+            (data, (indices, values)),
+            opset_version=11,
+        )
 
     def test_master_opset(self):
         x = torch.randn(2, 3).float()
@@ -721,7 +836,9 @@ class TestOperators(TestCase):
 
     def test_std(self):
         x = torch.randn(2, 3, 4).float()
-        self.assertONNX(lambda x: torch.std(x, dim=(0, 1), unbiased=True, keepdim=True), x)
+        self.assertONNX(
+            lambda x: torch.std(x, dim=(0, 1), unbiased=True, keepdim=True), x
+        )
 
     def test_cumsum(self):
         x = torch.randn(2, 3, 4, requires_grad=True)
@@ -732,16 +849,17 @@ class TestOperators(TestCase):
             def __init__(self):
                 super(MyModule, self).__init__()
                 self.fc1 = nn.Linear(4, 5, bias=False)
-                self.fc1.weight.data.fill_(2.)
+                self.fc1.weight.data.fill_(2.0)
                 self.fc2 = nn.Linear(5, 6, bias=False)
-                self.fc2.weight.data.fill_(3.)
+                self.fc2.weight.data.fill_(3.0)
 
             def forward(self, x):
                 return self.fc2(self.fc1(x))
 
         x = torch.randn(3, 4).float()
-        self.assertONNX(MyModule(), (x,), _retain_param_name=False,
-                        keep_initializers_as_inputs=True)
+        self.assertONNX(
+            MyModule(), (x,), _retain_param_name=False, keep_initializers_as_inputs=True
+        )
 
     def test_c2_op(self):
         class MyModel(torch.nn.Module):
@@ -750,8 +868,20 @@ class TestOperators(TestCase):
 
             def forward(self, scores, bbox_deltas, im_info, anchors):
                 a, b = torch.ops._caffe2.GenerateProposals(
-                    (scores), (bbox_deltas), (im_info), (anchors),
-                    2.0, 6000, 300, 0.7, 16, True, -90, 90, 1.0, True,
+                    (scores),
+                    (bbox_deltas),
+                    (im_info),
+                    (anchors),
+                    2.0,
+                    6000,
+                    300,
+                    0.7,
+                    16,
+                    True,
+                    -90,
+                    90,
+                    1.0,
+                    True,
                 )
                 return a, b
 
@@ -761,29 +891,32 @@ class TestOperators(TestCase):
         W = 8
         img_count = 3
         scores = torch.ones(img_count, A, H, W, dtype=torch.float32)
-        bbox_deltas = torch.linspace(0, 10, steps=img_count * 4 * A * H * W,
-                                     dtype=torch.float32)
+        bbox_deltas = torch.linspace(
+            0, 10, steps=img_count * 4 * A * H * W, dtype=torch.float32
+        )
         bbox_deltas = bbox_deltas.view(img_count, 4 * A, H, W)
         im_info = torch.ones(img_count, 3, dtype=torch.float32)
         anchors = torch.ones(A, 4, dtype=torch.float32)
         inputs = (scores, bbox_deltas, im_info, anchors)
-        self.assertONNX(model, inputs, custom_opsets={'org.pytorch._caffe2': 0})
+        self.assertONNX(model, inputs, custom_opsets={"org.pytorch._caffe2": 0})
 
     def test_dict(self):
         class MyModel(torch.nn.Module):
             def forward(self, x_in):
                 x_out = {}
-                x_out["test_key_out"] = torch.add(x_in[list(x_in.keys())[0]], list(x_in.keys())[0])
+                x_out["test_key_out"] = torch.add(
+                    x_in[list(x_in.keys())[0]], list(x_in.keys())[0]
+                )
                 return x_out
 
-        x = {torch.tensor(1.): torch.randn(1, 2, 3)}
+        x = {torch.tensor(1.0): torch.randn(1, 2, 3)}
         self.assertONNX(MyModel(), (x,))
 
     def test_dict_str(self):
         class MyModel(torch.nn.Module):
             def forward(self, x_in):
                 x_out = {}
-                x_out["test_key_out"] = torch.add(x_in["test_key_in"], 2.)
+                x_out["test_key_out"] = torch.add(x_in["test_key_in"], 2.0)
                 return x_out
 
         x = {"test_key_in": torch.randn(1, 2, 3)}
@@ -801,6 +934,7 @@ class TestOperators(TestCase):
         class BitshiftModel(torch.nn.Module):
             def forward(self, input, input2):
                 return input >> 1, input2 >> 2
+
         input = torch.arange(24, dtype=torch.float32).reshape(3, 4, 2)
         input2 = torch.arange(24, dtype=torch.uint8).reshape(3, 4, 2)
         self.assertONNX(BitshiftModel(), (input, input2), opset_version=11)
@@ -808,12 +942,17 @@ class TestOperators(TestCase):
     def test_layer_norm_aten(self):
         model = torch.nn.LayerNorm([10, 10])
         x = torch.randn(20, 5, 10, 10)
-        self.assertONNX(model, x,
-                        operator_export_type=torch.onnx.OperatorExportTypes.ONNX_ATEN_FALLBACK)
+        self.assertONNX(
+            model,
+            x,
+            operator_export_type=torch.onnx.OperatorExportTypes.ONNX_ATEN_FALLBACK,
+        )
 
     def test_pixel_shuffle(self):
         x = torch.randn(2, 8, 3, 4).float()
-        self.assertONNX(lambda x: torch.pixel_shuffle(x, upscale_factor=2), x, opset_version=11)
+        self.assertONNX(
+            lambda x: torch.pixel_shuffle(x, upscale_factor=2), x, opset_version=11
+        )
 
     def test_frobenius_norm(self):
         x = torch.randn(2, 3, 4).float()
@@ -839,8 +978,13 @@ class TestOperators(TestCase):
 
     def test_unique(self):
         x = torch.randint(3, (2, 3, 4, 5)).float()
-        self.assertONNX(lambda x: torch.unique(x, dim=0, sorted=True, return_inverse=False, return_counts=True), x,
-                        opset_version=11)
+        self.assertONNX(
+            lambda x: torch.unique(
+                x, dim=0, sorted=True, return_inverse=False, return_counts=True
+            ),
+            x,
+            opset_version=11,
+        )
 
     def test_meshgrid(self):
         x = torch.ones(3, requires_grad=True)
@@ -849,14 +993,18 @@ class TestOperators(TestCase):
         self.assertONNX(lambda x, y, z: torch.meshgrid(x, y, z), (x, y, z))
 
     def test_topk(self):
-        x = torch.arange(1., 6., requires_grad=True)
+        x = torch.arange(1.0, 6.0, requires_grad=True)
         k = torch.tensor(3)
         self.assertONNX(lambda x, k: torch.topk(x, k), (x, k), opset_version=10)
 
     def test_topk_smallest_unsorted(self):
-        x = torch.arange(1., 6., requires_grad=True)
+        x = torch.arange(1.0, 6.0, requires_grad=True)
         k = torch.tensor(3)
-        self.assertONNX(lambda x, k: torch.topk(x, k, largest=False, sorted=False), (x, k), opset_version=11)
+        self.assertONNX(
+            lambda x, k: torch.topk(x, k, largest=False, sorted=False),
+            (x, k),
+            opset_version=11,
+        )
 
     def test_baddbmm(self):
         x = torch.randn(10, 3, 5)
@@ -874,7 +1022,7 @@ class TestOperators(TestCase):
 
     @skipIfNoLapack
     def test_det(self):
-        x = torch.randn(2, 3, 5, 5, device=torch.device('cpu'))
+        x = torch.randn(2, 3, 5, 5, device=torch.device("cpu"))
         self.assertONNX(lambda x: torch.det(x), x, opset_version=11)
 
     @unittest.skip("disable test until onnx submodule is updated")
@@ -887,13 +1035,17 @@ class TestOperators(TestCase):
     def test_softmaxcrossentropy_ignore_index(self):
         x = torch.randn(3, 5)
         y = torch.empty(3, dtype=torch.long).random_(5)
-        self.assertONNX(torch.nn.CrossEntropyLoss(ignore_index=1), (x, y), opset_version=12)
+        self.assertONNX(
+            torch.nn.CrossEntropyLoss(ignore_index=1), (x, y), opset_version=12
+        )
 
     @unittest.skip("disable test until onnx submodule is updated")
     def test_softmaxcrossentropy_weights(self):
         x = torch.randn(3, 5)
         y = torch.empty(3, dtype=torch.long).random_(5)
-        self.assertONNX(torch.nn.CrossEntropyLoss(weight=torch.randn(5)), (x, y), opset_version=12)
+        self.assertONNX(
+            torch.nn.CrossEntropyLoss(weight=torch.randn(5)), (x, y), opset_version=12
+        )
 
     @unittest.skip("disable test until onnx submodule is updated")
     def test_softmaxcrossentropy_3d(self):
@@ -905,7 +1057,9 @@ class TestOperators(TestCase):
     def test_softmaxcrossentropy_3d_none(self):
         x = torch.randn(3, 5, 2)
         y = torch.empty(3, 2, dtype=torch.long).random_(5)
-        self.assertONNX(torch.nn.CrossEntropyLoss(reduction='none'), (x, y), opset_version=12)
+        self.assertONNX(
+            torch.nn.CrossEntropyLoss(reduction="none"), (x, y), opset_version=12
+        )
 
     @unittest.skip("disable test until onnx submodule is updated")
     def test_softmaxcrossentropy_4d(self):
@@ -914,18 +1068,21 @@ class TestOperators(TestCase):
         self.assertONNX(torch.nn.CrossEntropyLoss(), (x, y), opset_version=12)
 
 
-if __name__ == '__main__':
-    no_onnx_dep_flag = '--no-onnx'
+if __name__ == "__main__":
+    no_onnx_dep_flag = "--no-onnx"
     _onnx_dep = no_onnx_dep_flag not in common.UNITTEST_ARGS
     if no_onnx_dep_flag in common.UNITTEST_ARGS:
         common.UNITTEST_ARGS.remove(no_onnx_dep_flag)
-    onnx_test_flag = '--produce-onnx-test-data'
+    onnx_test_flag = "--produce-onnx-test-data"
     _onnx_test = onnx_test_flag in common.UNITTEST_ARGS
     if onnx_test_flag in common.UNITTEST_ARGS:
         common.UNITTEST_ARGS.remove(onnx_test_flag)
     if _onnx_test:
         _onnx_dep = True
         import test_onnx_common
-        for d in glob.glob(os.path.join(test_onnx_common.pytorch_operator_dir, "test_operator_*")):
+
+        for d in glob.glob(
+            os.path.join(test_onnx_common.pytorch_operator_dir, "test_operator_*")
+        ):
             shutil.rmtree(d)
     run_tests()

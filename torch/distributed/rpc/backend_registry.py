@@ -84,7 +84,7 @@ def _process_group_construct_rpc_backend_options_handler(
     return ProcessGroupRpcBackendOptions(
         rpc_timeout=rpc_timeout,
         init_method=init_method,
-        num_send_recv_threads=num_send_recv_threads
+        num_send_recv_threads=num_send_recv_threads,
     )
 
 

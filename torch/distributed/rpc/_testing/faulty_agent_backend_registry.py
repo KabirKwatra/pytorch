@@ -33,9 +33,7 @@ def _faulty_process_group_init_backend_handler(
     from . import FaultyProcessGroupAgent
 
     if dist.is_initialized():
-        raise RuntimeError(
-            "Process group must not be initialized before init_rpc."
-        )
+        raise RuntimeError("Process group must not be initialized before init_rpc.")
 
     process_group_timeout = rpc_constants.DEFAULT_PROCESS_GROUP_TIMEOUT
 

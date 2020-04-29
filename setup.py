@@ -165,8 +165,13 @@
 from __future__ import print_function
 
 from tools.setup_helpers.cmake import CMake
-from tools.setup_helpers.env import (IS_WINDOWS, IS_DARWIN, IS_LINUX,
-                                     check_env_flag, build_type)
+from tools.setup_helpers.env import (
+    IS_WINDOWS,
+    IS_DARWIN,
+    IS_LINUX,
+    check_env_flag,
+    build_type,
+)
 from tools.build_pytorch_libs import build_caffe2
 import importlib
 import glob
@@ -185,8 +190,11 @@ from distutils import core
 from collections import defaultdict
 from setuptools import setup, Extension, distutils, find_packages
 import sys
+
 if sys.version_info < (3,):
-    raise Exception("Python 2 has reached end-of-life and is no longer supported by PyTorch.")
+    raise Exception(
+        "Python 2 has reached end-of-life and is no longer supported by PyTorch."
+    )
 
 
 try:
@@ -207,33 +215,38 @@ RERUN_CMAKE = False
 CMAKE_ONLY = False
 filtered_args = []
 for i, arg in enumerate(sys.argv):
-    if arg == '--cmake':
+    if arg == "--cmake":
         RERUN_CMAKE = True
         continue
-    if arg == '--cmake-only':
+    if arg == "--cmake-only":
         # Stop once cmake terminates. Leave users a chance to adjust build
         # options.
         CMAKE_ONLY = True
         continue
-    if arg == 'rebuild' or arg == 'build':
-        arg = 'build'  # rebuild is gone, make it build
+    if arg == "rebuild" or arg == "build":
+        arg = "build"  # rebuild is gone, make it build
         EMIT_BUILD_WARNING = True
     if arg == "--":
         filtered_args += sys.argv[i:]
         break
-    if arg == '-q' or arg == '--quiet':
+    if arg == "-q" or arg == "--quiet":
         VERBOSE_SCRIPT = False
-    if arg == 'clean' or arg == 'egg_info':
+    if arg == "clean" or arg == "egg_info":
         RUN_BUILD_DEPS = False
     filtered_args.append(arg)
 sys.argv = filtered_args
 
 if VERBOSE_SCRIPT:
+
     def report(*args):
         print(*args)
+
+
 else:
+
     def report(*args):
         pass
+
 
 # Constant known variables used throughout this file
 cwd = os.path.dirname(os.path.abspath(__file__))
@@ -241,47 +254,53 @@ lib_path = os.path.join(cwd, "torch", "lib")
 third_party_path = os.path.join(cwd, "third_party")
 caffe2_build_dir = os.path.join(cwd, "build")
 # lib/pythonx.x/site-packages
-rel_site_packages = distutils.sysconfig.get_python_lib(prefix='')
+rel_site_packages = distutils.sysconfig.get_python_lib(prefix="")
 # full absolute path to the dir above
 full_site_packages = distutils.sysconfig.get_python_lib()
 # CMAKE: full path to python library
 if IS_WINDOWS:
     cmake_python_library = "{}/libs/python{}.lib".format(
         distutils.sysconfig.get_config_var("prefix"),
-        distutils.sysconfig.get_config_var("VERSION"))
+        distutils.sysconfig.get_config_var("VERSION"),
+    )
     # Fix virtualenv builds
     # TODO: Fix for python < 3.3
     if not os.path.exists(cmake_python_library):
         cmake_python_library = "{}/libs/python{}.lib".format(
-            sys.base_prefix,
-            distutils.sysconfig.get_config_var("VERSION"))
+            sys.base_prefix, distutils.sysconfig.get_config_var("VERSION")
+        )
 else:
     cmake_python_library = "{}/{}".format(
         distutils.sysconfig.get_config_var("LIBDIR"),
-        distutils.sysconfig.get_config_var("INSTSONAME"))
+        distutils.sysconfig.get_config_var("INSTSONAME"),
+    )
 cmake_python_include_dir = distutils.sysconfig.get_python_inc()
 
 
 ################################################################################
 # Version, create_version_file, and package_name
 ################################################################################
-package_name = os.getenv('TORCH_PACKAGE_NAME', 'torch')
-version = open('version.txt', 'r').read().strip()
-sha = 'Unknown'
+package_name = os.getenv("TORCH_PACKAGE_NAME", "torch")
+version = open("version.txt", "r").read().strip()
+sha = "Unknown"
 
 try:
-    sha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=cwd).decode('ascii').strip()
+    sha = (
+        subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=cwd)
+        .decode("ascii")
+        .strip()
+    )
 except Exception:
     pass
 
-if os.getenv('PYTORCH_BUILD_VERSION'):
-    assert os.getenv('PYTORCH_BUILD_NUMBER') is not None
-    build_number = int(os.getenv('PYTORCH_BUILD_NUMBER'))
-    version = os.getenv('PYTORCH_BUILD_VERSION')
+if os.getenv("PYTORCH_BUILD_VERSION"):
+    assert os.getenv("PYTORCH_BUILD_NUMBER") is not None
+    build_number = int(os.getenv("PYTORCH_BUILD_NUMBER"))
+    version = os.getenv("PYTORCH_BUILD_VERSION")
     if build_number > 1:
-        version += '.post' + str(build_number)
-elif sha != 'Unknown':
-    version += '+' + sha[:7]
+        version += ".post" + str(build_number)
+elif sha != "Unknown":
+    version += "+" + sha[:7]
 report("Building wheel {}-{}".format(package_name, version))
 
 cmake = CMake()
@@ -290,7 +309,7 @@ cmake = CMake()
 
 
 def build_deps():
-    report('-- Building version ' + version)
+    report("-- Building version " + version)
 
     def check_file(f):
         if bool(os.getenv("USE_SYSTEM_LIBS", False)):
@@ -302,49 +321,59 @@ def build_deps():
 
     check_file(os.path.join(third_party_path, "gloo", "CMakeLists.txt"))
     check_file(os.path.join(third_party_path, "pybind11", "CMakeLists.txt"))
-    check_file(os.path.join(third_party_path, 'cpuinfo', 'CMakeLists.txt'))
-    check_file(os.path.join(third_party_path, 'tbb', 'Makefile'))
-    check_file(os.path.join(third_party_path, 'onnx', 'CMakeLists.txt'))
-    check_file(os.path.join(third_party_path, 'foxi', 'CMakeLists.txt'))
-    check_file(os.path.join(third_party_path, 'QNNPACK', 'CMakeLists.txt'))
-    check_file(os.path.join(third_party_path, 'fbgemm', 'CMakeLists.txt'))
-    check_file(os.path.join(third_party_path, 'fbgemm', 'third_party',
-                            'asmjit', 'CMakeLists.txt'))
-    check_file(os.path.join(third_party_path, 'onnx', 'third_party',
-                            'benchmark', 'CMakeLists.txt'))
+    check_file(os.path.join(third_party_path, "cpuinfo", "CMakeLists.txt"))
+    check_file(os.path.join(third_party_path, "tbb", "Makefile"))
+    check_file(os.path.join(third_party_path, "onnx", "CMakeLists.txt"))
+    check_file(os.path.join(third_party_path, "foxi", "CMakeLists.txt"))
+    check_file(os.path.join(third_party_path, "QNNPACK", "CMakeLists.txt"))
+    check_file(os.path.join(third_party_path, "fbgemm", "CMakeLists.txt"))
+    check_file(
+        os.path.join(
+            third_party_path, "fbgemm", "third_party", "asmjit", "CMakeLists.txt"
+        )
+    )
+    check_file(
+        os.path.join(
+            third_party_path, "onnx", "third_party", "benchmark", "CMakeLists.txt"
+        )
+    )
 
-    check_pydep('yaml', 'pyyaml')
-    check_pydep('typing', 'typing')
+    check_pydep("yaml", "pyyaml")
+    check_pydep("typing", "typing")
 
-    build_caffe2(version=version,
-                 cmake_python_library=cmake_python_library,
-                 build_python=True,
-                 rerun_cmake=RERUN_CMAKE,
-                 cmake_only=CMAKE_ONLY,
-                 cmake=cmake)
+    build_caffe2(
+        version=version,
+        cmake_python_library=cmake_python_library,
+        build_python=True,
+        rerun_cmake=RERUN_CMAKE,
+        cmake_only=CMAKE_ONLY,
+        cmake=cmake,
+    )
 
-    version_path = os.path.join(cwd, 'torch', 'version.py')
-    with open(version_path, 'w') as f:
+    version_path = os.path.join(cwd, "torch", "version.py")
+    with open(version_path, "w") as f:
         f.write("__version__ = '{}'\n".format(version))
         # NB: This is not 100% accurate, because you could have built the
         # library code with DEBUG, but csrc without DEBUG (in which case
         # this would claim to be a release build when it's not.)
         f.write("debug = {}\n".format(repr(build_type.is_debug())))
         cmake_cache_vars = defaultdict(lambda: None, cmake.get_cmake_cache_variables())
-        f.write("cuda = {}\n".format(repr(cmake_cache_vars['CUDA_VERSION'])))
+        f.write("cuda = {}\n".format(repr(cmake_cache_vars["CUDA_VERSION"])))
         f.write("git_version = {}\n".format(repr(sha)))
-        f.write("hip = {}\n".format(repr(cmake_cache_vars['HIP_VERSION'])))
+        f.write("hip = {}\n".format(repr(cmake_cache_vars["HIP_VERSION"])))
 
     if CMAKE_ONLY:
-        report('Finished running cmake. Run "ccmake build" or '
-               '"cmake-gui build" to adjust build options and '
-               '"python setup.py install" to build.')
+        report(
+            'Finished running cmake. Run "ccmake build" or '
+            '"cmake-gui build" to adjust build options and '
+            '"python setup.py install" to build.'
+        )
         sys.exit()
 
     # Use copies instead of symbolic files.
     # Windows has very poor support for them.
-    sym_files = ['tools/shared/cwrap_common.py', 'tools/shared/_utils_internal.py']
-    orig_files = ['aten/src/ATen/common_with_cwrap.py', 'torch/_utils_internal.py']
+    sym_files = ["tools/shared/cwrap_common.py", "tools/shared/_utils_internal.py"]
+    orig_files = ["aten/src/ATen/common_with_cwrap.py", "torch/_utils_internal.py"]
     for sym_file, orig_file in zip(sym_files, orig_files):
         same = False
         if os.path.exists(sym_file):
@@ -355,18 +384,19 @@ def build_deps():
         if not same:
             shutil.copyfile(orig_file, sym_file)
 
+
 ################################################################################
 # Building dependent libraries
 ################################################################################
 
 
 # the list of runtime dependencies required by this built package
-install_requires = ['future']
+install_requires = ["future"]
 
-missing_pydep = '''
+missing_pydep = """
 Missing build dependency: Unable to `import {importname}`.
 Please install it via `conda install {module}` or `pip install {module}`
-'''.strip()
+""".strip()
 
 
 def check_pydep(importname, module):
@@ -381,47 +411,59 @@ class build_ext(setuptools.command.build_ext.build_ext):
         # Report build options. This is run after the build completes so # `CMakeCache.txt` exists and we can get an
         # accurate report on what is used and what is not.
         cmake_cache_vars = defaultdict(lambda: False, cmake.get_cmake_cache_variables())
-        if cmake_cache_vars['USE_NUMPY']:
-            report('-- Building with NumPy bindings')
+        if cmake_cache_vars["USE_NUMPY"]:
+            report("-- Building with NumPy bindings")
         else:
-            report('-- NumPy not found')
-        if cmake_cache_vars['USE_CUDNN']:
-            report('-- Detected cuDNN at ' +
-                   cmake_cache_vars['CUDNN_LIBRARY'] + ', ' + cmake_cache_vars['CUDNN_INCLUDE_DIR'])
+            report("-- NumPy not found")
+        if cmake_cache_vars["USE_CUDNN"]:
+            report(
+                "-- Detected cuDNN at "
+                + cmake_cache_vars["CUDNN_LIBRARY"]
+                + ", "
+                + cmake_cache_vars["CUDNN_INCLUDE_DIR"]
+            )
         else:
-            report('-- Not using cuDNN')
-        if cmake_cache_vars['USE_CUDA']:
-            report('-- Detected CUDA at ' + cmake_cache_vars['CUDA_TOOLKIT_ROOT_DIR'])
+            report("-- Not using cuDNN")
+        if cmake_cache_vars["USE_CUDA"]:
+            report("-- Detected CUDA at " + cmake_cache_vars["CUDA_TOOLKIT_ROOT_DIR"])
         else:
-            report('-- Not using CUDA')
-        if cmake_cache_vars['USE_MKLDNN']:
-            report('-- Using MKLDNN')
-            if cmake_cache_vars['USE_MKLDNN_CBLAS']:
-                report('-- Using CBLAS in MKLDNN')
+            report("-- Not using CUDA")
+        if cmake_cache_vars["USE_MKLDNN"]:
+            report("-- Using MKLDNN")
+            if cmake_cache_vars["USE_MKLDNN_CBLAS"]:
+                report("-- Using CBLAS in MKLDNN")
             else:
-                report('-- Not using CBLAS in MKLDNN')
+                report("-- Not using CBLAS in MKLDNN")
         else:
-            report('-- Not using MKLDNN')
-        if cmake_cache_vars['USE_NCCL'] and cmake_cache_vars['USE_SYSTEM_NCCL']:
-            report('-- Using system provided NCCL library at {}, {}'.format(cmake_cache_vars['NCCL_LIBRARIES'],
-                                                                            cmake_cache_vars['NCCL_INCLUDE_DIRS']))
-        elif cmake_cache_vars['USE_NCCL']:
-            report('-- Building NCCL library')
+            report("-- Not using MKLDNN")
+        if cmake_cache_vars["USE_NCCL"] and cmake_cache_vars["USE_SYSTEM_NCCL"]:
+            report(
+                "-- Using system provided NCCL library at {}, {}".format(
+                    cmake_cache_vars["NCCL_LIBRARIES"],
+                    cmake_cache_vars["NCCL_INCLUDE_DIRS"],
+                )
+            )
+        elif cmake_cache_vars["USE_NCCL"]:
+            report("-- Building NCCL library")
         else:
-            report('-- Not using NCCL')
-        if cmake_cache_vars['USE_DISTRIBUTED']:
+            report("-- Not using NCCL")
+        if cmake_cache_vars["USE_DISTRIBUTED"]:
             if IS_WINDOWS:
-                report('-- Building without distributed package')
+                report("-- Building without distributed package")
             else:
-                report('-- Building with distributed package ')
+                report("-- Building with distributed package ")
         else:
-            report('-- Building without distributed package')
+            report("-- Building without distributed package")
 
         # Do not use clang to compile exensions if `-fstack-clash-protection` is defined
         # in system CFLAGS
-        system_c_flags = distutils.sysconfig.get_config_var('CFLAGS')
-        if IS_LINUX and '-fstack-clash-protection' in system_c_flags and 'clang' in os.environ.get('CC', ''):
-            os.environ['CC'] = distutils.sysconfig.get_config_var('CC')
+        system_c_flags = distutils.sysconfig.get_config_var("CFLAGS")
+        if (
+            IS_LINUX
+            and "-fstack-clash-protection" in system_c_flags
+            and "clang" in os.environ.get("CC", "")
+        ):
+            os.environ["CC"] = distutils.sysconfig.get_config_var("CC")
 
         # It's an old-style class in Python 2.7...
         setuptools.command.build_ext.build_ext.run(self)
@@ -430,16 +472,18 @@ class build_ext(setuptools.command.build_ext.build_ext):
         if IS_WINDOWS:
             build_temp = self.build_temp
 
-            ext_filename = self.get_ext_filename('_C')
-            lib_filename = '.'.join(ext_filename.split('.')[:-1]) + '.lib'
+            ext_filename = self.get_ext_filename("_C")
+            lib_filename = ".".join(ext_filename.split(".")[:-1]) + ".lib"
 
             export_lib = os.path.join(
-                build_temp, 'torch', 'csrc', lib_filename).replace('\\', '/')
+                build_temp, "torch", "csrc", lib_filename
+            ).replace("\\", "/")
 
             build_lib = self.build_lib
 
-            target_lib = os.path.join(
-                build_lib, 'torch', 'lib', '_C.lib').replace('\\', '/')
+            target_lib = os.path.join(build_lib, "torch", "lib", "_C.lib").replace(
+                "\\", "/"
+            )
 
             # Create "torch/lib" directory if not exists.
             # (It is not created yet in "develop" mode.)
@@ -459,9 +503,9 @@ class build_ext(setuptools.command.build_ext.build_ext):
         # "install" command by default.
         # We only make this copy for Caffe2's pybind extensions
         caffe2_pybind_exts = [
-            'caffe2.python.caffe2_pybind11_state',
-            'caffe2.python.caffe2_pybind11_state_gpu',
-            'caffe2.python.caffe2_pybind11_state_hip',
+            "caffe2.python.caffe2_pybind11_state",
+            "caffe2.python.caffe2_pybind11_state_gpu",
+            "caffe2.python.caffe2_pybind11_state_hip",
         ]
         i = 0
         while i < len(self.extensions):
@@ -497,27 +541,26 @@ class build_ext(setuptools.command.build_ext.build_ext):
         def load(filename):
             with open(filename) as f:
                 return json.load(f)
-        ninja_files = glob.glob('build/*compile_commands.json')
-        cmake_files = glob.glob('torch/lib/build/*/compile_commands.json')
-        all_commands = [entry
-                        for f in ninja_files + cmake_files
-                        for entry in load(f)]
+
+        ninja_files = glob.glob("build/*compile_commands.json")
+        cmake_files = glob.glob("torch/lib/build/*/compile_commands.json")
+        all_commands = [entry for f in ninja_files + cmake_files for entry in load(f)]
 
         # cquery does not like c++ compiles that start with gcc.
         # It forgets to include the c++ header directories.
         # We can work around this by replacing the gcc calls that python
         # setup.py generates with g++ calls instead
         for command in all_commands:
-            if command['command'].startswith("gcc "):
-                command['command'] = "g++ " + command['command'][4:]
+            if command["command"].startswith("gcc "):
+                command["command"] = "g++ " + command["command"][4:]
 
         new_contents = json.dumps(all_commands, indent=2)
-        contents = ''
-        if os.path.exists('compile_commands.json'):
-            with open('compile_commands.json', 'r') as f:
+        contents = ""
+        if os.path.exists("compile_commands.json"):
+            with open("compile_commands.json", "r") as f:
                 contents = f.read()
         if contents != new_contents:
-            with open('compile_commands.json', 'w') as f:
+            with open("compile_commands.json", "w") as f:
                 f.write(new_contents)
 
 
@@ -530,10 +573,11 @@ class clean(distutils.command.clean.clean):
     def run(self):
         import glob
         import re
-        with open('.gitignore', 'r') as f:
+
+        with open(".gitignore", "r") as f:
             ignores = f.read()
-            pat = re.compile(r'^#( BEGIN NOT-CLEAN-FILES )?')
-            for wildcard in filter(None, ignores.split('\n')):
+            pat = re.compile(r"^#( BEGIN NOT-CLEAN-FILES )?")
+            for wildcard in filter(None, ignores.split("\n")):
                 match = pat.match(wildcard)
                 if match:
                     if match.group(1):
@@ -574,131 +618,136 @@ def configure_extension_build():
     if IS_WINDOWS:
         # /NODEFAULTLIB makes sure we only link to DLL runtime
         # and matches the flags set for protobuf and ONNX
-        extra_link_args = ['/NODEFAULTLIB:LIBCMT.LIB']
+        extra_link_args = ["/NODEFAULTLIB:LIBCMT.LIB"]
         # /MD links against DLL runtime
         # and matches the flags set for protobuf and ONNX
         # /Z7 turns on symbolic debugging information in .obj files
         # /EHsc is about standard C++ exception handling
         # /DNOMINMAX removes builtin min/max functions
         # /wdXXXX disables warning no. XXXX
-        extra_compile_args = ['/MD', '/Z7',
-                              '/EHsc', '/DNOMINMAX',
-                              '/wd4267', '/wd4251', '/wd4522', '/wd4522', '/wd4838',
-                              '/wd4305', '/wd4244', '/wd4190', '/wd4101', '/wd4996',
-                              '/wd4275']
+        extra_compile_args = [
+            "/MD",
+            "/Z7",
+            "/EHsc",
+            "/DNOMINMAX",
+            "/wd4267",
+            "/wd4251",
+            "/wd4522",
+            "/wd4522",
+            "/wd4838",
+            "/wd4305",
+            "/wd4244",
+            "/wd4190",
+            "/wd4101",
+            "/wd4996",
+            "/wd4275",
+        ]
     else:
         extra_link_args = []
         extra_compile_args = [
-            '-std=c++14',
-            '-Wall',
-            '-Wextra',
-            '-Wno-strict-overflow',
-            '-Wno-unused-parameter',
-            '-Wno-missing-field-initializers',
-            '-Wno-write-strings',
-            '-Wno-unknown-pragmas',
+            "-std=c++14",
+            "-Wall",
+            "-Wextra",
+            "-Wno-strict-overflow",
+            "-Wno-unused-parameter",
+            "-Wno-missing-field-initializers",
+            "-Wno-write-strings",
+            "-Wno-unknown-pragmas",
             # This is required for Python 2 declarations that are deprecated in 3.
-            '-Wno-deprecated-declarations',
+            "-Wno-deprecated-declarations",
             # Python 2.6 requires -fno-strict-aliasing, see
             # http://legacy.python.org/dev/peps/pep-3123/
             # We also depend on it in our code (even Python 3).
-            '-fno-strict-aliasing',
+            "-fno-strict-aliasing",
             # Clang has an unfixed bug leading to spurious missing
             # braces warnings, see
             # https://bugs.llvm.org/show_bug.cgi?id=21629
-            '-Wno-missing-braces',
+            "-Wno-missing-braces",
         ]
-        if check_env_flag('WERROR'):
-            extra_compile_args.append('-Werror')
+        if check_env_flag("WERROR"):
+            extra_compile_args.append("-Werror")
 
     library_dirs.append(lib_path)
 
     main_compile_args = []
-    main_libraries = ['shm', 'torch_python']
+    main_libraries = ["shm", "torch_python"]
     main_link_args = []
     main_sources = ["torch/csrc/stub.cpp"]
 
-    if cmake_cache_vars['USE_CUDA']:
-        library_dirs.append(
-            os.path.dirname(cmake_cache_vars['CUDA_CUDA_LIB']))
+    if cmake_cache_vars["USE_CUDA"]:
+        library_dirs.append(os.path.dirname(cmake_cache_vars["CUDA_CUDA_LIB"]))
 
-    if cmake_cache_vars['USE_NUMPY']:
-        extra_install_requires += ['numpy']
+    if cmake_cache_vars["USE_NUMPY"]:
+        extra_install_requires += ["numpy"]
 
     if build_type.is_debug():
         if IS_WINDOWS:
-            extra_link_args.append('/DEBUG:FULL')
+            extra_link_args.append("/DEBUG:FULL")
         else:
-            extra_compile_args += ['-O0', '-g']
-            extra_link_args += ['-O0', '-g']
+            extra_compile_args += ["-O0", "-g"]
+            extra_link_args += ["-O0", "-g"]
 
     if build_type.is_rel_with_deb_info():
         if IS_WINDOWS:
-            extra_link_args.append('/DEBUG:FULL')
+            extra_link_args.append("/DEBUG:FULL")
         else:
-            extra_compile_args += ['-g']
-            extra_link_args += ['-g']
+            extra_compile_args += ["-g"]
+            extra_link_args += ["-g"]
 
     def make_relative_rpath(path):
         if IS_DARWIN:
-            return '-Wl,-rpath,@loader_path/' + path
+            return "-Wl,-rpath,@loader_path/" + path
         elif IS_WINDOWS:
-            return ''
+            return ""
         else:
-            return '-Wl,-rpath,$ORIGIN/' + path
+            return "-Wl,-rpath,$ORIGIN/" + path
 
     ################################################################################
     # Declare extensions and package
     ################################################################################
 
     extensions = []
-    packages = find_packages(exclude=('tools', 'tools.*'))
-    C = Extension("torch._C",
-                  libraries=main_libraries,
-                  sources=main_sources,
-                  language='c++',
-                  extra_compile_args=main_compile_args + extra_compile_args,
-                  include_dirs=[],
-                  library_dirs=library_dirs,
-                  extra_link_args=extra_link_args + main_link_args + [make_relative_rpath('lib')])
+    packages = find_packages(exclude=("tools", "tools.*"))
+    C = Extension(
+        "torch._C",
+        libraries=main_libraries,
+        sources=main_sources,
+        language="c++",
+        extra_compile_args=main_compile_args + extra_compile_args,
+        include_dirs=[],
+        library_dirs=library_dirs,
+        extra_link_args=extra_link_args + main_link_args + [make_relative_rpath("lib")],
+    )
     extensions.append(C)
 
     if not IS_WINDOWS:
-        DL = Extension("torch._dl",
-                       sources=["torch/csrc/dl.c"],
-                       language='c')
+        DL = Extension("torch._dl", sources=["torch/csrc/dl.c"], language="c")
         extensions.append(DL)
 
     # These extensions are built by cmake and copied manually in build_extensions()
     # inside the build_ext implementaiton
     extensions.append(
-        Extension(
-            name=str('caffe2.python.caffe2_pybind11_state'),
-            sources=[]),
+        Extension(name=str("caffe2.python.caffe2_pybind11_state"), sources=[]),
     )
-    if cmake_cache_vars['USE_CUDA']:
+    if cmake_cache_vars["USE_CUDA"]:
         extensions.append(
-            Extension(
-                name=str('caffe2.python.caffe2_pybind11_state_gpu'),
-                sources=[]),
+            Extension(name=str("caffe2.python.caffe2_pybind11_state_gpu"), sources=[]),
         )
-    if cmake_cache_vars['USE_ROCM']:
+    if cmake_cache_vars["USE_ROCM"]:
         extensions.append(
-            Extension(
-                name=str('caffe2.python.caffe2_pybind11_state_hip'),
-                sources=[]),
+            Extension(name=str("caffe2.python.caffe2_pybind11_state_hip"), sources=[]),
         )
 
     cmdclass = {
-        'build_ext': build_ext,
-        'clean': clean,
-        'install': install,
+        "build_ext": build_ext,
+        "clean": clean,
+        "install": install,
     }
 
     entry_points = {
-        'console_scripts': [
-            'convert-caffe2-to-onnx = caffe2.python.onnx.bin.conversion:caffe2_to_onnx',
-            'convert-onnx-to-caffe2 = caffe2.python.onnx.bin.conversion:onnx_to_caffe2',
+        "console_scripts": [
+            "convert-caffe2-to-onnx = caffe2.python.onnx.bin.conversion:caffe2_to_onnx",
+            "convert-onnx-to-caffe2 = caffe2.python.onnx.bin.conversion:onnx_to_caffe2",
         ]
     }
 
@@ -719,15 +768,15 @@ build_update_message = """
 
 
 def print_box(msg):
-    lines = msg.split('\n')
+    lines = msg.split("\n")
     size = max(len(l) + 1 for l in lines)
-    print('-' * (size + 2))
+    print("-" * (size + 2))
     for l in lines:
-        print('|{}{}|'.format(l, ' ' * (size - len(l))))
-    print('-' * (size + 2))
+        print("|{}{}|".format(l, " " * (size - len(l))))
+    print("-" * (size + 2))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # Parse the command line and check the arguments
     # before we proceed with building deps and setup
     dist = Distribution()
@@ -743,166 +792,172 @@ if __name__ == '__main__':
     if RUN_BUILD_DEPS:
         build_deps()
 
-    extensions, cmdclass, packages, entry_points, extra_install_requires = configure_extension_build()
+    (
+        extensions,
+        cmdclass,
+        packages,
+        entry_points,
+        extra_install_requires,
+    ) = configure_extension_build()
 
     install_requires += extra_install_requires
 
     setup(
         name=package_name,
         version=version,
-        description=("Tensors and Dynamic neural networks in "
-                     "Python with strong GPU acceleration"),
+        description=(
+            "Tensors and Dynamic neural networks in "
+            "Python with strong GPU acceleration"
+        ),
         ext_modules=extensions,
         cmdclass=cmdclass,
         packages=packages,
         entry_points=entry_points,
         install_requires=install_requires,
         package_data={
-            'torch': [
-                'py.typed',
-                'bin/*',
-                'test/*',
-                '__init__.pyi',
-                'cuda/*.pyi',
-                'optim/*.pyi',
-                'autograd/*.pyi',
-                'utils/data/*.pyi',
-                'nn/*.pyi',
-                'nn/modules/*.pyi',
-                'nn/parallel/*.pyi',
-                'lib/*.so*',
-                'lib/*.dylib*',
-                'lib/*.dll',
-                'lib/*.lib',
-                'lib/*.pdb',
-                'lib/torch_shm_manager',
-                'lib/*.h',
-                'include/ATen/*.h',
-                'include/ATen/cpu/*.h',
-                'include/ATen/cpu/vec256/*.h',
-                'include/ATen/core/*.h',
-                'include/ATen/cuda/*.cuh',
-                'include/ATen/cuda/*.h',
-                'include/ATen/cuda/detail/*.cuh',
-                'include/ATen/cuda/detail/*.h',
-                'include/ATen/cudnn/*.h',
-                'include/ATen/hip/*.cuh',
-                'include/ATen/hip/*.h',
-                'include/ATen/hip/detail/*.cuh',
-                'include/ATen/hip/detail/*.h',
-                'include/ATen/hip/impl/*.h',
-                'include/ATen/detail/*.h',
-                'include/ATen/native/*.h',
-                'include/ATen/native/cpu/*.h',
-                'include/ATen/native/quantized/*.h',
-                'include/ATen/native/quantized/cpu/*.h',
-                'include/ATen/quantized/*.h',
-                'include/caffe2/utils/*.h',
-                'include/caffe2/utils/**/*.h',
-                'include/c10/*.h',
-                'include/c10/macros/*.h',
-                'include/c10/core/*.h',
-                'include/ATen/core/boxing/*.h',
-                'include/ATen/core/boxing/impl/*.h',
-                'include/ATen/core/dispatch/*.h',
-                'include/ATen/core/op_registration/*.h',
-                'include/c10/core/impl/*.h',
-                'include/c10/util/*.h',
-                'include/c10/cuda/*.h',
-                'include/c10/cuda/impl/*.h',
-                'include/c10/hip/*.h',
-                'include/c10/hip/impl/*.h',
-                'include/c10d/*.hpp',
-                'include/caffe2/**/*.h',
-                'include/torch/*.h',
-                'include/torch/csrc/*.h',
-                'include/torch/csrc/api/include/torch/*.h',
-                'include/torch/csrc/api/include/torch/data/*.h',
-                'include/torch/csrc/api/include/torch/data/dataloader/*.h',
-                'include/torch/csrc/api/include/torch/data/datasets/*.h',
-                'include/torch/csrc/api/include/torch/data/detail/*.h',
-                'include/torch/csrc/api/include/torch/data/samplers/*.h',
-                'include/torch/csrc/api/include/torch/data/transforms/*.h',
-                'include/torch/csrc/api/include/torch/detail/*.h',
-                'include/torch/csrc/api/include/torch/detail/ordered_dict.h',
-                'include/torch/csrc/api/include/torch/nn/*.h',
-                'include/torch/csrc/api/include/torch/nn/functional/*.h',
-                'include/torch/csrc/api/include/torch/nn/options/*.h',
-                'include/torch/csrc/api/include/torch/nn/modules/*.h',
-                'include/torch/csrc/api/include/torch/nn/modules/container/*.h',
-                'include/torch/csrc/api/include/torch/nn/parallel/*.h',
-                'include/torch/csrc/api/include/torch/nn/utils/*.h',
-                'include/torch/csrc/api/include/torch/optim/*.h',
-                'include/torch/csrc/api/include/torch/serialize/*.h',
-                'include/torch/csrc/autograd/*.h',
-                'include/torch/csrc/autograd/functions/*.h',
-                'include/torch/csrc/autograd/generated/*.h',
-                'include/torch/csrc/autograd/utils/*.h',
-                'include/torch/csrc/cuda/*.h',
-                'include/torch/csrc/jit/*.h',
-                'include/torch/csrc/jit/generated/*.h',
-                'include/torch/csrc/jit/passes/*.h',
-                'include/torch/csrc/jit/passes/utils/*.h',
-                'include/torch/csrc/jit/runtime/*.h',
-                'include/torch/csrc/jit/ir/*.h',
-                'include/torch/csrc/jit/frontend/*.h',
-                'include/torch/csrc/jit/api/*.h',
-                'include/torch/csrc/jit/serialization/*.h',
-                'include/torch/csrc/jit/python/*.h',
-                'include/torch/csrc/jit/testing/*.h',
-                'include/torch/csrc/onnx/*.h',
-                'include/torch/csrc/utils/*.h',
-                'include/pybind11/*.h',
-                'include/pybind11/detail/*.h',
-                'include/TH/*.h*',
-                'include/TH/generic/*.h*',
-                'include/THC/*.cuh',
-                'include/THC/*.h*',
-                'include/THC/generic/*.h',
-                'include/THCUNN/*.cuh',
-                'include/THCUNN/generic/*.h',
-                'include/THH/*.cuh',
-                'include/THH/*.h*',
-                'include/THH/generic/*.h',
-                'share/cmake/ATen/*.cmake',
-                'share/cmake/Caffe2/*.cmake',
-                'share/cmake/Caffe2/public/*.cmake',
-                'share/cmake/Caffe2/Modules_CUDA_fix/*.cmake',
-                'share/cmake/Caffe2/Modules_CUDA_fix/upstream/*.cmake',
-                'share/cmake/Caffe2/Modules_CUDA_fix/upstream/FindCUDA/*.cmake',
-                'share/cmake/Gloo/*.cmake',
-                'share/cmake/Torch/*.cmake',
+            "torch": [
+                "py.typed",
+                "bin/*",
+                "test/*",
+                "__init__.pyi",
+                "cuda/*.pyi",
+                "optim/*.pyi",
+                "autograd/*.pyi",
+                "utils/data/*.pyi",
+                "nn/*.pyi",
+                "nn/modules/*.pyi",
+                "nn/parallel/*.pyi",
+                "lib/*.so*",
+                "lib/*.dylib*",
+                "lib/*.dll",
+                "lib/*.lib",
+                "lib/*.pdb",
+                "lib/torch_shm_manager",
+                "lib/*.h",
+                "include/ATen/*.h",
+                "include/ATen/cpu/*.h",
+                "include/ATen/cpu/vec256/*.h",
+                "include/ATen/core/*.h",
+                "include/ATen/cuda/*.cuh",
+                "include/ATen/cuda/*.h",
+                "include/ATen/cuda/detail/*.cuh",
+                "include/ATen/cuda/detail/*.h",
+                "include/ATen/cudnn/*.h",
+                "include/ATen/hip/*.cuh",
+                "include/ATen/hip/*.h",
+                "include/ATen/hip/detail/*.cuh",
+                "include/ATen/hip/detail/*.h",
+                "include/ATen/hip/impl/*.h",
+                "include/ATen/detail/*.h",
+                "include/ATen/native/*.h",
+                "include/ATen/native/cpu/*.h",
+                "include/ATen/native/quantized/*.h",
+                "include/ATen/native/quantized/cpu/*.h",
+                "include/ATen/quantized/*.h",
+                "include/caffe2/utils/*.h",
+                "include/caffe2/utils/**/*.h",
+                "include/c10/*.h",
+                "include/c10/macros/*.h",
+                "include/c10/core/*.h",
+                "include/ATen/core/boxing/*.h",
+                "include/ATen/core/boxing/impl/*.h",
+                "include/ATen/core/dispatch/*.h",
+                "include/ATen/core/op_registration/*.h",
+                "include/c10/core/impl/*.h",
+                "include/c10/util/*.h",
+                "include/c10/cuda/*.h",
+                "include/c10/cuda/impl/*.h",
+                "include/c10/hip/*.h",
+                "include/c10/hip/impl/*.h",
+                "include/c10d/*.hpp",
+                "include/caffe2/**/*.h",
+                "include/torch/*.h",
+                "include/torch/csrc/*.h",
+                "include/torch/csrc/api/include/torch/*.h",
+                "include/torch/csrc/api/include/torch/data/*.h",
+                "include/torch/csrc/api/include/torch/data/dataloader/*.h",
+                "include/torch/csrc/api/include/torch/data/datasets/*.h",
+                "include/torch/csrc/api/include/torch/data/detail/*.h",
+                "include/torch/csrc/api/include/torch/data/samplers/*.h",
+                "include/torch/csrc/api/include/torch/data/transforms/*.h",
+                "include/torch/csrc/api/include/torch/detail/*.h",
+                "include/torch/csrc/api/include/torch/detail/ordered_dict.h",
+                "include/torch/csrc/api/include/torch/nn/*.h",
+                "include/torch/csrc/api/include/torch/nn/functional/*.h",
+                "include/torch/csrc/api/include/torch/nn/options/*.h",
+                "include/torch/csrc/api/include/torch/nn/modules/*.h",
+                "include/torch/csrc/api/include/torch/nn/modules/container/*.h",
+                "include/torch/csrc/api/include/torch/nn/parallel/*.h",
+                "include/torch/csrc/api/include/torch/nn/utils/*.h",
+                "include/torch/csrc/api/include/torch/optim/*.h",
+                "include/torch/csrc/api/include/torch/serialize/*.h",
+                "include/torch/csrc/autograd/*.h",
+                "include/torch/csrc/autograd/functions/*.h",
+                "include/torch/csrc/autograd/generated/*.h",
+                "include/torch/csrc/autograd/utils/*.h",
+                "include/torch/csrc/cuda/*.h",
+                "include/torch/csrc/jit/*.h",
+                "include/torch/csrc/jit/generated/*.h",
+                "include/torch/csrc/jit/passes/*.h",
+                "include/torch/csrc/jit/passes/utils/*.h",
+                "include/torch/csrc/jit/runtime/*.h",
+                "include/torch/csrc/jit/ir/*.h",
+                "include/torch/csrc/jit/frontend/*.h",
+                "include/torch/csrc/jit/api/*.h",
+                "include/torch/csrc/jit/serialization/*.h",
+                "include/torch/csrc/jit/python/*.h",
+                "include/torch/csrc/jit/testing/*.h",
+                "include/torch/csrc/onnx/*.h",
+                "include/torch/csrc/utils/*.h",
+                "include/pybind11/*.h",
+                "include/pybind11/detail/*.h",
+                "include/TH/*.h*",
+                "include/TH/generic/*.h*",
+                "include/THC/*.cuh",
+                "include/THC/*.h*",
+                "include/THC/generic/*.h",
+                "include/THCUNN/*.cuh",
+                "include/THCUNN/generic/*.h",
+                "include/THH/*.cuh",
+                "include/THH/*.h*",
+                "include/THH/generic/*.h",
+                "share/cmake/ATen/*.cmake",
+                "share/cmake/Caffe2/*.cmake",
+                "share/cmake/Caffe2/public/*.cmake",
+                "share/cmake/Caffe2/Modules_CUDA_fix/*.cmake",
+                "share/cmake/Caffe2/Modules_CUDA_fix/upstream/*.cmake",
+                "share/cmake/Caffe2/Modules_CUDA_fix/upstream/FindCUDA/*.cmake",
+                "share/cmake/Gloo/*.cmake",
+                "share/cmake/Torch/*.cmake",
             ],
-            'caffe2': [
-                'python/serialized_test/data/operator_test/*.zip',
-            ],
+            "caffe2": ["python/serialized_test/data/operator_test/*.zip",],
         },
-        url='https://pytorch.org/',
-        download_url='https://github.com/pytorch/pytorch/tags',
-        author='PyTorch Team',
-        author_email='packages@pytorch.org',
-        python_requires='>=3.6.1',
+        url="https://pytorch.org/",
+        download_url="https://github.com/pytorch/pytorch/tags",
+        author="PyTorch Team",
+        author_email="packages@pytorch.org",
+        python_requires=">=3.6.1",
         # PyPI package information.
         classifiers=[
-            'Development Status :: 5 - Production/Stable',
-            'Intended Audience :: Developers',
-            'Intended Audience :: Education',
-            'Intended Audience :: Science/Research',
-            'License :: OSI Approved :: BSD License',
-            'Programming Language :: C++',
-            'Programming Language :: Python :: 3',
-            'Programming Language :: Python :: 3.6',
-            'Programming Language :: Python :: 3.7',
-            'Programming Language :: Python :: 3.8',
-            'Topic :: Scientific/Engineering',
-            'Topic :: Scientific/Engineering :: Mathematics',
-            'Topic :: Scientific/Engineering :: Artificial Intelligence',
-            'Topic :: Software Development',
-            'Topic :: Software Development :: Libraries',
-            'Topic :: Software Development :: Libraries :: Python Modules',
+            "Development Status :: 5 - Production/Stable",
+            "Intended Audience :: Developers",
+            "Intended Audience :: Education",
+            "Intended Audience :: Science/Research",
+            "License :: OSI Approved :: BSD License",
+            "Programming Language :: C++",
+            "Programming Language :: Python :: 3",
+            "Programming Language :: Python :: 3.6",
+            "Programming Language :: Python :: 3.7",
+            "Programming Language :: Python :: 3.8",
+            "Topic :: Scientific/Engineering",
+            "Topic :: Scientific/Engineering :: Mathematics",
+            "Topic :: Scientific/Engineering :: Artificial Intelligence",
+            "Topic :: Software Development",
+            "Topic :: Software Development :: Libraries",
+            "Topic :: Software Development :: Libraries :: Python Modules",
         ],
-        license='BSD-3',
-        keywords='pytorch machine learning',
+        license="BSD-3",
+        keywords="pytorch machine learning",
     )
     if EMIT_BUILD_WARNING:
         print_box(build_update_message)
