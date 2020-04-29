@@ -256,7 +256,8 @@ class TestOperators(TestCase):
 
     def test_batchnorm_training(self):
         x = torch.ones(2, 2, 2, 2, requires_grad=True)
-        self.assertONNX(nn.BatchNorm2d(2), x, training=torch.onnx.TrainingMode.TRAINING, keep_initializers_as_inputs=True)
+        self.assertONNX(nn.BatchNorm2d(2), x, training=torch.onnx.TrainingMode.TRAINING,
+                        keep_initializers_as_inputs=True)
 
     def test_conv(self):
         x = torch.ones(20, 16, 50, 40, requires_grad=True)
@@ -573,12 +574,12 @@ class TestOperators(TestCase):
     def test_upsample_nearest_scale(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
         self.assertONNX(lambda x: nn.functional.interpolate(x, scale_factor=2.,
-                        mode='nearest', recompute_scale_factor=False), x)
+                                                            mode='nearest', recompute_scale_factor=False), x)
 
     def test_upsample_nearest_scale_default_scale_factor(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
         self.assertONNX(lambda x: nn.functional.interpolate(x, scale_factor=2.,
-                        mode='nearest'), x)
+                                                            mode='nearest'), x)
 
     def test_upsample_nearest_size(self):
         x = torch.randn(1, 2, 3, 4, requires_grad=True)
@@ -683,7 +684,8 @@ class TestOperators(TestCase):
 
     def test_dropout_training_opset12(self):
         x = torch.randn(3, 4, requires_grad=True)
-        self.assertONNX(lambda x: torch.max(functional.dropout(x)), x, opset_version=12, training=torch.onnx.TrainingMode.TRAINING)
+        self.assertONNX(lambda x: torch.max(functional.dropout(x)), x,
+                        opset_version=12, training=torch.onnx.TrainingMode.TRAINING)
 
     def test_nonzero(self):
         x = torch.tensor([[[2., 2.], [1., 0.]], [[0., 0.], [1., 1.]]], requires_grad=True)
@@ -709,7 +711,8 @@ class TestOperators(TestCase):
         data = torch.tensor([[0., 0., 0.], [0., 0., 0.], [0., 0., 0.]])
         indices = torch.tensor([[1, 0], [0, 1], [0, 1]], dtype=torch.int64)
         values = torch.tensor([[1.0, 1.1], [2.0, 2.1], [3.0, 3.1]])
-        self.assertONNX(lambda data, index: data.scatter_add(1, indices, values), (data, (indices, values)), opset_version=11)
+        self.assertONNX(lambda data, index: data.scatter_add(1, indices, values),
+                        (data, (indices, values)), opset_version=11)
 
     def test_master_opset(self):
         x = torch.randn(2, 3).float()
@@ -909,6 +912,7 @@ class TestOperators(TestCase):
         x = torch.randn(3, 5, 2, 1)
         y = torch.empty(3, 2, 1, dtype=torch.long).random_(5)
         self.assertONNX(torch.nn.CrossEntropyLoss(), (x, y), opset_version=12)
+
 
 if __name__ == '__main__':
     no_onnx_dep_flag = '--no-onnx'

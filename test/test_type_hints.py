@@ -184,7 +184,8 @@ class TestTypeHints(TestCase):
                     example_path],
                     check=True)
             except subprocess.CalledProcessError as e:
-                raise AssertionError("mypy failed for example {}.  Look above this error for mypy's output.".format(example))
+                raise AssertionError(
+                    "mypy failed for example {}.  Look above this error for mypy's output.".format(example))
 
     @unittest.skipIf(not HAVE_MYPY, "need mypy")
     def test_run_mypy(self):
@@ -216,6 +217,7 @@ class TestTypeHints(TestCase):
             raise AssertionError("mypy failed. Look above this error for mypy's output.")
         finally:
             os.chdir(cwd)
+
 
 if __name__ == '__main__':
     run_tests()

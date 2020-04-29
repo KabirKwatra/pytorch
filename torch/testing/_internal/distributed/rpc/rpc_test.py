@@ -158,6 +158,7 @@ def build_complex_tensors():
     e = {a: d}
     return [a, b, c, d, e]
 
+
 def non_cont_test(t_view, t_cont):
     if t_view.is_contiguous():
         raise Exception('t_view is contiguous!')
@@ -166,6 +167,7 @@ def non_cont_test(t_view, t_cont):
     if not torch.equal(t_view, t_cont):
         raise Exception('t_view is not equal to t_cont!')
     return t_view
+
 
 def my_function(a, b, c):
     return a + b + c
@@ -201,10 +203,12 @@ def delayed_add(a, b, seconds=0.05):
 def no_result():
     print("do nothing")
 
+
 def raise_or_inc(value):
     if value.numel() == 2:
         raise ValueError("Expected error")
     return value + 1
+
 
 def nested_rpc(dst):
     return rpc.rpc_sync(dst, torch.add, args=(torch.ones(2, 2), 1))
@@ -262,6 +266,7 @@ def heavy_rpc(tensor):
         tensor /= i + 1
     return 0
 
+
 @torch.jit.script
 def heavy_rpc_torchscript(tensor):
     for i in range(1, 100):
@@ -269,9 +274,11 @@ def heavy_rpc_torchscript(tensor):
         tensor /= i + 1
     return 0
 
+
 @torch.jit.script
 def my_script_func(tensor):
     return torch.add(tensor, tensor)
+
 
 def raise_func():
     raise ValueError("Expected error")
@@ -1728,7 +1735,6 @@ class RpcTest(RpcAgentTestFixture):
             fut = rref._get_future()
             self.assertIsInstance(fut, torch.distributed.rpc.Future)
 
-
     @dist_init
     def test_rref_context_debug_info(self):
         # This test checks local states that are modified by remote workers.
@@ -2140,7 +2146,6 @@ class RpcTest(RpcAgentTestFixture):
         rpc.rpc_sync(dst_worker, my_sleep_func, args=(1,), timeout=0)
         # Reset for clean shutdown
         rpc._set_rpc_timeout(rpc.constants.DEFAULT_RPC_TIMEOUT_SEC)
-
 
     def test_requires_process_group_agent_decorator(self):
         @requires_process_group_agent("test_func did not run")

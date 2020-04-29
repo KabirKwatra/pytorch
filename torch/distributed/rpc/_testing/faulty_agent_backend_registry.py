@@ -7,6 +7,7 @@ from torch.distributed.rpc import constants as rpc_constants
 
 from datetime import timedelta
 
+
 def _faulty_process_group_construct_rpc_backend_options_handler(
     rpc_timeout,
     init_method,
@@ -24,6 +25,7 @@ def _faulty_process_group_construct_rpc_backend_options_handler(
         messages_to_fail=messages_to_fail,
         num_fail_sends=num_fail_sends,
     )
+
 
 def _faulty_process_group_init_backend_handler(
     store, name, rank, world_size, rpc_backend_options
@@ -71,6 +73,7 @@ def _faulty_process_group_init_backend_handler(
     except Exception as ex:
         dist.destroy_process_group()
         raise ex
+
 
 rpc.backend_registry.register_backend(
     "FAULTY_PROCESS_GROUP",

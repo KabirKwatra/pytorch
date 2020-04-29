@@ -15,7 +15,7 @@ import copy
 from torch.nn.utils import rnn as rnn_utils
 from model_defs.lstm_flattening_result import LstmFlatteningResult
 from model_defs.rnn_model_with_packed_sequence import RnnModelWithPackedSequence
-from test_pytorch_common import (skipIfUnsupportedMinOpsetVersion, enableScriptTest, 
+from test_pytorch_common import (skipIfUnsupportedMinOpsetVersion, enableScriptTest,
                                  skipIfUnsupportedOpsetVersion, skipIfNoLapack)
 from test_pytorch_common import BATCH_SIZE
 from test_pytorch_common import RNN_BATCH_SIZE, RNN_SEQUENCE_LENGTH, RNN_INPUT_SIZE, RNN_HIDDEN_SIZE
@@ -164,7 +164,6 @@ class TestONNXRuntime(unittest.TestCase):
                 ort_sess = onnxruntime.InferenceSession(model_file_name, sess_options=ort_sess_opt)
                 input_copy = copy.deepcopy(input)
                 ort_test_with_input(ort_sess, input_copy, output, rtol, atol)
-
 
     @skipIfUnsupportedMinOpsetVersion(9)  # Because external data format was released with Opset 9.
     def test_embedding_model_with_external_data(self):
@@ -495,7 +494,6 @@ class TestONNXRuntime(unittest.TestCase):
 
         x = torch.arange(16).view(4, 4).float()
         self.run_test(ClampMaxModel(), x)
-
 
         class ClampMinModel(torch.jit.ScriptModule):
             @torch.jit.script_method
@@ -833,7 +831,7 @@ class TestONNXRuntime(unittest.TestCase):
         x = torch.rand(5, 5, 5)
         self.run_test(DynamicSliceExportMod(), x,
                       dynamic_axes={'input_1': [0, 1, 2],
-                      'output_1': [0, 1, 2]})
+                                    'output_1': [0, 1, 2]})
 
     @skipIfUnsupportedMinOpsetVersion(9)
     @unittest.skip("relies on not constant folding size calls, but other tests rely on constant folding")
@@ -901,8 +899,10 @@ class TestONNXRuntime(unittest.TestCase):
         self._test_index_generic(
             lambda input: input[:, torch.tensor([[0, 2], [1, 1]]), :, torch.tensor([2, 1]), torch.tensor([0, 3])])
         self._test_index_generic(lambda input: input[..., torch.tensor([2, 1]), torch.tensor([0, 3])])
-        self._test_index_generic(lambda input: input[:, torch.tensor([0, 2]), None, 2:4, torch.tensor([[1, 3], [4, 0]])])
-        self._test_index_generic(lambda input: input[:, torch.tensor([0, 2]), torch.tensor([1]), 2:4, torch.tensor([[1], [4]])])
+        self._test_index_generic(lambda input: input[:, torch.tensor(
+            [0, 2]), None, 2:4, torch.tensor([[1, 3], [4, 0]])])
+        self._test_index_generic(lambda input: input[:, torch.tensor(
+            [0, 2]), torch.tensor([1]), 2:4, torch.tensor([[1], [4]])])
 
     def test_tensor_index_advanced_indexing_consecutive(self):
         self._test_index_generic(lambda input: input[:, torch.tensor([0, 2]), torch.tensor([[1, 3], [4, 0]]), None])
@@ -1206,7 +1206,8 @@ class TestONNXRuntime(unittest.TestCase):
 
     def _interpolate_script(self, x, mode, use_size, is_upsample, align_corners=False):
         class MyModel(torch.jit.ScriptModule):
-            __constants__ = ['mode', 'use_size', 'is_upsample', 'size', 'scale', 'size_array', 'scale_array', 'align_corners']
+            __constants__ = ['mode', 'use_size', 'is_upsample', 'size',
+                             'scale', 'size_array', 'scale_array', 'align_corners']
 
             def __init__(self, mode, use_size, is_upsample, align_corners):
                 super(MyModel, self).__init__()
@@ -1738,7 +1739,7 @@ class TestONNXRuntime(unittest.TestCase):
         input = torch.randn(RNN_SEQUENCE_LENGTH, 1, RNN_INPUT_SIZE)
         # verify with different input of different batch size
         input2 = torch.randn(RNN_SEQUENCE_LENGTH, BATCH_SIZE, RNN_INPUT_SIZE)
-        self.run_test(model, input, dynamic_axes={'input' : {0 : 'seq', 1 : 'batch'}},
+        self.run_test(model, input, dynamic_axes={'input': {0: 'seq', 1: 'batch'}},
                       test_with_inputs=[input2])
 
     def test_lstm_constant_folding(self):
@@ -3113,7 +3114,7 @@ class TestONNXRuntime(unittest.TestCase):
                 return x + shape
 
         x = torch.randn(2, 5)
-        self.run_test(ShapeModule(), (x,), rtol=1e-3, atol=1e-5) 
+        self.run_test(ShapeModule(), (x,), rtol=1e-3, atol=1e-5)
 
     def test_onnx_proto_checker(self):
         class Model(torch.nn.Module):
@@ -3390,7 +3391,7 @@ TestONNXRuntime_opset12 = type(str("TestONNXRuntime_opset12"),
 TestONNXRuntime_opset9_IRv4 = type(str("TestONNXRuntime_opset9_IRv4"),
                                    (unittest.TestCase,),
                                    dict(TestONNXRuntime.__dict__,
-                                   keep_initializers_as_inputs=False))
+                                        keep_initializers_as_inputs=False))
 
 
 # opset 10 tests, with keep_initializers_as_inputs=False for
@@ -3398,7 +3399,7 @@ TestONNXRuntime_opset9_IRv4 = type(str("TestONNXRuntime_opset9_IRv4"),
 TestONNXRuntime_opset10_IRv4 = type(str("TestONNXRuntime_opset10_IRv4"),
                                     (unittest.TestCase,),
                                     dict(TestONNXRuntime.__dict__, opset_version=10,
-                                    keep_initializers_as_inputs=False))
+                                         keep_initializers_as_inputs=False))
 
 
 # opset 11 tests, with keep_initializers_as_inputs=False for
@@ -3406,14 +3407,14 @@ TestONNXRuntime_opset10_IRv4 = type(str("TestONNXRuntime_opset10_IRv4"),
 TestONNXRuntime_opset11_IRv4 = type(str("TestONNXRuntime_opset11_IRv4"),
                                     (unittest.TestCase,),
                                     dict(TestONNXRuntime.__dict__, opset_version=11,
-                                    keep_initializers_as_inputs=False))
+                                         keep_initializers_as_inputs=False))
 
 # opset 12 tests, with keep_initializers_as_inputs=False for
 # IR version 4 style export.
 TestONNXRuntime_opset12_IRv4 = type(str("TestONNXRuntime_opset12_IRv4"),
                                     (unittest.TestCase,),
                                     dict(TestONNXRuntime.__dict__, opset_version=12,
-                                    keep_initializers_as_inputs=False))
+                                         keep_initializers_as_inputs=False))
 
 
 if __name__ == '__main__':

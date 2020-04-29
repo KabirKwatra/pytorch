@@ -1,3 +1,5 @@
+import copy
+import io
 import unittest
 import math
 import torch
@@ -46,8 +48,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 import torch.testing._internal.hypothesis_utils as hu
 hu.assert_deadline_disabled()
-import io
-import copy
+
 
 @unittest.skipUnless('fbgemm' in torch.backends.quantized.supported_engines,
                      " Quantized operations require FBGEMM. FBGEMM is only optimized for CPUs"
@@ -163,7 +164,6 @@ class TestPostTrainingStatic(QuantizationTestCase):
                          self.calib_data)
         checkQuantized(model)
 
-
     def test_nested2(self):
         model = AnnotatedSubNestedModel()
         model = prepare(model)
@@ -266,7 +266,6 @@ class TestPostTrainingStatic(QuantizationTestCase):
         # test one line API
         model = quantize(AnnotatedSkipQuantModel(), test_only_eval_fn, self.calib_data)
         checkQuantized(model)
-
 
     def test_manual(self):
         r"""User inserts QuantStub and DeQuantStub in model code
@@ -749,7 +748,6 @@ class TestPostTrainingDynamic(QuantizationTestCase):
                             for loaded_val, ref_val in zip(out_loaded, ref_out):
                                 torch.testing.assert_allclose(loaded_val, ref_val)
 
-
                             class ScriptWrapperPacked(torch.nn.Module):
                                 def __init__(self, cell):
                                     super(ScriptWrapperPacked, self).__init__()
@@ -784,7 +782,6 @@ class TestPostTrainingDynamic(QuantizationTestCase):
                                     torch.testing.assert_allclose(packed_val, ref_val)
                                 else:
                                     self.assertEqual(packed_val, ref_val)
-
 
     def test_default_quantized_lstm(self):
         for qengine in ['fbgemm', 'qnnpack']:
@@ -955,6 +952,7 @@ class TestQuantizationAwareTraining(QuantizationTestCase):
             model.load_state_dict(quant_state_dict)
             out = model(x)
             self.assertEqual(ref, out)
+
 
 @unittest.skipUnless(
     'fbgemm' in torch.backends.quantized.supported_engines,
@@ -1211,6 +1209,7 @@ class TestFunctionalModule(QuantizationTestCase):
         checkQuantized(model)
         self.checkScriptable(model, [(xq, xq)], check_save_load=True)
 
+
 @unittest.skipUnless('fbgemm' in torch.backends.quantized.supported_engines,
                      " Quantized operations require FBGEMM. FBGEMM is only optimized for CPUs"
                      " with instruction set support avx2 or newer.")
@@ -1264,18 +1263,17 @@ class TestFusion(QuantizationTestCase):
 
         model = ModelForFusion(default_qat_qconfig).train()
         model = fuse_modules(model, [['conv1', 'bn1', 'relu1'],
-                             ['sub1.conv', 'sub1.bn']])
+                                     ['sub1.conv', 'sub1.bn']])
         model = quantize_qat(model, test_only_train_fn, self.img_data)
         checkQuantized(model)
-
 
     def test_fuse_module_eval(self):
         model = ModelForFusion(default_qconfig)
         model.eval()
-        model = fuse_modules(model, [['conv1', 'bn1', 'relu1'] ,
-                             ['conv2', 'relu2'],
-                             ['bn2', 'relu3'],
-                             ['sub1.conv', 'sub1.bn']])
+        model = fuse_modules(model, [['conv1', 'bn1', 'relu1'],
+                                     ['conv2', 'relu2'],
+                                     ['bn2', 'relu3'],
+                                     ['sub1.conv', 'sub1.bn']])
         self.assertEqual(type(model.conv1), nni.ConvReLU2d,
                          "Fused Conv + BN + Relu first layer (BN is folded)")
         self.assertEqual(type(model.conv1[0]), nn.Conv2d,
@@ -1327,16 +1325,16 @@ class TestFusion(QuantizationTestCase):
 
         model = ModelForFusion(default_qconfig).eval()
         model = fuse_modules(model, [['conv1', 'bn1', 'relu1'],
-                             ['conv2', 'relu2'],
-                             ['bn2', 'relu3'],
-                             ['sub1.conv', 'sub1.bn']])
+                                     ['conv2', 'relu2'],
+                                     ['bn2', 'relu3'],
+                                     ['sub1.conv', 'sub1.bn']])
         model = quantize(model, test_only_eval_fn, self.img_data)
         checkQuantized(model)
 
     def test_fusion_sequential_model_train(self):
         model = ModelWithSequentialFusion().train()
         model.to(torch.float)
-        fuse_modules(model, [['conv1', 'relu1'] ,
+        fuse_modules(model, [['conv1', 'relu1'],
                              ['features.0.0', 'features.0.1', 'features.0.2'],
                              ['features.1.0', 'features.1.1', 'features.1.2'],
                              ['features.2.0', 'features.2.1', 'features.2.2'],
@@ -1363,7 +1361,6 @@ class TestFusion(QuantizationTestCase):
         self.checkObservers(model)
         model(self.img_data[0][0])
 
-
         def checkQAT(model):
             self.assertEqual(type(model.conv1), nniqat.ConvReLU2d)
             self.assertEqual(type(model.relu1), nn.Identity)
@@ -1386,7 +1383,7 @@ class TestFusion(QuantizationTestCase):
     def test_fusion_sequential_model_eval(self):
         model = ModelWithSequentialFusion().eval()
         model.to(torch.float)
-        fuse_modules(model, [['conv1', 'relu1'] ,
+        fuse_modules(model, [['conv1', 'relu1'],
                              ['features.0.0', 'features.0.1', 'features.0.2'],
                              ['features.1.0', 'features.1.1', 'features.1.2'],
                              ['features.2.0', 'features.2.1', 'features.2.2'],
@@ -1454,6 +1451,7 @@ class TestFusion(QuantizationTestCase):
 
         checkQAT(model)
 
+
 class TestObserver(QuantizationTestCase):
     @given(qdtype=st.sampled_from((torch.qint8, torch.quint8)),
            qscheme=st.sampled_from((torch.per_tensor_affine, torch.per_tensor_symmetric)),
@@ -1514,7 +1512,6 @@ class TestObserver(QuantizationTestCase):
             self.assertEqual(myobs.min_val, loaded_obs.min_val)
             self.assertEqual(myobs.max_val, loaded_obs.max_val)
             self.assertEqual(myobs.calculate_qparams(), loaded_obs.calculate_qparams())
-
 
     @given(X=hu.tensor(shapes=hu.array_shapes(min_dims=2, max_dims=4,
                                               min_side=1, max_side=10),
@@ -1644,7 +1641,8 @@ class TestObserver(QuantizationTestCase):
             loaded_dict = torch.load(b)
             for key in state_dict:
                 self.assertEqual(state_dict[key], loaded_dict[key])
-            loaded_obs = PerChannelMinMaxObserver(reduce_range=reduce_range, ch_axis=ch_axis, dtype=qdtype, qscheme=qscheme)
+            loaded_obs = PerChannelMinMaxObserver(
+                reduce_range=reduce_range, ch_axis=ch_axis, dtype=qdtype, qscheme=qscheme)
             loaded_obs.load_state_dict(loaded_dict)
             loaded_qparams = loaded_obs.calculate_qparams()
             self.assertEqual(myobs.min_vals, loaded_obs.min_vals)
@@ -1703,8 +1701,10 @@ class TestRecordHistogramObserver(QuantizationTestCase):
 
         self.assertTrue('fc1.module.activation_post_process' in observer_dict.keys(),
                         'observer is not recorded in the dict')
-        self.assertEqual(len(observer_dict['fc1.module.activation_post_process'].get_tensor_value()), 2 * len(self.calib_data))
-        self.assertEqual(observer_dict['fc1.module.activation_post_process'].get_tensor_value()[0], model(self.calib_data[0][0]))
+        self.assertEqual(
+            len(observer_dict['fc1.module.activation_post_process'].get_tensor_value()), 2 * len(self.calib_data))
+        self.assertEqual(observer_dict['fc1.module.activation_post_process'].get_tensor_value()[
+                         0], model(self.calib_data[0][0]))
 
     @given(qdtype=st.sampled_from((torch.qint8, torch.quint8)),
            qscheme=st.sampled_from((torch.per_tensor_affine, torch.per_tensor_symmetric)))
@@ -1783,7 +1783,6 @@ class TestRecordHistogramObserver(QuantizationTestCase):
         self.assertEqual(myobs.min_val, 0)
         qparams = myobs.calculate_qparams()
         self.assertEqual(qparams[1].item(), 0)
-
 
 
 if __name__ == '__main__':

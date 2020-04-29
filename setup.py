@@ -164,31 +164,30 @@
 
 from __future__ import print_function
 
+from tools.setup_helpers.cmake import CMake
+from tools.setup_helpers.env import (IS_WINDOWS, IS_DARWIN, IS_LINUX,
+                                     check_env_flag, build_type)
+from tools.build_pytorch_libs import build_caffe2
+import importlib
+import glob
+import json
+import os
+import shutil
+import subprocess
+import filecmp
+import distutils.sysconfig
+import distutils.command.clean
+import setuptools.command.install
+import setuptools.command.build_ext
+from distutils.errors import DistutilsArgError
+from distutils.core import Distribution
+from distutils import core
+from collections import defaultdict
+from setuptools import setup, Extension, distutils, find_packages
 import sys
 if sys.version_info < (3,):
     raise Exception("Python 2 has reached end-of-life and is no longer supported by PyTorch.")
 
-from setuptools import setup, Extension, distutils, find_packages
-from collections import defaultdict
-from distutils import core
-from distutils.core import Distribution
-from distutils.errors import DistutilsArgError
-import setuptools.command.build_ext
-import setuptools.command.install
-import distutils.command.clean
-import distutils.sysconfig
-import filecmp
-import subprocess
-import shutil
-import os
-import json
-import glob
-import importlib
-
-from tools.build_pytorch_libs import build_caffe2
-from tools.setup_helpers.env import (IS_WINDOWS, IS_DARWIN, IS_LINUX,
-                                     check_env_flag, build_type)
-from tools.setup_helpers.cmake import CMake
 
 try:
     FileNotFoundError
@@ -288,6 +287,8 @@ report("Building wheel {}-{}".format(package_name, version))
 cmake = CMake()
 
 # all the work we need to do _before_ setup runs
+
+
 def build_deps():
     report('-- Building version ' + version)
 
@@ -357,6 +358,7 @@ def build_deps():
 ################################################################################
 # Building dependent libraries
 ################################################################################
+
 
 # the list of runtime dependencies required by this built package
 install_requires = ['future']
@@ -548,6 +550,7 @@ class clean(distutils.command.clean.clean):
         # It's an old-style class in Python 2.7...
         distutils.command.clean.clean.run(self)
 
+
 def configure_extension_build():
     r"""Configures extension build options according to system environment and user's choice.
 
@@ -636,7 +639,6 @@ def configure_extension_build():
             extra_compile_args += ['-g']
             extra_link_args += ['-g']
 
-
     def make_relative_rpath(path):
         if IS_DARWIN:
             return '-Wl,-rpath,@loader_path/' + path
@@ -702,6 +704,7 @@ def configure_extension_build():
 
     return extensions, cmdclass, packages, entry_points, extra_install_requires
 
+
 # post run, warnings, printed at the end to make them more visible
 build_update_message = """
     It is no longer necessary to use the 'build' or 'rebuild' targets
@@ -722,6 +725,7 @@ def print_box(msg):
     for l in lines:
         print('|{}{}|'.format(l, ' ' * (size - len(l))))
     print('-' * (size + 2))
+
 
 if __name__ == '__main__':
     # Parse the command line and check the arguments

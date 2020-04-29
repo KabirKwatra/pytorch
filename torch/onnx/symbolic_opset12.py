@@ -14,6 +14,7 @@ black_listed_operators = [
     "ArgMin", "ArgMax"
 ]
 
+
 @parse_args('s', 'v')
 def einsum(g, equation, tensor_list):
     tensors = sym_help._unpack_list(tensor_list)
@@ -51,9 +52,11 @@ def nll_loss(g, self, target, weight, reduction, ignore_index):
     if weight.node().mustBeNone():
         nllloss = g.op("NegativeLogLikelihoodLoss", self, target, reduction_s=reduction, ignore_index_i=ignore_index)
     else:
-        nllloss = g.op("NegativeLogLikelihoodLoss", self, target, weight, reduction_s=reduction, ignore_index_i=ignore_index)
+        nllloss = g.op("NegativeLogLikelihoodLoss", self, target, weight,
+                       reduction_s=reduction, ignore_index_i=ignore_index)
 
     return nllloss
+
 
 def nll_loss2d(g, self, target, weight, reduction, ignore_index):
     return nll_loss(g, self, target, weight, reduction, ignore_index)

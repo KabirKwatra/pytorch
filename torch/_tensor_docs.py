@@ -8,6 +8,7 @@ from ._torch_docs import parse_kwargs
 def add_docstr_all(method, docstr):
     add_docstr(getattr(torch._C._TensorBase, method), docstr)
 
+
 common_args = parse_kwargs("""
     memory_format (:class:`torch.memory_format`, optional): the desired memory format of
         returned Tensor. Default: ``torch.preserve_format``.
