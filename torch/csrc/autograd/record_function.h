@@ -1,13 +1,14 @@
 #pragma once
 
-#include <ATen/core/ivalue.h>
 #include <ATen/ThreadLocalState.h>
+#include <ATen/core/ivalue.h>
 #include <c10/util/SmallVector.h>
 #include <torch/csrc/WindowsTorchApiMacro.h>
 
 #include <functional>
 
-namespace torch { namespace autograd {
+namespace torch {
+namespace autograd {
 
 struct Node;
 
@@ -16,8 +17,8 @@ namespace profiler {
 // Kind of record function scope;
 // workaround for the older GCC versions:
 #ifndef _MSC_VER
-#  pragma GCC diagnostic push
-#  pragma GCC diagnostic ignored "-Wattributes"
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wattributes"
 #endif
 enum class TORCH_API RecordScope : uint8_t {
   // c10/ATen ops, autograd nodes
@@ -29,7 +30,7 @@ enum class TORCH_API RecordScope : uint8_t {
   NUM_SCOPES, // must be the last in the list
 };
 #ifndef _MSC_VER
-#  pragma GCC diagnostic pop
+#pragma GCC diagnostic pop
 #endif
 
 } // namespace profiler
@@ -53,10 +54,10 @@ namespace profiler {
 struct TORCH_API StringView {
   StringView() : StringView(nullptr) {}
   explicit StringView(const char* str_ptr)
-    : owned_str_ptr_(nullptr), str_ptr_(str_ptr) {}
+      : owned_str_ptr_(nullptr), str_ptr_(str_ptr) {}
   explicit StringView(std::string str)
-    : owned_str_ptr_(std::make_shared<std::string>(std::move(str))),
-      str_ptr_(owned_str_ptr_->c_str()) {}
+      : owned_str_ptr_(std::make_shared<std::string>(std::move(str))),
+        str_ptr_(owned_str_ptr_->c_str()) {}
 
   inline const char* str() const {
     return str_ptr_;
@@ -86,8 +87,7 @@ constexpr std::size_t kSoftLimitCallbacks = 32;
 struct TORCH_API RecordFunction {
   // Default constructor is used with before function called afterwards:
   //  scope - record scope that this function tracks
-  RecordFunction(
-      RecordScope scope = RecordScope::FUNCTION);
+  RecordFunction(RecordScope scope = RecordScope::FUNCTION);
 
   // Destructor calls end callbacks
   virtual ~RecordFunction();
@@ -142,7 +142,7 @@ struct TORCH_API RecordFunction {
   void _before(std::string name, int64_t sequence_nr = -1);
   void _before(Node* fn, int64_t sequence_nr = -1);
 
-  template<typename F>
+  template <typename F>
   void _before(
       F fn,
       c10::ArrayRef<c10::IValue> args,
@@ -151,7 +151,7 @@ struct TORCH_API RecordFunction {
     _before(fn, current_sequence_nr);
   }
 
-  template<typename F>
+  template <typename F>
   void _before(
       F fn,
       std::vector<c10::IValue>&& args,
@@ -220,25 +220,6 @@ struct TORCH_API RecordFunction {
   uint64_t callbacks_version_ = 0;
 };
 
-class TORCH_API RecordFunctionGuard {
- public:
-  explicit RecordFunctionGuard(bool is_enabled)
-      : prev_value_(at::_tls_is_record_function_enabled()) {
-    at::_tls_set_record_function_enabled(is_enabled);
-  }
-  virtual ~RecordFunctionGuard() {
-    at::_tls_set_record_function_enabled(prev_value_);
-  }
- private:
-  bool prev_value_ = false;
-};
-
-class TORCH_API DisableRecordFunctionGuard : public RecordFunctionGuard {
- public:
-  DisableRecordFunctionGuard() : RecordFunctionGuard(false) {}
-  virtual ~DisableRecordFunctionGuard() {}
-};
-
 // Returns whether there're callbacks registered with pushCallback
 TORCH_API bool hasCallbacks();
 
@@ -256,38 +237,42 @@ TORCH_API void TEST_unsetGlobalSamplingProbability();
 
 // Using macro to minimize inputs copies,
 // optional argument - function's seq_no
-#define RECORD_FUNCTION_WITH_SCOPE(scope, fn, inputs, ...) \
-  torch::autograd::profiler::RecordFunction guard(scope); \
-  if (guard._active()) { \
-    guard._setCurrent(); \
+#define RECORD_FUNCTION_WITH_SCOPE(scope, fn, inputs, ...)           \
+  torch::autograd::profiler::RecordFunction guard(scope);            \
+  if (guard._active()) {                                             \
+    guard._setCurrent();                                             \
     if (torch::autograd::profiler::RecordFunction::_needsInputs()) { \
-      guard._before(fn, inputs, ##__VA_ARGS__); \
-    } else { \
-      guard._before(fn, ##__VA_ARGS__); \
-    } \
+      guard._before(fn, inputs, ##__VA_ARGS__);                      \
+    } else {                                                         \
+      guard._before(fn, ##__VA_ARGS__);                              \
+    }                                                                \
   }
 
-#define RECORD_FUNCTION(fn, inputs, ...) \
-  RECORD_FUNCTION_WITH_SCOPE( \
-    torch::autograd::profiler::RecordScope::FUNCTION, \
-    fn, inputs, ##__VA_ARGS__)
+#define RECORD_FUNCTION(fn, inputs, ...)                \
+  RECORD_FUNCTION_WITH_SCOPE(                           \
+      torch::autograd::profiler::RecordScope::FUNCTION, \
+      fn,                                               \
+      inputs,                                           \
+      ##__VA_ARGS__)
 
-#define RECORD_TORCHSCRIPT_FUNCTION(mn, inputs) \
-  RECORD_FUNCTION_WITH_SCOPE( \
-    torch::autograd::profiler::RecordScope::TORCHSCRIPT_FUNCTION, mn, inputs)
+#define RECORD_TORCHSCRIPT_FUNCTION(mn, inputs)                     \
+  RECORD_FUNCTION_WITH_SCOPE(                                       \
+      torch::autograd::profiler::RecordScope::TORCHSCRIPT_FUNCTION, \
+      mn,                                                           \
+      inputs)
 
 // Custom user scopes in C++; similar to Python's 'with record_function("..."):'
 #define RECORD_USER_SCOPE(fn) \
   RECORD_FUNCTION_WITH_SCOPE( \
-    torch::autograd::profiler::RecordScope::USER_SCOPE, fn, {})
+      torch::autograd::profiler::RecordScope::USER_SCOPE, fn, {})
 
 /**
  * pushCallback adds a pair of callbacks to run with RecordFunction:
  *  start, end - the callbacks to run when entering and exiting the scope;
  *    if start callback returns false, end callback won't be executed;
- *  needs_inputs - whether the callbacks need the inputs passed from the observed
- *    function/range; NOTE: passing the inputs incurs an additional overhead;
- *  sampling_prob - whether the callbacks are sampled and the sampling
+ *  needs_inputs - whether the callbacks need the inputs passed from the
+ * observed function/range; NOTE: passing the inputs incurs an additional
+ * overhead; sampling_prob - whether the callbacks are sampled and the sampling
  *    probability;
  *  scopes - types of scopes to execute the callbacks on (see RecordScope);
  *    passing empty set means the callbacks will be executed for all possible
@@ -312,5 +297,33 @@ TORCH_API void pushCallback(
  */
 TORCH_API void popCallback();
 
+// Enable observers thread locally
+TORCH_API void enableObservers(bool enable = true);
+
+// Returns whether observers are enabled (thread locally)
+TORCH_API bool observersEnabled();
+
+class TORCH_API RecordFunctionGuard {
+ public:
+  explicit RecordFunctionGuard(bool is_enabled = true)
+      : prev_value_(observersEnabled()) {
+    enableObservers(is_enabled);
+  }
+
+  virtual ~RecordFunctionGuard() {
+    enableObservers(prev_value_);
+  }
+
+ private:
+  bool prev_value_ = false;
+};
+
+class TORCH_API DisableRecordFunctionGuard : public RecordFunctionGuard {
+ public:
+  DisableRecordFunctionGuard() : RecordFunctionGuard(false) {}
+  virtual ~DisableRecordFunctionGuard() {}
+};
+
 } // namespace profiler
-}} // namespace torch::autograd
+} // namespace autograd
+} // namespace torch

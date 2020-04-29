@@ -3,25 +3,31 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import unittest
-import onnxruntime  # noqa
-import torch
-
-import numpy as np
+import copy
 import io
 import itertools
-import copy
+import unittest
 
-from torch.nn.utils import rnn as rnn_utils
-from model_defs.lstm_flattening_result import LstmFlatteningResult
-from model_defs.rnn_model_with_packed_sequence import RnnModelWithPackedSequence
-from test_pytorch_common import (skipIfUnsupportedMinOpsetVersion, enableScriptTest,
-                                 skipIfNoLapack)
-from test_pytorch_common import BATCH_SIZE
-from test_pytorch_common import RNN_BATCH_SIZE, RNN_SEQUENCE_LENGTH, RNN_INPUT_SIZE, RNN_HIDDEN_SIZE
 import model_defs.word_language_model as word_language_model
-import torchvision
+import numpy as np
 import onnx
+import onnxruntime  # noqa
+import torchvision
+from model_defs.lstm_flattening_result import LstmFlatteningResult
+from model_defs.rnn_model_with_packed_sequence import \
+    RnnModelWithPackedSequence
+from test_pytorch_common import BATCH_SIZE
+from test_pytorch_common import enableScriptTest
+from test_pytorch_common import RNN_BATCH_SIZE
+from test_pytorch_common import RNN_HIDDEN_SIZE
+from test_pytorch_common import RNN_INPUT_SIZE
+from test_pytorch_common import RNN_SEQUENCE_LENGTH
+from test_pytorch_common import skipIfNoLapack
+from test_pytorch_common import skipIfUnsupportedMinOpsetVersion
+from test_pytorch_common import skipIfUnsupportedOpsetVersion
+
+import torch
+from torch.nn.utils import rnn as rnn_utils
 
 
 def ort_test_with_input(ort_sess, input, output, rtol, atol):
@@ -37,22 +43,37 @@ def ort_test_with_input(ort_sess, input, output, rtol, atol):
     inputs = list(map(to_numpy, input))
     outputs = list(map(to_numpy, output))
 
-    ort_inputs = dict((ort_sess.get_inputs()[i].name, input) for i, input in enumerate(inputs))
+    ort_inputs = dict((ort_sess.get_inputs()[i].name, input)
+                      for i, input in enumerate(inputs))
     ort_outs = ort_sess.run(None, ort_inputs)
 
     # compare onnxruntime and PyTorch results
     assert len(outputs) == len(ort_outs), "number of outputs differ"
 
     # compare onnxruntime and PyTorch results
-    [np.testing.assert_allclose(out, ort_out, rtol=rtol, atol=atol) for out, ort_out in zip(outputs, ort_outs)]
+    [
+        np.testing.assert_allclose(out, ort_out, rtol=rtol, atol=atol)
+        for out, ort_out in zip(outputs, ort_outs)
+    ]
 
 
-def run_model_test(self, model, batch_size=2, state_dict=None,
-                   input=None, use_gpu=True, rtol=0.001, atol=1e-7,
-                   example_outputs=None, do_constant_folding=True,
-                   dynamic_axes=None, test_with_inputs=None,
-                   input_names=None, output_names=None,
-                   fixed_batch_size=False):
+def run_model_test(
+        self,
+        model,
+        batch_size=2,
+        state_dict=None,
+        input=None,
+        use_gpu=True,
+        rtol=0.001,
+        atol=1e-7,
+        example_outputs=None,
+        do_constant_folding=True,
+        dynamic_axes=None,
+        test_with_inputs=None,
+        input_names=None,
+        output_names=None,
+        fixed_batch_size=False,
+):
     model.eval()
 
     if input is None:
@@ -60,25 +81,30 @@ def run_model_test(self, model, batch_size=2, state_dict=None,
 
     with torch.no_grad():
         if isinstance(input, torch.Tensor):
-            input = (input,)
+            input = (input, )
         # In-place operators will update input tensor data as well.
         # Thus inputs are replicated before every forward call.
         input_copy = copy.deepcopy(input)
         output = model(*input_copy)
         if isinstance(output, torch.Tensor):
-            output = (output,)
+            output = (output, )
 
         # export the model to ONNX
         f = io.BytesIO()
         input_copy = copy.deepcopy(input)
-        torch.onnx._export(model, input_copy, f,
-                           opset_version=self.opset_version,
-                           example_outputs=output,
-                           do_constant_folding=do_constant_folding,
-                           keep_initializers_as_inputs=self.keep_initializers_as_inputs,
-                           dynamic_axes=dynamic_axes,
-                           input_names=input_names, output_names=output_names,
-                           fixed_batch_size=fixed_batch_size)
+        torch.onnx._export(
+            model,
+            input_copy,
+            f,
+            opset_version=self.opset_version,
+            example_outputs=output,
+            do_constant_folding=do_constant_folding,
+            keep_initializers_as_inputs=self.keep_initializers_as_inputs,
+            dynamic_axes=dynamic_axes,
+            input_names=input_names,
+            output_names=output_names,
+            fixed_batch_size=fixed_batch_size,
+        )
 
         # compute onnxruntime output prediction
         ort_sess = onnxruntime.InferenceSession(f.getvalue())
@@ -90,16 +116,17 @@ def run_model_test(self, model, batch_size=2, state_dict=None,
         if test_with_inputs is not None:
             for test_input in test_with_inputs:
                 if isinstance(test_input, torch.Tensor):
-                    test_input = (test_input,)
+                    test_input = (test_input, )
                 test_input_copy = copy.deepcopy(test_input)
                 output = model(*test_input_copy)
                 if isinstance(output, torch.Tensor):
-                    output = (output,)
+                    output = (output, )
                 ort_test_with_input(ort_sess, test_input, output, rtol, atol)
 
 
 class TestONNXRuntime(unittest.TestCase):
     from torch.onnx.symbolic_helper import _export_onnx_opset_version
+
     opset_version = _export_onnx_opset_version
     keep_initializers_as_inputs = True  # For IR version 3 type export.
 
@@ -110,63 +137,102 @@ class TestONNXRuntime(unittest.TestCase):
         np.random.seed(seed=0)
         self.is_script_test_enabled = False
 
-    def run_test(self, model, input, rtol=1e-3, atol=1e-7, do_constant_folding=True,
-                 batch_size=2, use_gpu=True, dynamic_axes=None, test_with_inputs=None,
-                 input_names=None, output_names=None, fixed_batch_size=False):
+    def run_test(
+            self,
+            model,
+            input,
+            rtol=1e-3,
+            atol=1e-7,
+            do_constant_folding=True,
+            batch_size=2,
+            use_gpu=True,
+            dynamic_axes=None,
+            test_with_inputs=None,
+            input_names=None,
+            output_names=None,
+            fixed_batch_size=False,
+    ):
         def _run_test(m):
-            return run_model_test(self, m, batch_size=batch_size,
-                                  input=input, use_gpu=use_gpu, rtol=rtol, atol=atol,
-                                  do_constant_folding=do_constant_folding,
-                                  dynamic_axes=dynamic_axes, test_with_inputs=test_with_inputs,
-                                  input_names=input_names, output_names=output_names,
-                                  fixed_batch_size=fixed_batch_size)
+            return run_model_test(
+                self,
+                m,
+                batch_size=batch_size,
+                input=input,
+                use_gpu=use_gpu,
+                rtol=rtol,
+                atol=atol,
+                do_constant_folding=do_constant_folding,
+                dynamic_axes=dynamic_axes,
+                test_with_inputs=test_with_inputs,
+                input_names=input_names,
+                output_names=output_names,
+                fixed_batch_size=fixed_batch_size,
+            )
+
         if self.is_script_test_enabled:
             script_model = torch.jit.script(model)
             _run_test(script_model)
         _run_test(model)
 
-    def run_model_test_with_external_data(self, model, input, rtol=0.001, atol=1e-7,
-                                          example_outputs=None, do_constant_folding=True,
-                                          dynamic_axes=None, input_names=None, output_names=None,
-                                          ort_optim_on=True):
+    def run_model_test_with_external_data(
+            self,
+            model,
+            input,
+            rtol=0.001,
+            atol=1e-7,
+            example_outputs=None,
+            do_constant_folding=True,
+            dynamic_axes=None,
+            input_names=None,
+            output_names=None,
+            ort_optim_on=True,
+    ):
         import os
         import tempfile
 
         model.eval()
         with torch.no_grad():
             if isinstance(input, torch.Tensor):
-                input = (input,)
+                input = (input, )
             # In-place operators will update input tensor data as well.
             # Thus inputs are replicated before every forward call.
             input_copy = copy.deepcopy(input)
             output = model(*input_copy)
             if isinstance(output, torch.Tensor):
-                output = (output,)
+                output = (output, )
 
             # export the model to ONNX
             with tempfile.TemporaryDirectory() as tmpdirname:
-                model_file_name = os.path.join(tmpdirname, 'model.onnx')
+                model_file_name = os.path.join(tmpdirname, "model.onnx")
                 input_copy = copy.deepcopy(input)
-                torch.onnx.export(model, input_copy, model_file_name,
-                                  opset_version=self.opset_version,
-                                  example_outputs=output,
-                                  verbose=False,
-                                  do_constant_folding=do_constant_folding,
-                                  keep_initializers_as_inputs=self.keep_initializers_as_inputs,
-                                  dynamic_axes=dynamic_axes,
-                                  input_names=input_names, output_names=output_names,
-                                  use_external_data_format=True)
+                torch.onnx.export(
+                    model,
+                    input_copy,
+                    model_file_name,
+                    opset_version=self.opset_version,
+                    example_outputs=output,
+                    verbose=False,
+                    do_constant_folding=do_constant_folding,
+                    keep_initializers_as_inputs=self.
+                    keep_initializers_as_inputs,
+                    dynamic_axes=dynamic_axes,
+                    input_names=input_names,
+                    output_names=output_names,
+                    use_external_data_format=True,
+                )
                 # compute onnxruntime output prediction
                 ort_sess_opt = onnxruntime.SessionOptions()
-                ort_sess_opt.graph_optimization_level = \
-                    onnxruntime.GraphOptimizationLevel.ORT_ENABLE_EXTENDED if ort_optim_on else \
-                    onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL
-                ort_sess = onnxruntime.InferenceSession(model_file_name, sess_options=ort_sess_opt)
+                ort_sess_opt.graph_optimization_level = (
+                    onnxruntime.GraphOptimizationLevel.ORT_ENABLE_EXTENDED
+                    if ort_optim_on else
+                    onnxruntime.GraphOptimizationLevel.ORT_DISABLE_ALL)
+                ort_sess = onnxruntime.InferenceSession(
+                    model_file_name, sess_options=ort_sess_opt)
                 input_copy = copy.deepcopy(input)
                 ort_test_with_input(ort_sess, input_copy, output, rtol, atol)
 
-
-    @skipIfUnsupportedMinOpsetVersion(9)  # Because external data format was released with Opset 9.
+    @skipIfUnsupportedMinOpsetVersion(
+        9)  # Because external data format was released with Opset 9.
     def test_embedding_model_with_external_data(self):
         class LargeModel(torch.nn.Module):
             def __init__(self):
@@ -187,14 +253,19 @@ class TestONNXRuntime(unittest.TestCase):
         x = torch.tensor([2], dtype=torch.long)
         self.run_model_test_with_external_data(model, x)
 
-    @skipIfUnsupportedMinOpsetVersion(9)  # Because external data format was released with Opset 9.
+    @skipIfUnsupportedMinOpsetVersion(
+        9)  # Because external data format was released with Opset 9.
+    @skipIfUnsupportedOpsetVersion([12])
     def test_mobilenet_v2_with_external_data(self):
         model = torchvision.models.mobilenet_v2(pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
         # We are turning off Onnx Runtime optimization off in this test,
         # because external data format is not supported to in ORT optimizer.
         # Once that support is added, we can set ort_optim_on=True (default).
-        self.run_model_test_with_external_data(model, x, rtol=1e-3, atol=1e-5,
+        self.run_model_test_with_external_data(model,
+                                               x,
+                                               rtol=1e-3,
+                                               atol=1e-5,
                                                ort_optim_on=False)
 
     # Export Torchvision models
@@ -202,81 +273,96 @@ class TestONNXRuntime(unittest.TestCase):
     def test_alexnet(self):
         model = torchvision.models.alexnet(pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,))
+        self.run_test(model, (x, ))
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_densenets(self):
         model = torchvision.models.densenet121(pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_googlenet(self):
         model = torchvision.models.googlenet(pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_inception(self):
         model = torchvision.models.inception_v3(pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_mnasnet(self):
         model = torchvision.models.mnasnet1_0(pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_mobilenet(self):
         model = torchvision.models.mobilenet_v2(pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_resnet(self):
         model = torchvision.models.resnet50(pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,))
+        self.run_test(model, (x, ))
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_shufflenet(self):
         model = torchvision.models.shufflenet_v2_x1_0(pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
     def test_squeezenet(self):
         model = torchvision.models.squeezenet1_1(pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,))
+        self.run_test(model, (x, ))
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_vgg(self):
         model = torchvision.models.vgg19(pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
         model = torchvision.models.vgg19_bn(pretrained=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
     @skipIfUnsupportedMinOpsetVersion(11)
+    @skipIfUnsupportedOpsetVersion([12])
     def test_fcn(self):
-        model = torchvision.models.segmentation.segmentation.fcn_resnet101(pretrained=True)
+        model = torchvision.models.segmentation.segmentation.fcn_resnet101(
+            pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
     @skipIfUnsupportedMinOpsetVersion(11)
+    @skipIfUnsupportedOpsetVersion([12])
     def test_deeplab(self):
-        model = torchvision.models.segmentation.segmentation.deeplabv3_resnet101(pretrained=True)
+        model = torchvision.models.segmentation.segmentation.deeplabv3_resnet101(
+            pretrained=True)
         x = torch.randn(2, 3, 224, 224, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_r3d_18_video(self):
         model = torchvision.models.video.r3d_18(pretrained=True)
         x = torch.randn(1, 3, 4, 112, 112, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_mc3_18_video(self):
         model = torchvision.models.video.mc3_18(pretrained=True)
         x = torch.randn(1, 3, 4, 112, 112, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_r2plus1d_18_video(self):
         model = torchvision.models.video.r2plus1d_18(pretrained=True)
         x = torch.randn(1, 3, 4, 112, 112, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
     def test_reshape_constant_fold(self):
         class Reshape(torch.nn.Module):
@@ -289,7 +375,7 @@ class TestONNXRuntime(unittest.TestCase):
                 return x * scale_1
 
         x = torch.randn(4, 5)
-        self.run_test(Reshape(), (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(Reshape(), (x, ), rtol=1e-3, atol=1e-5)
 
     def run_word_language_model(self, model_name):
         ntokens = 50
@@ -299,20 +385,19 @@ class TestONNXRuntime(unittest.TestCase):
         dropout = 0.2
         tied = False
         batchsize = 5
-        model = word_language_model.RNNModel(model_name, ntokens, emsize,
-                                             nhid, nlayers, dropout, tied,
-                                             batchsize)
+        model = word_language_model.RNNModel(model_name, ntokens, emsize, nhid,
+                                             nlayers, dropout, tied, batchsize)
         x = torch.arange(0, ntokens).long().view(-1, batchsize)
         # Only support CPU version, since tracer is not working in GPU RNN.
         self.run_test(model, (x, model.hidden))
 
     @skipIfUnsupportedMinOpsetVersion(11)
     def test_faster_rcnn(self):
-        model = torchvision.models.detection.faster_rcnn.fasterrcnn_resnet50_fpn(pretrained=True, min_size=200,
-                                                                                 max_size=300)
+        model = torchvision.models.detection.faster_rcnn.fasterrcnn_resnet50_fpn(
+            pretrained=True, min_size=200, max_size=300)
         model.eval()
         x = torch.randn(2, 3, 200, 300, requires_grad=True)
-        self.run_test(model, (x,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (x, ), rtol=1e-3, atol=1e-5)
 
     def get_image_from_url(self, url):
         import os
@@ -326,7 +411,7 @@ class TestONNXRuntime(unittest.TestCase):
         data_dir = get_writable_path(os.path.join(os.path.dirname(__file__)))
         path = os.path.join(data_dir, filename)
         data = request.urlopen(url, timeout=15).read()
-        with open(path, 'wb') as f:
+        with open(path, "wb") as f:
             f.write(data)
         image = Image.open(path).convert("RGB")
         image = image.resize((300, 200), Image.BILINEAR)
@@ -341,28 +426,33 @@ class TestONNXRuntime(unittest.TestCase):
 
     @skipIfUnsupportedMinOpsetVersion(11)
     def test_mask_rcnn(self):
-        model = torchvision.models.detection.mask_rcnn.maskrcnn_resnet50_fpn(pretrained=True, min_size=200,
-                                                                             max_size=300)
+        model = torchvision.models.detection.mask_rcnn.maskrcnn_resnet50_fpn(
+            pretrained=True, min_size=200, max_size=300)
         images = self.get_test_images()
-        self.run_test(model, (images,), rtol=1e-3, atol=1e-5)
+        self.run_test(model, (images, ), rtol=1e-3, atol=1e-5)
 
     @skipIfUnsupportedMinOpsetVersion(11)
     def test_keypoint_rcnn(self):
         class KeyPointRCNN(torch.nn.Module):
             def __init__(self):
                 super(KeyPointRCNN, self).__init__()
-                self.model = torchvision.models.detection.keypoint_rcnn.keypointrcnn_resnet50_fpn(pretrained=True,
-                                                                                                  min_size=200,
-                                                                                                  max_size=300)
+                self.model = torchvision.models.detection.keypoint_rcnn.keypointrcnn_resnet50_fpn(
+                    pretrained=True, min_size=200, max_size=300)
 
             def forward(self, images):
                 output = self.model(images)
                 # TODO: The keypoints_scores require the use of Argmax that is updated in ONNX.
                 #       For now we are testing all the output of KeypointRCNN except keypoints_scores.
                 #       Enable When Argmax is updated in ONNX Runtime.
-                return output[0]['boxes'], output[0]['labels'], output[0]['scores'], output[0]['keypoints']
+                return (
+                    output[0]["boxes"],
+                    output[0]["labels"],
+                    output[0]["scores"],
+                    output[0]["keypoints"],
+                )
+
         images = self.get_test_images()
-        self.run_test(KeyPointRCNN(), (images,), rtol=1e-3, atol=1e-5)
+        self.run_test(KeyPointRCNN(), (images, ), rtol=1e-3, atol=1e-5)
 
     def test_word_language_model_RNN_TANH(self):
         self.run_word_language_model("RNN_TANH")
@@ -390,35 +480,41 @@ class TestONNXRuntime(unittest.TestCase):
 
     @skipIfUnsupportedMinOpsetVersion(9)
     def test_index_mask(self):
-        self._test_index_generic(lambda input: input[torch.tensor([0, 1, 0], dtype=torch.uint8)])
-        self._test_index_generic(lambda input: input[torch.tensor([0, 1, 0], dtype=torch.bool)])
+        self._test_index_generic(lambda input: input[torch.tensor(
+            [0, 1, 0], dtype=torch.uint8)])
+        self._test_index_generic(lambda input: input[torch.tensor(
+            [0, 1, 0], dtype=torch.bool)])
 
     def test_dict(self):
         class MyModel(torch.nn.Module):
             def forward(self, x_in):
                 x_out = {}
-                x_out["test_key_out"] = torch.add(x_in[list(x_in.keys())[0]], list(x_in.keys())[0])
+                x_out["test_key_out"] = torch.add(x_in[list(x_in.keys())[0]],
+                                                  list(x_in.keys())[0])
                 return x_out
 
-        x = {torch.tensor(1.): torch.randn(1, 2, 3)}
-        self.run_test(MyModel(), (x,))
+        x = {torch.tensor(1.0): torch.randn(1, 2, 3)}
+        self.run_test(MyModel(), (x, ))
 
     def test_dict_str(self):
         class MyModel(torch.nn.Module):
             def forward(self, x_in):
                 x_out = {}
-                x_out["test_key_out"] = torch.add(x_in["test_key_in"], 2.)
+                x_out["test_key_out"] = torch.add(x_in["test_key_in"], 2.0)
                 return x_out
 
         x = {"test_key_in": torch.randn(1, 2, 3)}
-        self.run_test(MyModel(), (x,))
+        self.run_test(MyModel(), (x, ))
 
     @skipIfUnsupportedMinOpsetVersion(9)
     def test_cste_script(self):
         class MyModel(torch.jit.ScriptModule):
             @torch.jit.script_method
             def forward(self, x):
-                return torch.zeros(x.size(0)), torch.ones((x.size(1), x.size(0)), dtype=torch.int64)
+                return (
+                    torch.zeros(x.size(0)),
+                    torch.ones((x.size(1), x.size(0)), dtype=torch.int64),
+                )
 
         x = torch.randn(3, 4)
         self.run_test(MyModel(), x)
@@ -426,15 +522,21 @@ class TestONNXRuntime(unittest.TestCase):
     def test_scalar_tensor(self):
         class test(torch.nn.Module):
             def forward(self, input):
-                return torch.scalar_tensor(input.size(0)), \
-                    torch.scalar_tensor(input.size(1), dtype=torch.int64)
+                return (
+                    torch.scalar_tensor(input.size(0)),
+                    torch.scalar_tensor(input.size(1), dtype=torch.int64),
+                )
 
         x = torch.randn(2, 3, 4)
         y = torch.randn(7, 8, 9)
         model = test()
-        self.run_test(model, x, test_with_inputs=[y],
-                      input_names=['input_1'],
-                      dynamic_axes={'input_1': [0, 1, 2]})
+        self.run_test(
+            model,
+            x,
+            test_with_inputs=[y],
+            input_names=["input_1"],
+            dynamic_axes={"input_1": [0, 1, 2]},
+        )
 
     def test_hardtanh(self):
         model = torch.nn.Hardtanh(-1.5, 2.5)
@@ -481,7 +583,6 @@ class TestONNXRuntime(unittest.TestCase):
 
         x = torch.arange(16).view(4, 4).float()
         self.run_test(ClampMaxModel(), x)
-
 
         class ClampMinModel(torch.jit.ScriptModule):
             @torch.jit.script_method
@@ -536,22 +637,38 @@ class TestONNXRuntime(unittest.TestCase):
             def __init__(self):
                 super(TraceModel, self).__init__()
                 self.conv1 = torch.nn.Conv1d(16, 33, 3, stride=2)
-                self.conv2 = torch.nn.Conv2d(16, 33, (3, 5), stride=(2, 1), padding=(4, 2), dilation=(3, 1))
-                self.conv3 = torch.nn.Conv3d(16, 33, (3, 5, 2), stride=(2, 1, 1), padding=(4, 2, 0))
+                self.conv2 = torch.nn.Conv2d(16,
+                                             33, (3, 5),
+                                             stride=(2, 1),
+                                             padding=(4, 2),
+                                             dilation=(3, 1))
+                self.conv3 = torch.nn.Conv3d(16,
+                                             33, (3, 5, 2),
+                                             stride=(2, 1, 1),
+                                             padding=(4, 2, 0))
 
             def forward(self, input1, input2, input3):
-                return self.conv1(input1), self.conv2(input2), self.conv3(input3)
+                return self.conv1(input1), self.conv2(input2), self.conv3(
+                    input3)
 
         class ScriptModel(torch.jit.ScriptModule):
             def __init__(self):
                 super(ScriptModel, self).__init__()
                 self.conv1 = torch.nn.Conv1d(16, 33, 3, stride=2)
-                self.conv2 = torch.nn.Conv2d(16, 33, (3, 5), stride=(2, 1), padding=(4, 2), dilation=(3, 1))
-                self.conv3 = torch.nn.Conv3d(16, 33, (3, 5, 2), stride=(2, 1, 1), padding=(4, 2, 0))
+                self.conv2 = torch.nn.Conv2d(16,
+                                             33, (3, 5),
+                                             stride=(2, 1),
+                                             padding=(4, 2),
+                                             dilation=(3, 1))
+                self.conv3 = torch.nn.Conv3d(16,
+                                             33, (3, 5, 2),
+                                             stride=(2, 1, 1),
+                                             padding=(4, 2, 0))
 
             @torch.jit.script_method
             def forward(self, input1, input2, input3):
-                return self.conv1(input1), self.conv2(input2), self.conv3(input3)
+                return self.conv1(input1), self.conv2(input2), self.conv3(
+                    input3)
 
         x1 = torch.randn(20, 16, 50)
         x2 = torch.randn(20, 16, 50, 100)
@@ -566,7 +683,11 @@ class TestONNXRuntime(unittest.TestCase):
         class TraceModel(torch.nn.Module):
             def __init__(self):
                 super(TraceModel, self).__init__()
-                self.conv2 = torch.nn.ConvTranspose2d(16, 33, (3, 5), stride=(2, 1), padding=(4, 2), dilation=(1, 1))
+                self.conv2 = torch.nn.ConvTranspose2d(16,
+                                                      33, (3, 5),
+                                                      stride=(2, 1),
+                                                      padding=(4, 2),
+                                                      dilation=(1, 1))
 
             def forward(self, input2):
                 return self.conv2(input2)
@@ -574,7 +695,11 @@ class TestONNXRuntime(unittest.TestCase):
         class ScriptModel(torch.jit.ScriptModule):
             def __init__(self):
                 super(ScriptModel, self).__init__()
-                self.conv2 = torch.nn.ConvTranspose2d(16, 33, (3, 5), stride=(2, 1), padding=(4, 2), dilation=(1, 1))
+                self.conv2 = torch.nn.ConvTranspose2d(16,
+                                                      33, (3, 5),
+                                                      stride=(2, 1),
+                                                      padding=(4, 2),
+                                                      dilation=(1, 1))
 
             @torch.jit.script_method
             def forward(self, input2):
@@ -582,8 +707,8 @@ class TestONNXRuntime(unittest.TestCase):
 
         x2 = torch.randn(20, 16, 50, 100)
 
-        self.run_test(TraceModel(), (x2,), atol=10e-5)
-        self.run_test(ScriptModel(), (x2,), atol=10e-5)
+        self.run_test(TraceModel(), (x2, ), atol=10e-5)
+        self.run_test(ScriptModel(), (x2, ), atol=10e-5)
 
     def test_squeeze(self):
         class Squeeze(torch.nn.Module):
@@ -693,12 +818,20 @@ class TestONNXRuntime(unittest.TestCase):
     def test_floor_div(self):
         class FloorDivModule(torch.nn.Module):
             def forward(self, x, y):
-                return x // 3, x // 2., \
-                    x.to(dtype=torch.float64) // 3, x.to(dtype=torch.float64) // 2., \
-                    x.to(dtype=torch.int64) // 3, x.to(dtype=torch.int64) // 2., \
-                    x // (y + 1.).to(dtype=torch.int64), x // y, \
-                    x.to(dtype=torch.float64) // y.to(dtype=torch.int64), x.to(dtype=torch.float64) // y.to(dtype=torch.float64), \
-                    x.to(dtype=torch.int64) // y.to(dtype=torch.int64), x.to(dtype=torch.int64) // y
+                return (
+                    x // 3,
+                    x // 2.0,
+                    x.to(dtype=torch.float64) // 3,
+                    x.to(dtype=torch.float64) // 2.0,
+                    x.to(dtype=torch.int64) // 3,
+                    x.to(dtype=torch.int64) // 2.0,
+                    x // (y + 1.0).to(dtype=torch.int64),
+                    x // y,
+                    x.to(dtype=torch.float64) // y.to(dtype=torch.int64),
+                    x.to(dtype=torch.float64) // y.to(dtype=torch.float64),
+                    x.to(dtype=torch.int64) // y.to(dtype=torch.int64),
+                    x.to(dtype=torch.int64) // y,
+                )
 
         x = torch.randn(2, 3, 4)
         y = torch.arange(1, 2 * 3 * 4 + 1).reshape(2, 3, 4)
@@ -708,7 +841,7 @@ class TestONNXRuntime(unittest.TestCase):
         class FloorDivModule(torch.jit.ScriptModule):
             @torch.jit.script_method
             def forward(self, x, y):
-                return x // 3, x // 2., x // y
+                return x // 3, x // 2.0, x // y
 
         x = torch.randn(2, 3, 4)
         y = torch.randn(2, 3, 4)
@@ -771,7 +904,7 @@ class TestONNXRuntime(unittest.TestCase):
         x = torch.randn(3, 4, 5, 6, 7)
         self.run_test(NegSlice(), x)
 
-    @unittest.skip('https://github.com/pytorch/pytorch/issues/10984')
+    @unittest.skip("https://github.com/pytorch/pytorch/issues/10984")
     def test_slice_neg_large_negone(self):
         class NegSlice(torch.nn.Module):
             def forward(self, x):
@@ -791,11 +924,17 @@ class TestONNXRuntime(unittest.TestCase):
 
         x = torch.rand(5, 5, 5)
         y = torch.randn(6, 7, 8)
-        self.run_test(DynamicSliceExportMod(), x, test_with_inputs=[y],
-                      input_names=['input_1'],
-                      output_names=['output_1'],
-                      dynamic_axes={'input_1': [0, 1, 2],
-                                    'output_1': [0, 1, 2]})
+        self.run_test(
+            DynamicSliceExportMod(),
+            x,
+            test_with_inputs=[y],
+            input_names=["input_1"],
+            output_names=["output_1"],
+            dynamic_axes={
+                "input_1": [0, 1, 2],
+                "output_1": [0, 1, 2]
+            },
+        )
 
     @skipIfUnsupportedMinOpsetVersion(10)
     def test_slice_dynamic_script(self):
@@ -817,31 +956,52 @@ class TestONNXRuntime(unittest.TestCase):
                 return tuple(results)
 
         x = torch.rand(5, 5, 5)
-        self.run_test(DynamicSliceExportMod(), x,
-                      dynamic_axes={'input_1': [0, 1, 2],
-                      'output_1': [0, 1, 2]})
+        self.run_test(
+            DynamicSliceExportMod(),
+            x,
+            dynamic_axes={
+                "input_1": [0, 1, 2],
+                "output_1": [0, 1, 2]
+            },
+        )
 
     @skipIfUnsupportedMinOpsetVersion(9)
-    @unittest.skip("relies on not constant folding size calls, but other tests rely on constant folding")
+    @unittest.skip(
+        "relies on not constant folding size calls, but other tests rely on constant folding"
+    )
     def test_arange_dynamic(self):
         class ArangeModel(torch.nn.Module):
             def forward(self, input):
-                return torch.arange(input.shape[0]), \
-                    torch.arange(12), \
-                    torch.arange(start=input.shape[0], end=input.shape[0] + 5)
+                return (
+                    torch.arange(input.shape[0]),
+                    torch.arange(12),
+                    torch.arange(start=input.shape[0], end=input.shape[0] + 5),
+                )
 
         x = torch.randn(5, 3, 2)
         y = torch.randn(8, 3, 2)
-        self.run_test(ArangeModel(), x, test_with_inputs=[y],
-                      input_names=['input_1'],
-                      output_names=['output_1', 'output_2', 'output_3'],
-                      dynamic_axes={'input_1': [0],
-                                    'output_1': [0]})
-        self.run_test(torch.jit.script(ArangeModel()), x,
-                      test_with_inputs=[y], input_names=['input_1'],
-                      output_names=['output_1', 'output_2', 'output_3'],
-                      dynamic_axes={'input_1': [0],
-                                    'output_1': [0]})
+        self.run_test(
+            ArangeModel(),
+            x,
+            test_with_inputs=[y],
+            input_names=["input_1"],
+            output_names=["output_1", "output_2", "output_3"],
+            dynamic_axes={
+                "input_1": [0],
+                "output_1": [0]
+            },
+        )
+        self.run_test(
+            torch.jit.script(ArangeModel()),
+            x,
+            test_with_inputs=[y],
+            input_names=["input_1"],
+            output_names=["output_1", "output_2", "output_3"],
+            dynamic_axes={
+                "input_1": [0],
+                "output_1": [0]
+            },
+        )
 
     @skipIfUnsupportedMinOpsetVersion(11)
     def test_arange(self):
@@ -857,8 +1017,7 @@ class TestONNXRuntime(unittest.TestCase):
     def test_arange_no_type(self):
         class ArangeModel(torch.nn.Module):
             def forward(self, end):
-                return torch.arange(end), \
-                    torch.arange(0, end)
+                return torch.arange(end), torch.arange(0, end)
 
         x = torch.tensor(6.2, dtype=torch.float)
         self.run_test(ArangeModel(), x)
@@ -867,7 +1026,11 @@ class TestONNXRuntime(unittest.TestCase):
     def test_size(self):
         class SizeModel(torch.nn.Module):
             def forward(self, input):
-                return torch.arange(input.size(0)), torch.arange(input.size(-1)), torch.ones(input.shape)
+                return (
+                    torch.arange(input.size(0)),
+                    torch.arange(input.size(-1)),
+                    torch.ones(input.shape),
+                )
 
         x = torch.randn(5, 3, 2)
         self.run_test(SizeModel(), x)
@@ -884,14 +1047,29 @@ class TestONNXRuntime(unittest.TestCase):
         self.run_test(MyModel(), m1)
 
     def test_tensor_index_advanced_indexing(self):
-        self._test_index_generic(
-            lambda input: input[:, torch.tensor([[0, 2], [1, 1]]), :, torch.tensor([2, 1]), torch.tensor([0, 3])])
-        self._test_index_generic(lambda input: input[..., torch.tensor([2, 1]), torch.tensor([0, 3])])
-        self._test_index_generic(lambda input: input[:, torch.tensor([0, 2]), None, 2:4, torch.tensor([[1, 3], [4, 0]])])
-        self._test_index_generic(lambda input: input[:, torch.tensor([0, 2]), torch.tensor([1]), 2:4, torch.tensor([[1], [4]])])
+        self._test_index_generic(lambda input: input[:,
+                                                     torch.tensor([[0, 2],
+                                                                   [1, 1]]), :,
+                                                     torch.tensor([2, 1]),
+                                                     torch.tensor([0, 3]), ])
+        self._test_index_generic(lambda input: input[...,
+                                                     torch.tensor([2, 1]),
+                                                     torch.tensor([0, 3])])
+        self._test_index_generic(lambda input:
+                                 input[:,
+                                       torch.tensor([0, 2]), None, 2:4,
+                                       torch.tensor([[1, 3], [4, 0]])])
+        self._test_index_generic(lambda input: input[:,
+                                                     torch.tensor([0, 2]),
+                                                     torch.tensor([1]), 2:4,
+                                                     torch.tensor([[1], [4]]),
+                                                     ])
 
     def test_tensor_index_advanced_indexing_consecutive(self):
-        self._test_index_generic(lambda input: input[:, torch.tensor([0, 2]), torch.tensor([[1, 3], [4, 0]]), None])
+        self._test_index_generic(lambda input:
+                                 input[:,
+                                       torch.tensor([0, 2]),
+                                       torch.tensor([[1, 3], [4, 0]]), None])
 
     @skipIfUnsupportedMinOpsetVersion(11)
     def test_index_put(self):
@@ -1149,19 +1327,24 @@ class TestONNXRuntime(unittest.TestCase):
     def test_random_like_dtype(self):
         class RandNLike(torch.nn.Module):
             def forward(self, x):
-                return torch.mul(x.to(torch.double), torch.randn_like(x, dtype=torch.double).size(0))
+                return torch.mul(
+                    x.to(torch.double),
+                    torch.randn_like(x, dtype=torch.double).size(0))
 
         x = torch.randn(2, 3, 4)
         self.run_test(RandNLike(), x)
 
         class RandLike(torch.nn.Module):
             def forward(self, x):
-                return torch.mul(x.to(torch.double), torch.rand_like(x, dtype=torch.double).size(0))
+                return torch.mul(
+                    x.to(torch.double),
+                    torch.rand_like(x, dtype=torch.double).size(0))
 
         x = torch.randn(2, 3, 4)
         self.run_test(RandLike(), x)
 
-    def _interpolate(self, x, mode, use_size, is_upsample, align_corners=False):
+    def _interpolate(self, x, mode, use_size, is_upsample,
+                     align_corners=False):
         class MyModel(torch.nn.Module):
             def forward(self, x):
                 scale = 2.3 if is_upsample else 0.5
@@ -1174,25 +1357,76 @@ class TestONNXRuntime(unittest.TestCase):
                 if use_size:
                     size_array = [int(float(v) * scale) for v in x.size()[2:]]
                     if align_corners:
-                        return torch.nn.functional.interpolate(x, mode=mode, size=size_array[0], align_corners=True), \
-                            torch.nn.functional.interpolate(x, mode=mode, size=size_array, align_corners=True)
-                    return torch.nn.functional.interpolate(x, mode=mode, size=size_array[0]), \
-                        torch.nn.functional.interpolate(x, mode=mode, size=size_array)
+                        return (
+                            torch.nn.functional.interpolate(
+                                x,
+                                mode=mode,
+                                size=size_array[0],
+                                align_corners=True),
+                            torch.nn.functional.interpolate(
+                                x,
+                                mode=mode,
+                                size=size_array,
+                                align_corners=True),
+                        )
+                    return (
+                        torch.nn.functional.interpolate(x,
+                                                        mode=mode,
+                                                        size=size_array[0]),
+                        torch.nn.functional.interpolate(x,
+                                                        mode=mode,
+                                                        size=size_array),
+                    )
                 if align_corners:
-                    return torch.nn.functional.interpolate(x, mode=mode, scale_factor=scale,
-                                                           align_corners=True, recompute_scale_factor=False), \
-                        torch.nn.functional.interpolate(x, mode=mode, scale_factor=scale_array,
-                                                        align_corners=True, recompute_scale_factor=False)
-                return torch.nn.functional.interpolate(x, mode=mode,
-                                                       scale_factor=scale, recompute_scale_factor=False), \
-                    torch.nn.functional.interpolate(x, mode=mode,
-                                                    scale_factor=scale_array, recompute_scale_factor=False)
+                    return (
+                        torch.nn.functional.interpolate(
+                            x,
+                            mode=mode,
+                            scale_factor=scale,
+                            align_corners=True,
+                            recompute_scale_factor=False,
+                        ),
+                        torch.nn.functional.interpolate(
+                            x,
+                            mode=mode,
+                            scale_factor=scale_array,
+                            align_corners=True,
+                            recompute_scale_factor=False,
+                        ),
+                    )
+                return (
+                    torch.nn.functional.interpolate(
+                        x,
+                        mode=mode,
+                        scale_factor=scale,
+                        recompute_scale_factor=False),
+                    torch.nn.functional.interpolate(
+                        x,
+                        mode=mode,
+                        scale_factor=scale_array,
+                        recompute_scale_factor=False,
+                    ),
+                )
 
         self.run_test(MyModel(), x)
 
-    def _interpolate_script(self, x, mode, use_size, is_upsample, align_corners=False):
+    def _interpolate_script(self,
+                            x,
+                            mode,
+                            use_size,
+                            is_upsample,
+                            align_corners=False):
         class MyModel(torch.jit.ScriptModule):
-            __constants__ = ['mode', 'use_size', 'is_upsample', 'size', 'scale', 'size_array', 'scale_array', 'align_corners']
+            __constants__ = [
+                "mode",
+                "use_size",
+                "is_upsample",
+                "size",
+                "scale",
+                "size_array",
+                "scale_array",
+                "align_corners",
+            ]
 
             def __init__(self, mode, use_size, is_upsample, align_corners):
                 super(MyModel, self).__init__()
@@ -1216,19 +1450,56 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, x):
                 if self.use_size:
                     if self.align_corners:
-                        return torch.nn.functional.interpolate(x, mode=self.mode, size=self.size, align_corners=True), \
-                            torch.nn.functional.interpolate(x, mode=self.mode, size=self.size_array, align_corners=True)
-                    return torch.nn.functional.interpolate(x, mode=self.mode, size=self.size), \
-                        torch.nn.functional.interpolate(x, mode=self.mode, size=self.size_array)
+                        return (
+                            torch.nn.functional.interpolate(
+                                x,
+                                mode=self.mode,
+                                size=self.size,
+                                align_corners=True),
+                            torch.nn.functional.interpolate(
+                                x,
+                                mode=self.mode,
+                                size=self.size_array,
+                                align_corners=True,
+                            ),
+                        )
+                    return (
+                        torch.nn.functional.interpolate(x,
+                                                        mode=self.mode,
+                                                        size=self.size),
+                        torch.nn.functional.interpolate(x,
+                                                        mode=self.mode,
+                                                        size=self.size_array),
+                    )
                 if self.align_corners:
-                    return torch.nn.functional.interpolate(x, mode=self.mode,
-                                                           scale_factor=self.scale, recompute_scale_factor=False), \
-                        torch.nn.functional.interpolate(x, mode=self.mode,
-                                                        scale_factor=self.scale_array, recompute_scale_factor=False)
-                return torch.nn.functional.interpolate(x, mode=self.mode,
-                                                       scale_factor=self.scale, recompute_scale_factor=False), \
-                    torch.nn.functional.interpolate(x, mode=self.mode,
-                                                    scale_factor=self.scale_array, recompute_scale_factor=False)
+                    return (
+                        torch.nn.functional.interpolate(
+                            x,
+                            mode=self.mode,
+                            scale_factor=self.scale,
+                            recompute_scale_factor=False,
+                        ),
+                        torch.nn.functional.interpolate(
+                            x,
+                            mode=self.mode,
+                            scale_factor=self.scale_array,
+                            recompute_scale_factor=False,
+                        ),
+                    )
+                return (
+                    torch.nn.functional.interpolate(
+                        x,
+                        mode=self.mode,
+                        scale_factor=self.scale,
+                        recompute_scale_factor=False,
+                    ),
+                    torch.nn.functional.interpolate(
+                        x,
+                        mode=self.mode,
+                        scale_factor=self.scale_array,
+                        recompute_scale_factor=False,
+                    ),
+                )
 
         model = MyModel(mode, use_size, is_upsample, align_corners)
         self.run_test(model, x, atol=1e-6)
@@ -1239,9 +1510,11 @@ class TestONNXRuntime(unittest.TestCase):
         modes = ["nearest", "linear", "bicubic"]
         if self.opset_version < 11:
             modes = ["nearest"]
-        x = [torch.randn(1, 2, 6, requires_grad=True),
-             torch.randn(1, 2, 4, 6, requires_grad=True),
-             torch.randn(1, 2, 4, 4, 6, requires_grad=True)]
+        x = [
+            torch.randn(1, 2, 6, requires_grad=True),
+            torch.randn(1, 2, 4, 6, requires_grad=True),
+            torch.randn(1, 2, 4, 4, 6, requires_grad=True),
+        ]
 
         for mode in modes:
             for xi in x:
@@ -1261,18 +1534,20 @@ class TestONNXRuntime(unittest.TestCase):
                         continue
                 self._interpolate(xi, mode_i, True, is_upsample)
                 # test with align_corners if supported
-                if mode != 'nearest':
+                if mode != "nearest":
                     self._interpolate(xi, mode_i, True, is_upsample, True)
-                    self._interpolate_script(xi, mode_i, True, is_upsample, True)
+                    self._interpolate_script(xi, mode_i, True, is_upsample,
+                                             True)
                 # the following cases, require dynamic sizes/scales,
                 # which which is not supported for opset_version < 9
                 if self.opset_version >= 9:
                     self._interpolate_script(xi, mode_i, True, is_upsample)
                     self._interpolate(xi, mode_i, False, is_upsample)
                     # test with align_corners if supported
-                    if mode != 'nearest':
+                    if mode != "nearest":
                         self._interpolate(xi, mode_i, False, is_upsample, True)
-                        self._interpolate_script(xi, mode_i, False, is_upsample, True)
+                        self._interpolate_script(xi, mode_i, False,
+                                                 is_upsample, True)
                     self._interpolate_script(xi, mode_i, False, is_upsample)
 
     def test_interpolate_upsample(self):
@@ -1283,7 +1558,9 @@ class TestONNXRuntime(unittest.TestCase):
         class ScriptModel(torch.jit.ScriptModule):
             @torch.jit.script_method
             def forward(self, x):
-                return torch.nn.functional.interpolate(x, mode="nearest", scale_factor=2.)
+                return torch.nn.functional.interpolate(x,
+                                                       mode="nearest",
+                                                       scale_factor=2.0)
 
         class ScriptModule(torch.jit.ScriptModule):
             def __init__(self):
@@ -1295,17 +1572,19 @@ class TestONNXRuntime(unittest.TestCase):
                 return self.submodule(input)
 
         x = torch.randn(1, 2, 4, 4, 6)
-        self.run_test(ScriptModule(), (x,))
+        self.run_test(ScriptModule(), (x, ))
 
         @torch.jit.script
         def script_method(x):
-            return torch.nn.functional.interpolate(x, mode="nearest", scale_factor=2.)
+            return torch.nn.functional.interpolate(x,
+                                                   mode="nearest",
+                                                   scale_factor=2.0)
 
         class TracingModule(torch.nn.Module):
             def forward(self, x):
                 return script_method(x)
 
-        self.run_test(TracingModule(), (x,))
+        self.run_test(TracingModule(), (x, ))
 
     @skipIfUnsupportedMinOpsetVersion(10)
     def test_interpolate_downsample(self):
@@ -1318,8 +1597,14 @@ class TestONNXRuntime(unittest.TestCase):
             @torch.jit.script_method
             def forward(self, x, y):
                 x = torch.add(x, x)
-                out1 = torch.nn.functional.interpolate(x, mode="bilinear", size=(16, 16), align_corners=False)
-                out2 = torch.nn.functional.interpolate(x, mode="nearest", size=(int(y.size(0)), int(y.size(1))))
+                out1 = torch.nn.functional.interpolate(x,
+                                                       mode="bilinear",
+                                                       size=(16, 16),
+                                                       align_corners=False)
+                out2 = torch.nn.functional.interpolate(x,
+                                                       mode="nearest",
+                                                       size=(int(y.size(0)),
+                                                             int(y.size(1))))
                 return out1, out2
 
         x = torch.randn(1, 2, 4, 4, requires_grad=True)
@@ -1373,25 +1658,36 @@ class TestONNXRuntime(unittest.TestCase):
     def test_std_keepdim(self):
         class StandardDeviation(torch.nn.Module):
             def forward(self, input):
-                return torch.std(input, dim=(0, 1), unbiased=False, keepdim=True)
+                return torch.std(input,
+                                 dim=(0, 1),
+                                 unbiased=False,
+                                 keepdim=True)
 
         x = torch.randn(2, 3, 4)
         model = StandardDeviation()
         self.run_test(model, x)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_bitshift(self):
         class BitshiftModel(torch.nn.Module):
             def forward(self, input, input2):
-                return input >> 1, input << 3.1, \
-                    input2 >> torch.tensor([1, 2]), input2 << 4.2
+                return (
+                    input >> 1,
+                    input << 3.1,
+                    input2 >> torch.tensor([1, 2]),
+                    input2 << 4.2,
+                )
+
         input = torch.arange(24, dtype=torch.float32).reshape(3, 4, 2)
         input2 = torch.arange(24, dtype=torch.int64).reshape(3, 4, 2)
         self.run_test(BitshiftModel(), (input, input2))
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_bitshift_other_fp(self):
         class BitshiftModel(torch.nn.Module):
             def forward(self, input):
                 return input << 2.4
+
         input = torch.arange(24, dtype=torch.int64).reshape(3, 4, 2)
         self.run_test(BitshiftModel(), input)
 
@@ -1401,8 +1697,13 @@ class TestONNXRuntime(unittest.TestCase):
     def test_bitshift_uint8(self):
         class BitshiftModel(torch.nn.Module):
             def forward(self, input, input2):
-                return input >> 1, input << 3., \
-                    input2 >> torch.tensor([1, 2], dtype=torch.uint8), input2 << 4.
+                return (
+                    input >> 1,
+                    input << 3.0,
+                    input2 >> torch.tensor([1, 2], dtype=torch.uint8),
+                    input2 << 4.0,
+                )
+
         input = torch.arange(24, dtype=torch.uint8).reshape(3, 4, 2)
         input2 = torch.arange(24, dtype=torch.uint8).reshape(3, 4, 2)
         self.run_test(BitshiftModel(), (input, input2))
@@ -1443,6 +1744,7 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, x):
                 index = 2
                 return torch.index_select(x, 1, torch.tensor(index))
+
         x = torch.randn(3, 4)
         self.run_test(IndexSelectScalerIndexModel(), x)
 
@@ -1455,6 +1757,7 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, x, index_offset):
                 index = self.index_base + index_offset
                 return torch.index_select(x, 1, index)
+
         x = torch.randn(3, 4)
         offset = 2
         index_offset = torch.tensor(offset)
@@ -1475,7 +1778,7 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, x):
                 return torch.topk(x, 3)
 
-        x = torch.arange(1., 6., requires_grad=True)
+        x = torch.arange(1.0, 6.0, requires_grad=True)
         self.run_test(MyModule(), x)
 
     @skipIfUnsupportedMinOpsetVersion(11)
@@ -1484,7 +1787,7 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, x, k):
                 return torch.topk(x, k, largest=False, sorted=False)
 
-        x = torch.arange(1., 6., requires_grad=True)
+        x = torch.arange(1.0, 6.0, requires_grad=True)
         k = torch.tensor(3)
         self.run_test(MyModule(), (x, k))
 
@@ -1495,15 +1798,17 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, x, k):
                 return torch.topk(x, k)
 
-        x = torch.arange(1., 6., requires_grad=True)
+        x = torch.arange(1.0, 6.0, requires_grad=True)
         k = torch.tensor(3)
         self.run_test(MyModuleDynamic(), [x, k])
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_layer_norm(self):
         model = torch.nn.LayerNorm([10, 10])
         x = torch.randn(20, 5, 10, 10)
         self.run_test(model, x)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_batchnorm1d(self):
         x = torch.randn(10, 10)
         model = torch.nn.BatchNorm1d(10, affine=True)
@@ -1512,6 +1817,7 @@ class TestONNXRuntime(unittest.TestCase):
         x = torch.randn(10, 10, 128)
         self.run_test(model, x)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_batchnorm1d_noaffine(self):
         x = torch.randn(10, 10)
         model = torch.nn.BatchNorm1d(10, affine=False)
@@ -1520,21 +1826,25 @@ class TestONNXRuntime(unittest.TestCase):
         x = torch.randn(10, 10, 128)
         self.run_test(model, x)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_batchnorm2d(self):
         x = torch.randn(10, 3, 128, 128)
         model = torch.nn.BatchNorm2d(3, affine=True)
         self.run_test(model, x)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_batchnorm2d_noaffine(self):
         x = torch.randn(10, 3, 128, 128)
         model = torch.nn.BatchNorm2d(3, affine=False)
         self.run_test(model, x)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_batchnorm3d(self):
         x = torch.randn(10, 3, 128, 128, 128)
         model = torch.nn.BatchNorm3d(3, affine=True)
         self.run_test(model, x)
 
+    @skipIfUnsupportedOpsetVersion([12])
     def test_batchnorm3d_noaffine(self):
         x = torch.randn(10, 3, 128, 128, 128)
         model = torch.nn.BatchNorm3d(3, affine=False)
@@ -1546,12 +1856,14 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, input, indices, values):
                 return input.scatter(1, indices, values)
 
-        input = torch.tensor([[0., 0., 0.], [0., 0., 0.], [0., 0., 0.]])
+        input = torch.tensor([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0],
+                              [0.0, 0.0, 0.0]])
         indices = torch.tensor([[1, 0], [0, 1], [0, 1]], dtype=torch.int64)
         values = torch.tensor([[1.0, 1.1], [2.0, 2.1], [3.0, 3.1]])
         self.run_test(ScatterModel(), input=(input, indices, values))
 
-        input = torch.tensor([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+        input = torch.tensor([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0],
+                              [0.0, 0.0, 0.0]])
         indices = torch.tensor([[1, 0], [0, 2], [0, 1]], dtype=torch.int64)
         values = torch.tensor([[1.0, 1.1], [2.0, 2.1], [3.0, 3.1]])
         self.run_test(ScatterModel(), (input, indices, values))
@@ -1559,11 +1871,13 @@ class TestONNXRuntime(unittest.TestCase):
         input = torch.zeros(3, 4, 5, 6)
         indices = torch.tensor([[1, 0], [0, 2], [0, 1]], dtype=torch.int64)
         indices = indices.view(3, 2, 1, 1).expand(3, 2, 5, 6)
-        values = torch.arange(3 * 2 * 5 * 6, dtype=torch.float32).view(3, 2, 5, 6)
+        values = torch.arange(3 * 2 * 5 * 6,
+                              dtype=torch.float32).view(3, 2, 5, 6)
         self.run_test(ScatterModel(), (input, indices, values))
 
         input = torch.zeros(3, 4, 2)
-        indices = torch.tensor([[[1, 0], [0, 2]], [[1, 1], [0, 1]], [[2, 1], [2, 2]]])
+        indices = torch.tensor([[[1, 0], [0, 2]], [[1, 1], [0, 1]],
+                                [[2, 1], [2, 2]]])
         values = torch.arange(3 * 2 * 2, dtype=torch.float32).view(3, 2, 2)
         self.run_test(ScatterModel(), (input, indices, values))
 
@@ -1573,7 +1887,8 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, input, indices, values):
                 return input.scatter_add(1, indices, values)
 
-        input = torch.tensor([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0], [0.0, 0.0, 0.0]])
+        input = torch.tensor([[0.0, 0.0, 0.0], [0.0, 0.0, 0.0],
+                              [0.0, 0.0, 0.0]])
         indices = torch.tensor([[1, 0], [0, 1], [0, 1]], dtype=torch.int64)
         values = torch.tensor([[1.0, 1.1], [2.0, 2.1], [3.0, 3.1]])
         self.run_test(ScatterModel(), input=(input, indices, values))
@@ -1597,7 +1912,8 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, input, indices):
                 return input.gather(1, indices)
 
-        input = torch.tensor([[1., 2., 3.], [4., 5., 6.], [7., 8., 9.]])
+        input = torch.tensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0],
+                              [7.0, 8.0, 9.0]])
         indices = torch.tensor([[1, 0], [0, 1], [0, 1]], dtype=torch.int64)
         self.run_test(GatherModel(), input=(input, indices))
 
@@ -1621,7 +1937,7 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, input, size):
                 return input.expand(size)
 
-        input = torch.randn(3,)
+        input = torch.randn(3, )
         size = torch.tensor([-1])
         self.run_test(ExpandTensorSizeModel(), input=(input, size))
 
@@ -1634,9 +1950,10 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, weight):
                 return torch.multinomial(weight, 1)
 
-        weight = torch.tensor([[0, 10, 0, 0], [0, 0, 100, 0]], dtype=torch.float)
-        self.run_test(Multinomial(), (weight,))
-        self.run_test(MultinomialNoReplacement(), (weight,))
+        weight = torch.tensor([[0, 10, 0, 0], [0, 0, 100, 0]],
+                              dtype=torch.float)
+        self.run_test(Multinomial(), (weight, ))
+        self.run_test(MultinomialNoReplacement(), (weight, ))
 
     def test_reduce_log_sum_exp(self):
         class ReduceLogSumExpModel(torch.nn.Module):
@@ -1663,7 +1980,10 @@ class TestONNXRuntime(unittest.TestCase):
 
     @skipIfUnsupportedMinOpsetVersion(9)
     def test_lstm(self):
-        model = torch.nn.LSTM(RNN_INPUT_SIZE, RNN_HIDDEN_SIZE, 1, bidirectional=False)
+        model = torch.nn.LSTM(RNN_INPUT_SIZE,
+                              RNN_HIDDEN_SIZE,
+                              1,
+                              bidirectional=False)
         input = torch.randn(RNN_SEQUENCE_LENGTH, BATCH_SIZE, RNN_INPUT_SIZE)
         h0 = torch.randn(1, BATCH_SIZE, RNN_HIDDEN_SIZE)
         c0 = torch.randn(1, BATCH_SIZE, RNN_HIDDEN_SIZE)
@@ -1671,7 +1991,10 @@ class TestONNXRuntime(unittest.TestCase):
 
     @skipIfUnsupportedMinOpsetVersion(9)
     def test_lstm_default_init_state(self):
-        model = torch.nn.LSTM(RNN_INPUT_SIZE, RNN_HIDDEN_SIZE, 1, bidirectional=False)
+        model = torch.nn.LSTM(RNN_INPUT_SIZE,
+                              RNN_HIDDEN_SIZE,
+                              1,
+                              bidirectional=False)
         input = torch.randn(RNN_SEQUENCE_LENGTH, BATCH_SIZE, RNN_INPUT_SIZE)
         self.run_test(model, input)
 
@@ -1680,12 +2003,17 @@ class TestONNXRuntime(unittest.TestCase):
         class LSTMModel(torch.nn.Module):
             def __init__(self):
                 super(LSTMModel, self).__init__()
-                self.lstm = torch.nn.LSTM(RNN_INPUT_SIZE, RNN_HIDDEN_SIZE, 1, bidirectional=False)
+                self.lstm = torch.nn.LSTM(RNN_INPUT_SIZE,
+                                          RNN_HIDDEN_SIZE,
+                                          1,
+                                          bidirectional=False)
 
             def forward(self, input):
                 batch_size = input.size()[1]
-                h0_np = np.ones([1, batch_size, RNN_HIDDEN_SIZE]).astype(np.float32)
-                c0_np = np.ones([1, batch_size, RNN_HIDDEN_SIZE]).astype(np.float32)
+                h0_np = np.ones([1, batch_size,
+                                 RNN_HIDDEN_SIZE]).astype(np.float32)
+                c0_np = np.ones([1, batch_size,
+                                 RNN_HIDDEN_SIZE]).astype(np.float32)
                 h0 = torch.from_numpy(h0_np)
                 c0 = torch.from_numpy(c0_np)
                 return self.lstm(input, (h0, c0))
@@ -1693,20 +2021,27 @@ class TestONNXRuntime(unittest.TestCase):
         input = torch.randn(RNN_SEQUENCE_LENGTH, BATCH_SIZE, RNN_INPUT_SIZE)
         # verify with different input of same batch size
         input2 = torch.randn(RNN_SEQUENCE_LENGTH, BATCH_SIZE, RNN_INPUT_SIZE)
-        self.run_test(LSTMModel(), input, fixed_batch_size=True, test_with_inputs=[input2])
+        self.run_test(LSTMModel(),
+                      input,
+                      fixed_batch_size=True,
+                      test_with_inputs=[input2])
 
     @skipIfUnsupportedMinOpsetVersion(9)
     def test_lstm_post_fix_init_state(self):
         class LSTMModel(torch.nn.Module):
             def __init__(self):
                 super(LSTMModel, self).__init__()
-                self.lstm = torch.nn.LSTM(RNN_INPUT_SIZE, RNN_HIDDEN_SIZE,
-                                          1, bidirectional=False)
+                self.lstm = torch.nn.LSTM(RNN_INPUT_SIZE,
+                                          RNN_HIDDEN_SIZE,
+                                          1,
+                                          bidirectional=False)
 
             def forward(self, input):
                 batch_size = input.size()[1]
-                h0_np = np.ones([1, batch_size, RNN_HIDDEN_SIZE]).astype(np.float32)
-                c0_np = np.ones([1, batch_size, RNN_HIDDEN_SIZE]).astype(np.float32)
+                h0_np = np.ones([1, batch_size,
+                                 RNN_HIDDEN_SIZE]).astype(np.float32)
+                c0_np = np.ones([1, batch_size,
+                                 RNN_HIDDEN_SIZE]).astype(np.float32)
                 h0 = torch.from_numpy(h0_np)
                 c0 = torch.from_numpy(c0_np)
                 return self.lstm(input, (h0, c0))
@@ -1715,59 +2050,81 @@ class TestONNXRuntime(unittest.TestCase):
         input = torch.randn(RNN_SEQUENCE_LENGTH, 1, RNN_INPUT_SIZE)
         # verify with different input of different batch size
         input2 = torch.randn(RNN_SEQUENCE_LENGTH, BATCH_SIZE, RNN_INPUT_SIZE)
-        self.run_test(model, input, dynamic_axes={'input' : {0 : 'seq', 1 : 'batch'}},
-                      test_with_inputs=[input2])
+        self.run_test(
+            model,
+            input,
+            dynamic_axes={"input": {
+                0: "seq",
+                1: "batch"
+            }},
+            test_with_inputs=[input2],
+        )
 
     def test_lstm_constant_folding(self):
         class LstmNet(torch.nn.Module):
-            def __init__(self, input_size, hidden_size, num_layers, bidirectional):
+            def __init__(self, input_size, hidden_size, num_layers,
+                         bidirectional):
                 super(LstmNet, self).__init__()
-                self.lstm = torch.nn.LSTM(input_size, hidden_size, num_layers, bidirectional=bidirectional)
+                self.lstm = torch.nn.LSTM(input_size,
+                                          hidden_size,
+                                          num_layers,
+                                          bidirectional=bidirectional)
 
             def forward(self, input, initial_state):
                 return self.lstm(input, initial_state)
 
-        def get_LstmNet_model_and_inputs(input_size, hidden_size, num_layers, batch_size,
-                                         seq_len, bidirectional):
+        def get_LstmNet_model_and_inputs(input_size, hidden_size, num_layers,
+                                         batch_size, seq_len, bidirectional):
             num_directions = 2 if bidirectional else 1
             model = LstmNet(input_size, hidden_size, num_layers, bidirectional)
             input = torch.randn(seq_len, batch_size, input_size)
-            h0 = torch.randn(num_layers * num_directions, batch_size, hidden_size)
-            c0 = torch.randn(num_layers * num_directions, batch_size, hidden_size)
+            h0 = torch.randn(num_layers * num_directions, batch_size,
+                             hidden_size)
+            c0 = torch.randn(num_layers * num_directions, batch_size,
+                             hidden_size)
             return model, (input, (h0, c0))
 
         batch_size1 = 3
-        model1, input1 = get_LstmNet_model_and_inputs(7, 3, 2, batch_size1, 5, True)
+        model1, input1 = get_LstmNet_model_and_inputs(7, 3, 2, batch_size1, 5,
+                                                      True)
         self.run_test(model1, input1, do_constant_folding=True)
 
         batch_size2 = 4
-        model2, input2 = get_LstmNet_model_and_inputs(5, 4, 3, batch_size2, 7, False)
+        model2, input2 = get_LstmNet_model_and_inputs(5, 4, 3, batch_size2, 7,
+                                                      False)
         self.run_test(model2, input2, do_constant_folding=True)
 
     def test_gru_constant_folding(self):
         class GruNet(torch.nn.Module):
-            def __init__(self, input_size, hidden_size, num_layers, bidirectional):
+            def __init__(self, input_size, hidden_size, num_layers,
+                         bidirectional):
                 super(GruNet, self).__init__()
-                self.mygru = torch.nn.GRU(input_size, hidden_size, num_layers, bidirectional=bidirectional)
+                self.mygru = torch.nn.GRU(input_size,
+                                          hidden_size,
+                                          num_layers,
+                                          bidirectional=bidirectional)
 
             def forward(self, input, initial_state):
                 out = self.mygru(input, initial_state)
                 return out
 
-        def get_GruNet_model_and_inputs(input_size, hidden_size, num_layers, batch_size,
-                                        seq_len, bidirectional):
+        def get_GruNet_model_and_inputs(input_size, hidden_size, num_layers,
+                                        batch_size, seq_len, bidirectional):
             num_directions = 2 if bidirectional else 1
             model = GruNet(input_size, hidden_size, num_layers, bidirectional)
             input = torch.randn(seq_len, batch_size, input_size)
-            h0 = torch.randn(num_layers * num_directions, batch_size, hidden_size)
+            h0 = torch.randn(num_layers * num_directions, batch_size,
+                             hidden_size)
             return model, (input, h0)
 
         batch_size1 = 3
-        model1, input1 = get_GruNet_model_and_inputs(7, 3, 2, batch_size1, 5, True)
+        model1, input1 = get_GruNet_model_and_inputs(7, 3, 2, batch_size1, 5,
+                                                     True)
         self.run_test(model1, input1, do_constant_folding=True)
 
         batch_size2 = 4
-        model2, input2 = get_GruNet_model_and_inputs(5, 4, 3, batch_size2, 7, False)
+        model2, input2 = get_GruNet_model_and_inputs(5, 4, 3, batch_size2, 7,
+                                                     False)
         self.run_test(model2, input2, do_constant_folding=True)
 
     @skipIfUnsupportedMinOpsetVersion(8)
@@ -1786,7 +2143,8 @@ class TestONNXRuntime(unittest.TestCase):
         class ArangeScript(torch.jit.ScriptModule):
             @torch.jit.script_method
             def forward(self, a):
-                return torch.arange(a.size(0), dtype=torch.float).view(-1, 1) + a
+                return torch.arange(a.size(0), dtype=torch.float).view(-1,
+                                                                       1) + a
 
         x = torch.randn(3, 4, requires_grad=True)
         outputs = ArangeScript()(x)
@@ -1794,7 +2152,8 @@ class TestONNXRuntime(unittest.TestCase):
 
         class ArangeModel(torch.nn.Module):
             def forward(self, a):
-                return torch.arange(a.size(0), dtype=torch.float).view(-1, 1) + a
+                return torch.arange(a.size(0), dtype=torch.float).view(-1,
+                                                                       1) + a
 
         self.run_test(ArangeModel(), x)
 
@@ -1820,14 +2179,16 @@ class TestONNXRuntime(unittest.TestCase):
         class ArangeScript(torch.jit.ScriptModule):
             @torch.jit.script_method
             def forward(self, a):
-                return torch.arange(2, a.size(0) + 2, dtype=torch.float).view(-1, 1) + a
+                return torch.arange(2, a.size(0) + 2, dtype=torch.float).view(
+                    -1, 1) + a
 
         x = torch.randn(3, 4, requires_grad=True)
         self.run_test(ArangeScript(), x)
 
         class ArangeModel(torch.nn.Module):
             def forward(self, a):
-                return torch.arange(2, a.size(0) + 2, dtype=torch.float).view(-1, 1) + a
+                return torch.arange(2, a.size(0) + 2, dtype=torch.float).view(
+                    -1, 1) + a
 
         self.run_test(ArangeModel(), x)
 
@@ -1852,14 +2213,18 @@ class TestONNXRuntime(unittest.TestCase):
         class ArangeScript(torch.jit.ScriptModule):
             @torch.jit.script_method
             def forward(self, a):
-                return torch.arange(2, a.size(0) * a.size(1) + 2, a.size(1), dtype=torch.float).view(-1, 1) + a
+                return (torch.arange(
+                    2, a.size(0) * a.size(1) + 2, a.size(1),
+                    dtype=torch.float).view(-1, 1) + a)
 
         x = torch.randn(3, 4, requires_grad=True)
         self.run_test(ArangeScript(), x)
 
         class ArangeModel(torch.nn.Module):
             def forward(self, a):
-                return torch.arange(2, a.size(0) * a.size(1) + 2, a.size(1), dtype=torch.float).view(-1, 1) + a
+                return (torch.arange(
+                    2, a.size(0) * a.size(1) + 2, a.size(1),
+                    dtype=torch.float).view(-1, 1) + a)
 
         self.run_test(ArangeModel(), x)
 
@@ -1868,14 +2233,18 @@ class TestONNXRuntime(unittest.TestCase):
         class ArangeScript(torch.jit.ScriptModule):
             @torch.jit.script_method
             def forward(self, a):
-                return torch.arange(2.7, a.size(0) * a.size(1) + 2, a.size(1)).view(-1, 1) + a
+                return (torch.arange(2.7,
+                                     a.size(0) * a.size(1) + 2,
+                                     a.size(1)).view(-1, 1) + a)
 
         x = torch.randn(3, 4, requires_grad=True)
         self.run_test(ArangeScript(), x)
 
         class ArangeModel(torch.nn.Module):
             def forward(self, a):
-                return torch.arange(2.7, a.size(0) * a.size(1) + 2, a.size(1)).view(-1, 1) + a
+                return (torch.arange(2.7,
+                                     a.size(0) * a.size(1) + 2,
+                                     a.size(1)).view(-1, 1) + a)
 
         self.run_test(ArangeModel(), x)
 
@@ -1972,7 +2341,8 @@ class TestONNXRuntime(unittest.TestCase):
         x = torch.randn(1, 1, 5, requires_grad=True)
         self.run_test(model, x)
 
-        model = torch.nn.utils.weight_norm(torch.nn.Conv1d(3, 6, 3), name='weight')
+        model = torch.nn.utils.weight_norm(torch.nn.Conv1d(3, 6, 3),
+                                           name="weight")
         x = torch.randn(3, 3, 5, requires_grad=True)
         self.run_test(model, x)
 
@@ -2000,7 +2370,11 @@ class TestONNXRuntime(unittest.TestCase):
     def test_flatten2d_neg(self):
         class FlattenModel(torch.nn.Module):
             def forward(self, x):
-                return torch.flatten(x, 1, -1), torch.flatten(x, 0, -2), torch.flatten(x, 1, -2)
+                return (
+                    torch.flatten(x, 1, -1),
+                    torch.flatten(x, 0, -2),
+                    torch.flatten(x, 1, -2),
+                )
 
         x = torch.randint(10, (1, 2, 3, 4))
         self.run_test(FlattenModel(), x)
@@ -2055,8 +2429,15 @@ class TestONNXRuntime(unittest.TestCase):
                 return len(input.unbind()) + input
 
         x = torch.randn(4, 5)
-        self.run_test(LenModel(), x, input_names=['input'], dynamic_axes={'input': {0: 'seq'}},
-                      test_with_inputs=(torch.randn(5, 5),))
+        self.run_test(
+            LenModel(),
+            x,
+            input_names=["input"],
+            dynamic_axes={"input": {
+                0: "seq"
+            }},
+            test_with_inputs=(torch.randn(5, 5), ),
+        )
 
     @skipIfUnsupportedMinOpsetVersion(11)
     def test_unbind_dynamic(self):
@@ -2242,7 +2623,8 @@ class TestONNXRuntime(unittest.TestCase):
         class TensorFactory(torch.jit.ScriptModule):
             @torch.jit.script_method
             def forward(self, x):
-                return torch.zeros(x.shape, dtype=torch.float) + torch.ones(x.shape, dtype=torch.float)
+                return torch.zeros(x.shape, dtype=torch.float) + torch.ones(
+                    x.shape, dtype=torch.float)
 
         x = torch.randn(2, 3, 4)
         self.run_test(TensorFactory(), x)
@@ -2252,8 +2634,18 @@ class TestONNXRuntime(unittest.TestCase):
         class TensorFactory(torch.jit.ScriptModule):
             @torch.jit.script_method
             def forward(self, x):
-                zeros = torch.zeros_like(x, dtype=torch.float, layout=torch.strided, device=torch.device('cpu'))
-                ones = torch.ones_like(x, dtype=torch.float, layout=torch.strided, device=torch.device('cpu'))
+                zeros = torch.zeros_like(
+                    x,
+                    dtype=torch.float,
+                    layout=torch.strided,
+                    device=torch.device("cpu"),
+                )
+                ones = torch.ones_like(
+                    x,
+                    dtype=torch.float,
+                    layout=torch.strided,
+                    device=torch.device("cpu"),
+                )
                 return zeros + ones
 
         x = torch.randn(2, 3, 4)
@@ -2342,11 +2734,13 @@ class TestONNXRuntime(unittest.TestCase):
     def test_masked_scatter(self):
         class MaskedScatterModel(torch.nn.Module):
             def forward(self, x):
-                return torch.masked_scatter(x, x.ge(0.5), torch.ones(100, 100) * 5)
+                return torch.masked_scatter(x, x.ge(0.5),
+                                            torch.ones(100, 100) * 5)
 
         x = torch.randn(3, 4, 5, requires_grad=True)
         self.run_test(MaskedScatterModel(), x)
 
+    @skipIfUnsupportedOpsetVersion([12])
     @skipIfUnsupportedMinOpsetVersion(11)
     def test_masked_select(self):
         class MaskedSelectModel(torch.nn.Module):
@@ -2356,7 +2750,8 @@ class TestONNXRuntime(unittest.TestCase):
         x = torch.randn(3, 4, 5, requires_grad=True)
         self.run_test(MaskedSelectModel(), x)
 
-    @unittest.skip("Enable this once depthToSpace attr 'mode' is supported in ORT")
+    @unittest.skip(
+        "Enable this once depthToSpace attr 'mode' is supported in ORT")
     @skipIfUnsupportedMinOpsetVersion(9)
     def test_pixel_shuffle(self):
         class PixelShuffle(torch.nn.Module):
@@ -2392,7 +2787,7 @@ class TestONNXRuntime(unittest.TestCase):
 
         class MatMulModel(torch.nn.Module):
             def forward(self, x):
-                return (torch.mm(x, x) + x + torch.mm(x, x) + x)
+                return torch.mm(x, x) + x + torch.mm(x, x) + x
 
         x = torch.ones(3, 3)
         self.run_test(MatMulModel(), x)
@@ -2408,6 +2803,7 @@ class TestONNXRuntime(unittest.TestCase):
             # add is used for exporting full
             def forward(self, x):
                 return torch.full((3, 4), x)
+
         x = torch.tensor(12)
         self.run_test(FullModel(), x)
 
@@ -2517,6 +2913,7 @@ class TestONNXRuntime(unittest.TestCase):
         class RsqrtModel(torch.nn.Module):
             def forward(self, x):
                 return x.rsqrt()
+
         x = torch.zeros(4, 2, 3, requires_grad=True, dtype=torch.float64)
         self.run_test(RsqrtModel(), x)
 
@@ -2524,7 +2921,10 @@ class TestONNXRuntime(unittest.TestCase):
     def test_unique(self):
         class UniqueModel(torch.nn.Module):
             def forward(self, x):
-                return torch.unique(x, sorted=True, return_inverse=False, return_counts=True)
+                return torch.unique(x,
+                                    sorted=True,
+                                    return_inverse=False,
+                                    return_counts=True)
 
         x = torch.tensor([1, 3, 2, 3], dtype=torch.long)
         self.run_test(UniqueModel(), x)
@@ -2533,7 +2933,11 @@ class TestONNXRuntime(unittest.TestCase):
     def test_unique_along_dim(self):
         class UniqueModel(torch.nn.Module):
             def forward(self, x):
-                return torch.unique(x, dim=0, sorted=True, return_inverse=True, return_counts=False)
+                return torch.unique(x,
+                                    dim=0,
+                                    sorted=True,
+                                    return_inverse=True,
+                                    return_counts=False)
 
         x = torch.tensor([1, 3, 2, 3], dtype=torch.long)
         self.run_test(UniqueModel(), x)
@@ -2543,6 +2947,7 @@ class TestONNXRuntime(unittest.TestCase):
         class CumSum(torch.nn.Module):
             def forward(self, input):
                 return torch.cumsum(input, dim=0)
+
         x = torch.randn(2, 3, 4)
         model = CumSum()
         self.run_test(model, x)
@@ -2572,7 +2977,12 @@ class TestONNXRuntime(unittest.TestCase):
     def test_baddbmm(self):
         class MyModule(torch.nn.Module):
             def forward(self, input, batch1, batch2):
-                return torch.baddbmm(input, batch1, batch2, alpha=torch.tensor(5), beta=3.5)
+                return torch.baddbmm(input,
+                                     batch1,
+                                     batch2,
+                                     alpha=torch.tensor(5),
+                                     beta=3.5)
+
         x = torch.randn(10, 3, 5)
         batch1 = torch.randn(10, 3, 4)
         batch2 = torch.randn(10, 4, 5)
@@ -2582,7 +2992,12 @@ class TestONNXRuntime(unittest.TestCase):
     def test_baddbmm_dynamic(self):
         class MyModule(torch.nn.Module):
             def forward(self, input, batch1, batch2, alpha, beta):
-                return torch.baddbmm(input, batch1, batch2, alpha=alpha, beta=beta)
+                return torch.baddbmm(input,
+                                     batch1,
+                                     batch2,
+                                     alpha=alpha,
+                                     beta=beta)
+
         x = torch.randn(10, 3, 5)
         batch1 = torch.randn(10, 3, 4)
         batch2 = torch.randn(10, 4, 5)
@@ -2591,10 +3006,42 @@ class TestONNXRuntime(unittest.TestCase):
         model = MyModule()
         self.run_test(model, (x, batch1, batch2, alpha, beta))
 
+    def test_numel(self):
+        class MyModule(torch.jit.ScriptModule):
+            @torch.jit.script_method
+            def forward(self, input):
+                return input.numel() * input
+
+        x = torch.randn(2, 3, 5)
+        model = MyModule()
+        self.run_test(model, (x, ))
+
+    def test_numel_empty(self):
+        class MyModule(torch.jit.ScriptModule):
+            @torch.jit.script_method
+            def forward(self, input):
+                return input.numel() * input
+
+        x = torch.randn(0)
+        model = MyModule()
+        self.run_test(model, (x, ))
+
+    def test_cast_to(self):
+        class MyModule(torch.jit.ScriptModule):
+            @torch.jit.script_method
+            def forward(self, input, other):
+                return input.to(other) + other
+
+        x = torch.randn(2, 3, 4)
+        y = torch.tensor([1], dtype=torch.int64)
+        model = MyModule()
+        self.run_test(model, (x, y))
+
     def test_log(self):
         class Log(torch.nn.Module):
             def forward(self, input):
                 return torch.log(input)
+
         x = torch.rand(2, 3, 4)
         model = Log()
         self.run_test(model, x)
@@ -2603,6 +3050,7 @@ class TestONNXRuntime(unittest.TestCase):
         class Log1p(torch.nn.Module):
             def forward(self, input):
                 return torch.log1p(input)
+
         x = torch.rand(2, 3, 4)
         model = Log1p()
         self.run_test(model, x)
@@ -2613,7 +3061,8 @@ class TestONNXRuntime(unittest.TestCase):
             def forward(self, x):
                 return torch.round(x)
 
-        x = torch.tensor([0.9920, -1.0362, -1.5000, 3.5000], requires_grad=True)
+        x = torch.tensor([0.9920, -1.0362, -1.5000, 3.5000],
+                         requires_grad=True)
         self.run_test(Round(), x)
 
     def test_constant_pad(self):
@@ -2634,10 +3083,16 @@ class TestONNXRuntime(unittest.TestCase):
                 return torch.nn.functional.pad(x, pad)
 
         x = torch.randn(2, 2, 4, 4)
-        y = pad = (torch.tensor(2, dtype=torch.int32), torch.tensor(4, dtype=torch.int32))
+        y = pad = (
+            torch.tensor(2, dtype=torch.int32),
+            torch.tensor(4, dtype=torch.int32),
+        )
         self.run_test(Pad(), (x, y))
 
-        y = pad = (torch.tensor(2, dtype=torch.int64), torch.tensor(4, dtype=torch.int64))
+        y = pad = (
+            torch.tensor(2, dtype=torch.int64),
+            torch.tensor(4, dtype=torch.int64),
+        )
         self.run_test(Pad(), (x, y))
 
     def test_reflection_pad(self):
@@ -2662,9 +3117,23 @@ class TestONNXRuntime(unittest.TestCase):
     def test_im2col(self):
         class Unfold(torch.nn.Module):
             def forward(self, input):
-                return torch.nn.functional.unfold(input, kernel_size=(10, 15), dilation=2, padding=5, stride=3), \
-                    torch.nn.functional.unfold(input, kernel_size=(2, 2), dilation=1, padding=0, stride=3), \
-                    torch.nn.functional.unfold(input, kernel_size=(1, 1), dilation=5, padding=2, stride=3)
+                return (
+                    torch.nn.functional.unfold(input,
+                                               kernel_size=(10, 15),
+                                               dilation=2,
+                                               padding=5,
+                                               stride=3),
+                    torch.nn.functional.unfold(input,
+                                               kernel_size=(2, 2),
+                                               dilation=1,
+                                               padding=0,
+                                               stride=3),
+                    torch.nn.functional.unfold(input,
+                                               kernel_size=(1, 1),
+                                               dilation=5,
+                                               padding=2,
+                                               stride=3),
+                )
 
         x = torch.rand(1, 1, 200, 100)
         self.run_test(Unfold(), x)
@@ -2689,7 +3158,8 @@ class TestONNXRuntime(unittest.TestCase):
 
         class CenterCrop(torch.nn.Module):
             def forward(self, input):
-                return center_slice_helper(input, torch.tensor(input.shape[1] - 1))
+                return center_slice_helper(input,
+                                           torch.tensor(input.shape[1] - 1))
 
         x = torch.randn(3, 4)
         self.run_test(CenterCrop(), x)
@@ -2711,6 +3181,7 @@ class TestONNXRuntime(unittest.TestCase):
                 out = input * 2
                 out *= out.dim()
                 return out
+
         empty_input = torch.randn(0, requires_grad=True)
         multi_dim_input = torch.randn(1, 2, 3, requires_grad=True)
         self.run_test(DimModel(), empty_input)
@@ -2721,15 +3192,15 @@ class TestONNXRuntime(unittest.TestCase):
     def test_einsum(self):
         class EinsumModelBatchDiagonal(torch.nn.Module):
             def forward(self, *tensor_list):
-                eqn = '...ii ->...i'
+                eqn = "...ii ->...i"
                 return torch.einsum(eqn, *tensor_list)
 
         x = torch.randn(3, 5, 5)
-        self.run_test(EinsumModelBatchDiagonal(), input=(x,))
+        self.run_test(EinsumModelBatchDiagonal(), input=(x, ))
 
         class EinsumModelBatchMatmul(torch.nn.Module):
             def forward(self, *tensor_list):
-                eqn = 'bij, bjk -> bik'
+                eqn = "bij, bjk -> bik"
                 return torch.einsum(eqn, *tensor_list)
 
         x = torch.randn(5, 2, 3)
@@ -2738,7 +3209,7 @@ class TestONNXRuntime(unittest.TestCase):
 
         class EinsumModelInnerProd(torch.nn.Module):
             def forward(self, *tensor_list):
-                eqn = 'i,i'
+                eqn = "i,i"
                 return torch.einsum(eqn, *tensor_list)
 
         x = torch.randn(5)
@@ -2747,11 +3218,11 @@ class TestONNXRuntime(unittest.TestCase):
 
         class EinsumModelTranspose(torch.nn.Module):
             def forward(self, *tensor_list):
-                eqn = 'ij->ji'
+                eqn = "ij->ji"
                 return torch.einsum(eqn, *tensor_list)
 
         x = torch.randn(3, 4)
-        self.run_test(EinsumModelTranspose(), input=(x,))
+        self.run_test(EinsumModelTranspose(), input=(x, ))
 
     @unittest.skip("Enable this once ORT version is updated")
     @skipIfUnsupportedMinOpsetVersion(12)
@@ -2772,7 +3243,7 @@ class TestONNXRuntime(unittest.TestCase):
         class CrossEntropyLossNone(torch.nn.Module):
             def __init__(self):
                 super(CrossEntropyLossNone, self).__init__()
-                self.loss = torch.nn.CrossEntropyLoss(reduction='none')
+                self.loss = torch.nn.CrossEntropyLoss(reduction="none")
 
             def forward(self, input, target):
                 return self.loss(input, target)
@@ -2782,7 +3253,8 @@ class TestONNXRuntime(unittest.TestCase):
         class CrossEntropyLossNoneWeight(torch.nn.Module):
             def __init__(self):
                 super(CrossEntropyLossNoneWeight, self).__init__()
-                self.loss = torch.nn.CrossEntropyLoss(reduction='none', weight=torch.randn(5))
+                self.loss = torch.nn.CrossEntropyLoss(reduction="none",
+                                                      weight=torch.randn(5))
 
             def forward(self, input, target):
                 return self.loss(input, target)
@@ -2792,7 +3264,7 @@ class TestONNXRuntime(unittest.TestCase):
         class CrossEntropyLossSum(torch.nn.Module):
             def __init__(self):
                 super(CrossEntropyLossSum, self).__init__()
-                self.loss = torch.nn.CrossEntropyLoss(reduction='sum')
+                self.loss = torch.nn.CrossEntropyLoss(reduction="sum")
 
             def forward(self, input, target):
                 return self.loss(input, target)
@@ -2802,7 +3274,8 @@ class TestONNXRuntime(unittest.TestCase):
         class CrossEntropyLossSumWeight(torch.nn.Module):
             def __init__(self):
                 super(CrossEntropyLossSumWeight, self).__init__()
-                self.loss = torch.nn.CrossEntropyLoss(reduction='sum', weight=torch.randn(5))
+                self.loss = torch.nn.CrossEntropyLoss(reduction="sum",
+                                                      weight=torch.randn(5))
 
             def forward(self, input, target):
                 return self.loss(input, target)
@@ -2832,7 +3305,8 @@ class TestONNXRuntime(unittest.TestCase):
         class CrossEntropyLossNoneIgnoreIndex(torch.nn.Module):
             def __init__(self):
                 super(CrossEntropyLossNoneIgnoreIndex, self).__init__()
-                self.loss = torch.nn.CrossEntropyLoss(reduction='none', ignore_index=1)
+                self.loss = torch.nn.CrossEntropyLoss(reduction="none",
+                                                      ignore_index=1)
 
             def forward(self, input, target):
                 return self.loss(input, target)
@@ -2842,7 +3316,9 @@ class TestONNXRuntime(unittest.TestCase):
         class CrossEntropyLossNoneWeightIgnoreIndex(torch.nn.Module):
             def __init__(self):
                 super(CrossEntropyLossNoneWeightIgnoreIndex, self).__init__()
-                self.loss = torch.nn.CrossEntropyLoss(reduction='none', weight=torch.randn(5), ignore_index=1)
+                self.loss = torch.nn.CrossEntropyLoss(reduction="none",
+                                                      weight=torch.randn(5),
+                                                      ignore_index=1)
 
             def forward(self, input, target):
                 return self.loss(input, target)
@@ -2852,7 +3328,8 @@ class TestONNXRuntime(unittest.TestCase):
         class CrossEntropyLossSumIgnoreIndex(torch.nn.Module):
             def __init__(self):
                 super(CrossEntropyLossSumIgnoreIndex, self).__init__()
-                self.loss = torch.nn.CrossEntropyLoss(reduction='sum', ignore_index=1)
+                self.loss = torch.nn.CrossEntropyLoss(reduction="sum",
+                                                      ignore_index=1)
 
             def forward(self, input, target):
                 return self.loss(input, target)
@@ -2862,7 +3339,9 @@ class TestONNXRuntime(unittest.TestCase):
         class CrossEntropyLossSumWeightIgnoreIndex(torch.nn.Module):
             def __init__(self):
                 super(CrossEntropyLossSumWeightIgnoreIndex, self).__init__()
-                self.loss = torch.nn.CrossEntropyLoss(reduction='sum', weight=torch.randn(5), ignore_index=1)
+                self.loss = torch.nn.CrossEntropyLoss(reduction="sum",
+                                                      weight=torch.randn(5),
+                                                      ignore_index=1)
 
             def forward(self, input, target):
                 return self.loss(input, target)
@@ -2882,7 +3361,8 @@ class TestONNXRuntime(unittest.TestCase):
         class CrossEntropyLossMeanWeightIgnoreIndex(torch.nn.Module):
             def __init__(self):
                 super(CrossEntropyLossMeanWeightIgnoreIndex, self).__init__()
-                self.loss = torch.nn.CrossEntropyLoss(weight=torch.randn(5), ignore_index=1)
+                self.loss = torch.nn.CrossEntropyLoss(weight=torch.randn(5),
+                                                      ignore_index=1)
 
             def forward(self, input, target):
                 return self.loss(input, target)
@@ -2902,6 +3382,7 @@ class TestONNXRuntime(unittest.TestCase):
                 else:
                     pass
                 return out
+
         x = torch.randn(1, 2, 3, requires_grad=True)
         self.run_test(EmptyBranchModel(), x)
 
@@ -2911,7 +3392,7 @@ class TestONNXRuntime(unittest.TestCase):
         class NLLModel(torch.nn.Module):
             def __init__(self):
                 super(NLLModel, self).__init__()
-                self.loss = torch.nn.NLLLoss(reduction='none')
+                self.loss = torch.nn.NLLLoss(reduction="none")
                 self.m = torch.nn.LogSoftmax(dim=1)
 
             def forward(self, input, target):
@@ -2929,7 +3410,7 @@ class TestONNXRuntime(unittest.TestCase):
         class NLLModel(torch.nn.Module):
             def __init__(self):
                 super(NLLModel, self).__init__()
-                self.loss = torch.nn.NLLLoss(reduction='none')
+                self.loss = torch.nn.NLLLoss(reduction="none")
                 self.conv = torch.nn.Conv2d(16, C, (3, 3))
                 self.m = torch.nn.LogSoftmax(dim=1)
 
@@ -2948,7 +3429,7 @@ class TestONNXRuntime(unittest.TestCase):
         class NLLModel(torch.nn.Module):
             def __init__(self):
                 super(NLLModel, self).__init__()
-                self.loss = torch.nn.NLLLoss(reduction='mean')
+                self.loss = torch.nn.NLLLoss(reduction="mean")
                 self.conv = torch.nn.Conv2d(16, C, (3, 3))
                 self.m = torch.nn.LogSoftmax(dim=1)
 
@@ -2967,7 +3448,7 @@ class TestONNXRuntime(unittest.TestCase):
         class NLLModel(torch.nn.Module):
             def __init__(self):
                 super(NLLModel, self).__init__()
-                self.loss = torch.nn.NLLLoss(reduction='sum')
+                self.loss = torch.nn.NLLLoss(reduction="sum")
                 self.conv = torch.nn.Conv2d(16, C, (3, 3))
                 self.m = torch.nn.LogSoftmax(dim=1)
 
@@ -2986,7 +3467,8 @@ class TestONNXRuntime(unittest.TestCase):
         class NLLModel(torch.nn.Module):
             def __init__(self):
                 super(NLLModel, self).__init__()
-                self.loss = torch.nn.NLLLoss(reduction='mean', weight=torch.randn(C))
+                self.loss = torch.nn.NLLLoss(reduction="mean",
+                                             weight=torch.randn(C))
                 self.conv = torch.nn.Conv2d(16, C, (3, 3))
                 self.m = torch.nn.LogSoftmax(dim=1)
 
@@ -3005,7 +3487,7 @@ class TestONNXRuntime(unittest.TestCase):
         class NLLModel(torch.nn.Module):
             def __init__(self):
                 super(NLLModel, self).__init__()
-                self.loss = torch.nn.NLLLoss(reduction='mean', ignore_index=1)
+                self.loss = torch.nn.NLLLoss(reduction="mean", ignore_index=1)
                 self.conv = torch.nn.Conv2d(16, C, (3, 3))
                 self.m = torch.nn.LogSoftmax(dim=1)
 
@@ -3024,7 +3506,9 @@ class TestONNXRuntime(unittest.TestCase):
         class NLLModel(torch.nn.Module):
             def __init__(self):
                 super(NLLModel, self).__init__()
-                self.loss = torch.nn.NLLLoss(reduction='mean', weight=torch.randn(C), ignore_index=1)
+                self.loss = torch.nn.NLLLoss(reduction="mean",
+                                             weight=torch.randn(C),
+                                             ignore_index=1)
                 self.conv = torch.nn.Conv2d(16, C, (3, 3))
                 self.m = torch.nn.LogSoftmax(dim=1)
 
@@ -3058,7 +3542,7 @@ class TestONNXRuntime(unittest.TestCase):
                 return x + shape
 
         x = torch.randn(2, 5)
-        self.run_test(ShapeModule(), (x,), rtol=1e-3, atol=1e-5) 
+        self.run_test(ShapeModule(), (x, ), rtol=1e-3, atol=1e-5)
 
     def test_onnx_proto_checker(self):
         class Model(torch.nn.Module):
@@ -3067,6 +3551,7 @@ class TestONNXRuntime(unittest.TestCase):
 
             def forward(self, x):
                 return 2 * x
+
         x = torch.randn(1, 2, 3, requires_grad=True)
         f = io.BytesIO()
         torch.onnx._export(Model(), x, f)
@@ -3075,12 +3560,14 @@ class TestONNXRuntime(unittest.TestCase):
 
         def check_proto():
             torch._C._check_onnx_proto(model.SerializeToString())
+
         self.assertRaises(RuntimeError, check_proto)
 
     def test_split_tensor_scalar(self):
         class SplitModel(torch.nn.Module):
             def forward(self, x):
                 return torch.split(x, x.size(1))
+
         x = torch.randn(1, 2, 3, requires_grad=True)
         self.run_test(SplitModel(), x)
 
@@ -3088,25 +3575,41 @@ class TestONNXRuntime(unittest.TestCase):
         class SplitModel(torch.nn.Module):
             def forward(self, x):
                 return torch.split(x, torch.ones(3))
+
         x = torch.randn(1, 2, 3, requires_grad=True)
 
         def run_model():
             SplitModel(x)
+
         self.assertRaises(TypeError, run_model)
 
     def _dispatch_rnn_test(self, name, *args, **kwargs):
-        if name == 'elman':
+        if name == "elman":
             self._elman_rnn_test(*args, **kwargs)
-        if name == 'lstm':
+        if name == "lstm":
             self._lstm_test(*args, **kwargs)
-        if name == 'gru':
+        if name == "gru":
             self._gru_test(*args, **kwargs)
 
-    def _elman_rnn_test(self, layers, nonlinearity, bidirectional,
-                        initial_state, packed_sequence, dropout):
+    def _elman_rnn_test(
+            self,
+            layers,
+            nonlinearity,
+            bidirectional,
+            initial_state,
+            packed_sequence,
+            dropout,
+    ):
         batch_first = True if packed_sequence == 2 else False
-        model = torch.nn.RNN(RNN_INPUT_SIZE, RNN_HIDDEN_SIZE, layers, nonlinearity=nonlinearity,
-                             bidirectional=bidirectional, dropout=dropout, batch_first=batch_first)
+        model = torch.nn.RNN(
+            RNN_INPUT_SIZE,
+            RNN_HIDDEN_SIZE,
+            layers,
+            nonlinearity=nonlinearity,
+            bidirectional=bidirectional,
+            dropout=dropout,
+            batch_first=batch_first,
+        )
 
         if packed_sequence == 1:
             model = RnnModelWithPackedSequence(model, False)
@@ -3114,7 +3617,9 @@ class TestONNXRuntime(unittest.TestCase):
             model = RnnModelWithPackedSequence(model, True)
 
         def make_input(batch_size):
-            seq_lengths = np.random.randint(1, RNN_SEQUENCE_LENGTH + 1, size=batch_size)
+            seq_lengths = np.random.randint(1,
+                                            RNN_SEQUENCE_LENGTH + 1,
+                                            size=batch_size)
             seq_lengths = list(reversed(sorted(map(int, seq_lengths))))
             inputs = [torch.randn(l, RNN_INPUT_SIZE) for l in seq_lengths]
             inputs = rnn_utils.pad_sequence(inputs, batch_first=batch_first)
@@ -3123,7 +3628,8 @@ class TestONNXRuntime(unittest.TestCase):
             directions = 2 if bidirectional else 1
 
             if initial_state:
-                h0 = torch.randn(directions * layers, batch_size, RNN_HIDDEN_SIZE)
+                h0 = torch.randn(directions * layers, batch_size,
+                                 RNN_HIDDEN_SIZE)
                 inputs.append(h0)
             if packed_sequence != 0:
                 inputs.append(torch.IntTensor(seq_lengths))
@@ -3140,19 +3646,26 @@ class TestONNXRuntime(unittest.TestCase):
         other_input = make_input(RNN_BATCH_SIZE + 1)
         self.run_test(model, other_input, batch_size=RNN_BATCH_SIZE + 1)
 
-    def _lstm_test(self, layers, bidirectional, initial_state,
-                   packed_sequence, dropout):
+    def _lstm_test(self, layers, bidirectional, initial_state, packed_sequence,
+                   dropout):
         batch_first = True if packed_sequence == 2 else False
         model = LstmFlatteningResult(
-            RNN_INPUT_SIZE, RNN_HIDDEN_SIZE, layers,
-            bidirectional=bidirectional, dropout=dropout, batch_first=batch_first)
+            RNN_INPUT_SIZE,
+            RNN_HIDDEN_SIZE,
+            layers,
+            bidirectional=bidirectional,
+            dropout=dropout,
+            batch_first=batch_first,
+        )
         if packed_sequence == 1:
             model = RnnModelWithPackedSequence(model, False)
         if packed_sequence == 2:
             model = RnnModelWithPackedSequence(model, True)
 
         def make_input(batch_size):
-            seq_lengths = np.random.randint(1, RNN_SEQUENCE_LENGTH + 1, size=batch_size)
+            seq_lengths = np.random.randint(1,
+                                            RNN_SEQUENCE_LENGTH + 1,
+                                            size=batch_size)
             seq_lengths = list(reversed(sorted(map(int, seq_lengths))))
             inputs = [torch.randn(l, RNN_INPUT_SIZE) for l in seq_lengths]
             inputs = rnn_utils.pad_sequence(inputs, batch_first=batch_first)
@@ -3161,8 +3674,10 @@ class TestONNXRuntime(unittest.TestCase):
             directions = 2 if bidirectional else 1
 
             if initial_state:
-                h0 = torch.randn(directions * layers, batch_size, RNN_HIDDEN_SIZE)
-                c0 = torch.randn(directions * layers, batch_size, RNN_HIDDEN_SIZE)
+                h0 = torch.randn(directions * layers, batch_size,
+                                 RNN_HIDDEN_SIZE)
+                c0 = torch.randn(directions * layers, batch_size,
+                                 RNN_HIDDEN_SIZE)
                 inputs.append((h0, c0))
             if packed_sequence != 0:
                 inputs.append(torch.IntTensor(seq_lengths))
@@ -3179,18 +3694,26 @@ class TestONNXRuntime(unittest.TestCase):
         other_input = make_input(RNN_BATCH_SIZE + 1)
         self.run_test(model, other_input, batch_size=RNN_BATCH_SIZE + 1)
 
-    def _gru_test(self, layers, bidirectional, initial_state,
-                  packed_sequence, dropout):
+    def _gru_test(self, layers, bidirectional, initial_state, packed_sequence,
+                  dropout):
         batch_first = True if packed_sequence == 2 else False
-        model = torch.nn.GRU(RNN_INPUT_SIZE, RNN_HIDDEN_SIZE, layers, bidirectional=bidirectional, dropout=dropout,
-                             batch_first=batch_first)
+        model = torch.nn.GRU(
+            RNN_INPUT_SIZE,
+            RNN_HIDDEN_SIZE,
+            layers,
+            bidirectional=bidirectional,
+            dropout=dropout,
+            batch_first=batch_first,
+        )
         if packed_sequence == 1:
             model = RnnModelWithPackedSequence(model, False)
         if packed_sequence == 2:
             model = RnnModelWithPackedSequence(model, True)
 
         def make_input(batch_size):
-            seq_lengths = np.random.randint(1, RNN_SEQUENCE_LENGTH + 1, size=batch_size)
+            seq_lengths = np.random.randint(1,
+                                            RNN_SEQUENCE_LENGTH + 1,
+                                            size=batch_size)
             seq_lengths = list(reversed(sorted(map(int, seq_lengths))))
             inputs = [torch.randn(l, RNN_INPUT_SIZE) for l in seq_lengths]
             inputs = rnn_utils.pad_sequence(inputs, batch_first=batch_first)
@@ -3199,7 +3722,8 @@ class TestONNXRuntime(unittest.TestCase):
             directions = 2 if bidirectional else 1
 
             if initial_state:
-                h0 = torch.randn(directions * layers, batch_size, RNN_HIDDEN_SIZE)
+                h0 = torch.randn(directions * layers, batch_size,
+                                 RNN_HIDDEN_SIZE)
                 inputs.append(h0)
             if packed_sequence != 0:
                 inputs.append(torch.IntTensor(seq_lengths))
@@ -3217,57 +3741,53 @@ class TestONNXRuntime(unittest.TestCase):
         self.run_test(model, other_input, batch_size=RNN_BATCH_SIZE + 1)
 
 
-def make_test(name, base, layer, bidirectional, initial_state,
-              variable_length, dropout,
-              **extra_kwargs):
-    test_name = str('_'.join([
-        'test', name, layer[1],
-        bidirectional[1], initial_state[1],
-        variable_length[1], dropout[1]
+def make_test(name, base, layer, bidirectional, initial_state, variable_length,
+              dropout, **extra_kwargs):
+    test_name = str("_".join([
+        "test",
+        name,
+        layer[1],
+        bidirectional[1],
+        initial_state[1],
+        variable_length[1],
+        dropout[1],
     ]))
 
     # Cannot export with older opsets because of 'ConstantFill' op
     # ConstantFill was a temp op removed at opset 8. This is no longer supported by onnxruntime
     @skipIfUnsupportedMinOpsetVersion(9)
     def f(self):
-        self._dispatch_rnn_test(
-            base,
-            layers=layer[0],
-            bidirectional=bidirectional[0],
-            initial_state=initial_state[0],
-            packed_sequence=variable_length[0],
-            dropout=dropout[0],
-            **extra_kwargs)
+        self._dispatch_rnn_test(base,
+                                layers=layer[0],
+                                bidirectional=bidirectional[0],
+                                initial_state=initial_state[0],
+                                packed_sequence=variable_length[0],
+                                dropout=dropout[0],
+                                **extra_kwargs)
 
     f.__name__ = test_name
     setattr(TestONNXRuntime, f.__name__, f)
 
 
 def setup_rnn_tests():
-    layers_opts = [
-        (1, 'unilayer'),
-        (3, 'trilayer')
-    ]
-    bidirectional_opts = [
-        (False, 'forward'),
-        (True, 'bidirectional')
-    ]
-    initial_state_opts = [
-        (True, 'with_initial_state'),
-        (False, 'no_initial_state')
-    ]
+    layers_opts = [(1, "unilayer"), (3, "trilayer")]
+    bidirectional_opts = [(False, "forward"), (True, "bidirectional")]
+    initial_state_opts = [(True, "with_initial_state"),
+                          (False, "no_initial_state")]
     variable_length_opts = [
-        (0, 'without_sequence_lengths'),
-        (1, 'with_variable_length_sequences'),
-        (2, 'with_batch_first_sequence_lengths')
+        (0, "without_sequence_lengths"),
+        (1, "with_variable_length_sequences"),
+        (2, "with_batch_first_sequence_lengths"),
     ]
-    dropout_opts = [
-        (0.2, 'with_dropout'),
-        (0.0, 'without_dropout')
-    ]
+    dropout_opts = [(0.2, "with_dropout"), (0.0, "without_dropout")]
     test_count = 0
-    for (layer, bidirectional, initial_state, variable_length, dropout) in \
-        itertools.product(
+    for (
+            layer,
+            bidirectional,
+            initial_state,
+            variable_length,
+            dropout,
+    ) in itertools.product(
             layers_opts,
             bidirectional_opts,
             initial_state_opts,
@@ -3276,18 +3796,21 @@ def setup_rnn_tests():
     ):
 
         for base, name, extra_kwargs in (
-                ('elman', 'elman_relu', {'nonlinearity': u'relu'}),
-                ('elman', 'elman_tanh', {'nonlinearity': u'tanh'}),
-                ('lstm', 'lstm', {}),
-                ('gru', 'gru', {})
+            ("elman", "elman_relu", {
+                "nonlinearity": "relu"
+            }),
+            ("elman", "elman_tanh", {
+                "nonlinearity": "tanh"
+            }),
+            ("lstm", "lstm", {}),
+            ("gru", "gru", {}),
         ):
             # This is a hack to skip elman_rnn bidirectional tests for now
             # TODO: Revert this once elman_rnn bidirectional issue is fixed
-            if base == 'elman' and bidirectional[1] == 'bidirectional':
+            if base == "elman" and bidirectional[1] == "bidirectional":
                 continue
             make_test(name, base, layer, bidirectional, initial_state,
-                      variable_length, dropout,
-                      **extra_kwargs)
+                      variable_length, dropout, **extra_kwargs)
             test_count += 1
 
     # sanity check that a representative example does exist
@@ -3298,68 +3821,83 @@ def setup_rnn_tests():
     # assert test_count == 192, test_count
     # TODO: Revert this once elman_rnn bidirectional issue is fixed
     if test_count != 144:
-        raise ValueError('Expected 144 tests but found {}'.format(test_count))
+        raise ValueError("Expected 144 tests but found {}".format(test_count))
 
 
 setup_rnn_tests()
 
-
 # opset 7 tests
-TestONNXRuntime_opset7 = type(str("TestONNXRuntime_opset7"),
-                              (unittest.TestCase,),
-                              dict(TestONNXRuntime.__dict__, opset_version=7))
+TestONNXRuntime_opset7 = type(
+    str("TestONNXRuntime_opset7"),
+    (unittest.TestCase, ),
+    dict(TestONNXRuntime.__dict__, opset_version=7),
+)
 
 # opset 8 tests
-TestONNXRuntime_opset8 = type(str("TestONNXRuntime_opset8"),
-                              (unittest.TestCase,),
-                              dict(TestONNXRuntime.__dict__, opset_version=8))
-
+TestONNXRuntime_opset8 = type(
+    str("TestONNXRuntime_opset8"),
+    (unittest.TestCase, ),
+    dict(TestONNXRuntime.__dict__, opset_version=8),
+)
 
 # opset 10 tests
-TestONNXRuntime_opset10 = type(str("TestONNXRuntime_opset10"),
-                               (unittest.TestCase,),
-                               dict(TestONNXRuntime.__dict__, opset_version=10))
+TestONNXRuntime_opset10 = type(
+    str("TestONNXRuntime_opset10"),
+    (unittest.TestCase, ),
+    dict(TestONNXRuntime.__dict__, opset_version=10),
+)
 
 # opset 11 tests
-TestONNXRuntime_opset11 = type(str("TestONNXRuntime_opset11"),
-                               (unittest.TestCase,),
-                               dict(TestONNXRuntime.__dict__, opset_version=11))
+TestONNXRuntime_opset11 = type(
+    str("TestONNXRuntime_opset11"),
+    (unittest.TestCase, ),
+    dict(TestONNXRuntime.__dict__, opset_version=11),
+)
 
 # opset 12 tests
-TestONNXRuntime_opset12 = type(str("TestONNXRuntime_opset12"),
-                               (unittest.TestCase,),
-                               dict(TestONNXRuntime.__dict__, opset_version=12))
+TestONNXRuntime_opset12 = type(
+    str("TestONNXRuntime_opset12"),
+    (unittest.TestCase, ),
+    dict(TestONNXRuntime.__dict__, opset_version=12),
+)
 
 # opset 9 tests, with keep_initializers_as_inputs=False for
 # IR version 4 style export.
-TestONNXRuntime_opset9_IRv4 = type(str("TestONNXRuntime_opset9_IRv4"),
-                                   (unittest.TestCase,),
-                                   dict(TestONNXRuntime.__dict__,
-                                   keep_initializers_as_inputs=False))
-
+TestONNXRuntime_opset9_IRv4 = type(
+    str("TestONNXRuntime_opset9_IRv4"),
+    (unittest.TestCase, ),
+    dict(TestONNXRuntime.__dict__, keep_initializers_as_inputs=False),
+)
 
 # opset 10 tests, with keep_initializers_as_inputs=False for
 # IR version 4 style export.
-TestONNXRuntime_opset10_IRv4 = type(str("TestONNXRuntime_opset10_IRv4"),
-                                    (unittest.TestCase,),
-                                    dict(TestONNXRuntime.__dict__, opset_version=10,
-                                    keep_initializers_as_inputs=False))
-
+TestONNXRuntime_opset10_IRv4 = type(
+    str("TestONNXRuntime_opset10_IRv4"),
+    (unittest.TestCase, ),
+    dict(TestONNXRuntime.__dict__,
+         opset_version=10,
+         keep_initializers_as_inputs=False),
+)
 
 # opset 11 tests, with keep_initializers_as_inputs=False for
 # IR version 4 style export.
-TestONNXRuntime_opset11_IRv4 = type(str("TestONNXRuntime_opset11_IRv4"),
-                                    (unittest.TestCase,),
-                                    dict(TestONNXRuntime.__dict__, opset_version=11,
-                                    keep_initializers_as_inputs=False))
+TestONNXRuntime_opset11_IRv4 = type(
+    str("TestONNXRuntime_opset11_IRv4"),
+    (unittest.TestCase, ),
+    dict(TestONNXRuntime.__dict__,
+         opset_version=11,
+         keep_initializers_as_inputs=False),
+)
 
 # opset 12 tests, with keep_initializers_as_inputs=False for
 # IR version 4 style export.
-TestONNXRuntime_opset12_IRv4 = type(str("TestONNXRuntime_opset12_IRv4"),
-                                    (unittest.TestCase,),
-                                    dict(TestONNXRuntime.__dict__, opset_version=12,
-                                    keep_initializers_as_inputs=False))
+TestONNXRuntime_opset12_IRv4 = type(
+    str("TestONNXRuntime_opset12_IRv4"),
+    (unittest.TestCase, ),
+    dict(TestONNXRuntime.__dict__,
+         opset_version=12,
+         keep_initializers_as_inputs=False),
+)
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,6 @@
-#include <torch/csrc/autograd/record_function.h>
 #include <torch/csrc/autograd/function.h>
 #include <torch/csrc/autograd/profiler.h>
+#include <torch/csrc/autograd/record_function.h>
 #include <torch/csrc/utils/memory.h>
 #include <cstdlib>
 #include <random>
@@ -27,12 +27,11 @@ class CallbackManager {
       double sampling_prob,
       std::unordered_set<RecordScope, std::hash<RecordScope>> scopes) {
     callbacks_.emplace_back(
-      std::move(start),
-      std::move(end),
-      needs_inputs,
-      sampling_prob,
-      std::move(scopes)
-    );
+        std::move(start),
+        std::move(end),
+        needs_inputs,
+        sampling_prob,
+        std::move(scopes));
     recomputeFlags();
 
     // make sure we mark the change in callbacks
@@ -64,7 +63,7 @@ class CallbackManager {
         try {
           bool cb_ret = callbacks_[cb_idx].start_cb_(rf);
           rf._activeCallbacks().push_back(cb_ret);
-        } catch (const std::exception &e) {
+        } catch (const std::exception& e) {
           LOG(WARNING) << "Exception in RecordFunction start observer: "
                        << e.what();
           rf._activeCallbacks().push_back(false);
@@ -86,7 +85,7 @@ class CallbackManager {
         }
         try {
           callbacks_[cb_idx].end_cb_(rf);
-        } catch (const std::exception &e) {
+        } catch (const std::exception& e) {
           LOG(WARNING) << "Exception in RecordFunction end observer: "
                        << e.what();
         } catch (...) {
@@ -94,9 +93,10 @@ class CallbackManager {
         }
       }
     } else {
-      LOG(WARNING) << "Callbacks changed while running a record function, "
-                   << "you might be partially overlapping a record function "
-                   << "with a profiling scope";
+      C10_LOG_EVERY_MS(WARNING, 1000)
+          << "Callbacks changed while running a record function, "
+          << "you might be partially overlapping a record function "
+          << "with a profiling scope";
     }
   }
 
@@ -121,7 +121,8 @@ class CallbackManager {
   inline double samplingProbability(size_t cb_idx) const {
     TORCH_INTERNAL_ASSERT(cb_idx < callbacks_.size());
     if (callbacks_[cb_idx].is_sampled_) {
-      return use_global_prob_ ? global_prob_ : callbacks_[cb_idx].sampling_prob_;
+      return use_global_prob_ ? global_prob_
+                              : callbacks_[cb_idx].sampling_prob_;
     } else {
       return 1.0;
     }
@@ -130,8 +131,8 @@ class CallbackManager {
   inline bool shouldRunCallback(size_t cb_idx, RecordScope scope) const {
     TORCH_INTERNAL_ASSERT(cb_idx < callbacks_.size());
     return callbacks_[cb_idx].scopes_[static_cast<size_t>(scope)] &&
-           (!callbacks_[cb_idx].is_sampled_ ||
-            (sample_zero_one() < samplingProbability(cb_idx)));
+        (!callbacks_[cb_idx].is_sampled_ ||
+         (sample_zero_one() < samplingProbability(cb_idx)));
   }
 
   struct Callback;
@@ -151,12 +152,12 @@ class CallbackManager {
         std::function<void(const RecordFunction&)> end_cb,
         bool needs_inputs,
         double sampling_prob,
-        std::unordered_set<RecordScope, std::hash<RecordScope>> scopes
-    ) : start_cb_(std::move(start_cb)),
-        end_cb_(std::move(end_cb)),
-        needs_inputs_(needs_inputs),
-        sampling_prob_(sampling_prob),
-        is_sampled_(sampling_prob != 1.0) {
+        std::unordered_set<RecordScope, std::hash<RecordScope>> scopes)
+        : start_cb_(std::move(start_cb)),
+          end_cb_(std::move(end_cb)),
+          needs_inputs_(needs_inputs),
+          sampling_prob_(sampling_prob),
+          is_sampled_(sampling_prob != 1.0) {
       if (!scopes.empty()) {
         scopes_.fill(false);
         for (auto sc : scopes) {
@@ -212,13 +213,21 @@ void popCallback() {
   manager().popCallback();
 }
 
+bool observersEnabled() {
+  return c10::impl::tls_is_dispatch_key_included(c10::DispatchKey::Profiler);
+}
+
+void enableObservers(bool enable) {
+  c10::impl::tls_set_dispatch_key_included(c10::DispatchKey::Profiler, enable);
+}
+
 void _runBeforeCallbacks(RecordFunction* rf, const std::string& funcName) {
   TORCH_INTERNAL_ASSERT(rf != nullptr);
   rf->_before(funcName);
 }
 
 RecordFunction::RecordFunction(RecordScope scope) : scope_(scope) {
-  if (manager().hasCallbacks() && at::_tls_is_record_function_enabled()) {
+  if (manager().hasCallbacks() && observersEnabled()) {
     active_ = true;
   }
 }

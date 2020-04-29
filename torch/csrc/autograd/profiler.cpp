@@ -1,5 +1,5 @@
-#include <torch/csrc/autograd/profiler.h>
 #include <torch/csrc/autograd/function.h>
+#include <torch/csrc/autograd/profiler.h>
 #include <torch/csrc/jit/frontend/code_template.h>
 
 #include <torch/csrc/jit/runtime/operator.h>
@@ -14,7 +14,9 @@
 #include <string>
 #include <vector>
 
-namespace torch { namespace autograd { namespace profiler {
+namespace torch {
+namespace autograd {
+namespace profiler {
 
 namespace {
 
@@ -31,6 +33,10 @@ std::unordered_map<uint16_t, std::shared_ptr<RangeEventList>>
     all_event_lists_map;
 thread_local std::shared_ptr<RangeEventList> event_list;
 thread_local uint16_t thread_id;
+
+// use RecordFunctionGuard to keep track of observers,
+// enable/disableProfiler are tied to the code range
+thread_local std::vector<std::shared_ptr<RecordFunctionGuard>> g_;
 
 } // namespace
 
@@ -78,25 +84,24 @@ void pushRange(
     return;
   }
   if (state == ProfilerState::NVTX) {
-    if(sequence_nr >= 0 || shapes.size() > 0) {
+    if (sequence_nr >= 0 || shapes.size() > 0) {
       std::stringstream s;
-      if(sequence_nr >= 0)
+      if (sequence_nr >= 0)
         s << name.str() << msg << sequence_nr;
-      if(shapes.size() > 0) {
+      if (shapes.size() > 0) {
         s << ", sizes = [";
-        for(int i = 0; i < shapes.size(); i++) {
-          if(shapes[i].size() > 0) {
+        for (int i = 0; i < shapes.size(); i++) {
+          if (shapes[i].size() > 0) {
             s << "[";
-            for(int dim = 0; dim < shapes[i].size(); dim++) {
+            for (int dim = 0; dim < shapes[i].size(); dim++) {
               s << shapes[i][dim];
-              if(dim < shapes[i].size() - 1)
+              if (dim < shapes[i].size() - 1)
                 s << ", ";
             }
             s << "]";
-          }
-          else
+          } else
             s << "[]";
-          if(i < shapes.size() - 1)
+          if (i < shapes.size() - 1)
             s << ", ";
         }
         s << "]";
@@ -134,9 +139,11 @@ void enableProfiler(ProfilerConfig config) {
   ProfilerState new_state = config.state;
   AT_ASSERT(new_state != ProfilerState::Disabled);
   if (new_state == ProfilerState::NVTX && !cuda_stubs->enabled())
-    throw std::runtime_error("Can't use NVTX profiler - PyTorch was compiled without CUDA");
+    throw std::runtime_error(
+        "Can't use NVTX profiler - PyTorch was compiled without CUDA");
   if (state != ProfilerState::Disabled && new_state != state) {
-    throw std::runtime_error("can't change kind of profiling (e.g. NVTX to CPU) while profiler is running");
+    throw std::runtime_error(
+        "can't change kind of profiling (e.g. NVTX to CPU) while profiler is running");
   }
 
   pushCallback(
@@ -165,7 +172,7 @@ void enableProfiler(ProfilerConfig config) {
       },
       [](const RecordFunction& fn) {
         if (fn.getStartCallbacksThreadId() !=
-                RecordFunction::currentThreadId()) {
+            RecordFunction::currentThreadId()) {
           // If we're not in a thread that ran start callbacks, then find
           // the eventList that was created for the original thread_id. Then,
           // record the end event on this list so that the block is added to
@@ -184,10 +191,10 @@ void enableProfiler(ProfilerConfig config) {
 
             auto& eventList = eventListIter->second;
             eventList->record(
-                      EventKind::PopRange,
-                      StringView(""),
-                      fn.getStartCallbacksThreadId(),
-                      state == ProfilerState::CUDA);
+                EventKind::PopRange,
+                StringView(""),
+                fn.getStartCallbacksThreadId(),
+                state == ProfilerState::CUDA);
           }
         } else {
           popRange();
@@ -197,24 +204,23 @@ void enableProfiler(ProfilerConfig config) {
       /* sampling_prob */ 1.0,
       /* scopes */ {RecordScope::FUNCTION, RecordScope::USER_SCOPE});
   state = new_state;
-  c10::impl::tls_set_dispatch_key_included(c10::DispatchKey::Profiler, true);
+  g_.emplace_back(std::make_shared<RecordFunctionGuard>());
 
-  if(state == ProfilerState::CUDA) {
+  if (state == ProfilerState::CUDA) {
     // event recording appears to have some startup overhead, so we need to
-    // to generate some dummy events first before recording synchronization events
-    for(int i = 0; i < 5; i++) {
+    // to generate some dummy events first before recording synchronization
+    // events
+    for (int i = 0; i < 5; i++) {
       cuda_stubs->onEachDevice([](int d) {
-          mark("__cuda_startup");
-          cuda_stubs->synchronize();
+        mark("__cuda_startup");
+        cuda_stubs->synchronize();
       });
     }
 
     // cuda events must be on the same device, so we need a start event recorded
     // for each gpu. we then use this event to synchronize time on the GPU
     // with the CPU clock.
-    cuda_stubs->onEachDevice([](int d) {
-        mark("__cuda_start_event");
-    });
+    cuda_stubs->onEachDevice([](int d) { mark("__cuda_start_event"); });
   }
   mark("__start_profile", false);
 }
@@ -228,15 +234,17 @@ thread_event_lists disableProfiler() {
 
   popCallback();
   state = ProfilerState::Disabled;
-  c10::impl::tls_set_dispatch_key_included(c10::DispatchKey::Profiler, false);
+  TORCH_INTERNAL_ASSERT(!g_.empty());
+  g_.pop_back();
 
   if (old_state == ProfilerState::NVTX) {
     return thread_event_lists();
   } else {
     thread_event_lists result;
     std::lock_guard<std::mutex> guard(all_event_lists_map_mutex);
-    for (auto it = all_event_lists_map.begin(); it != all_event_lists_map.end();) {
-      auto & list = it->second;
+    for (auto it = all_event_lists_map.begin();
+         it != all_event_lists_map.end();) {
+      auto& list = it->second;
       result.emplace_back(list->consolidate());
       // GC lists that are not held by any threads
       if (list.use_count() == 1) {
@@ -259,18 +267,17 @@ void Event::record(bool record_cuda) {
   cpu_ns_ = getTime();
 }
 
-double Event::cuda_elapsed_us(const Event & e) {
-  if(!e.has_cuda() || !has_cuda()) {
+double Event::cuda_elapsed_us(const Event& e) {
+  if (!e.has_cuda() || !has_cuda()) {
     throw std::logic_error("Events were not recorded for CUDA");
   }
-  if(e.device() != device()) {
+  if (e.device() != device()) {
     throw std::logic_error("Events are not on the same device");
   }
   return cuda_stubs->elapsed(event, e.event);
 }
 
 CUDAStubs::~CUDAStubs() = default;
-
 
 static jit::CodeTemplate event_template(R"(
 {
@@ -283,14 +290,12 @@ static jit::CodeTemplate event_template(R"(
   "args": {}
 })");
 
-
-RecordProfile::RecordProfile(std::ostream& out)
-: out_(out) {
+RecordProfile::RecordProfile(std::ostream& out) : out_(out) {
   init();
 }
 
 RecordProfile::RecordProfile(const std::string& filename)
-: file_(new std::ofstream(filename)), out_(*file_) {
+    : file_(new std::ofstream(filename)), out_(*file_) {
   init();
 }
 
@@ -301,13 +306,13 @@ void RecordProfile::init() {
 RecordProfile::~RecordProfile() {
   thread_event_lists event_lists = disableProfiler();
   std::vector<Event*> events;
-  for(auto& l : event_lists) {
-    for(auto& e : l) {
-        events.push_back(&e);
+  for (auto& l : event_lists) {
+    for (auto& e : l) {
+      events.push_back(&e);
     }
   }
   processEvents(events);
-  if (file_){
+  if (file_) {
     file_->close();
   }
 }
@@ -316,7 +321,7 @@ void RecordProfile::processEvents(const std::vector<Event*>& events) {
   TORCH_CHECK(out_, "could not open file");
   Event* start = nullptr;
   for (Event* e : events) {
-    if(0 == strcmp(e->name(), "__start_profile")) {
+    if (0 == strcmp(e->name(), "__start_profile")) {
       start = e;
       break;
     }
@@ -325,11 +330,11 @@ void RecordProfile::processEvents(const std::vector<Event*>& events) {
   std::vector<Event*> stack;
   out_ << "[\n";
   bool first = true;
-  for(Event* e : events) {
-    if(e->kind() == "push") {
+  for (Event* e : events) {
+    if (e->kind() == "push") {
       stack.push_back(e);
-    } else if(e->kind() == "pop") {
-      if(!first) {
+    } else if (e->kind() == "pop") {
+      if (!first) {
         out_ << ",\n";
       }
       first = false;
@@ -346,12 +351,17 @@ void RecordProfile::processEvents(const std::vector<Event*>& events) {
   out_ << "]\n";
 }
 
-}}}
+} // namespace profiler
+} // namespace autograd
+} // namespace torch
 
 void profile_wrapper(const c10::OperatorHandle& op, torch::jit::Stack* stack) {
   c10::impl::ExcludeDispatchKeyGuard key_guard(c10::DispatchKey::Profiler);
 #if !defined(CAFFE2_IS_XPLAT_BUILD) && !defined(C10_MOBILE)
-  RECORD_FUNCTION(op.schema().name(), *stack, torch::autograd::Node::peek_at_next_sequence_nr());
+  RECORD_FUNCTION(
+      op.schema().name(),
+      *stack,
+      torch::autograd::Node::peek_at_next_sequence_nr());
 #else
   RECORD_FUNCTION(op.schema().name(), *stack);
 #endif

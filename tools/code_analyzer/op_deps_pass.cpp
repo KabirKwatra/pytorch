@@ -65,8 +65,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "llvm/Demangle/Demangle.h"
 #include "llvm/Analysis/LazyCallGraph.h"
+#include "llvm/Demangle/Demangle.h"
 #include "llvm/IR/CallSite.h"
 #include "llvm/IR/Constant.h"
 #include "llvm/IR/Function.h"
@@ -100,8 +100,9 @@ struct RegexOpt {
 };
 
 class RegexOptParser : public cl::basic_parser<RegexOpt> {
-public:
+ public:
   RegexOptParser(cl::Option& O) : basic_parser(O) {}
+  virtual ~RegexOptParser() = default;
 
   // parse - Return true on error.
   bool parse(cl::Option&, StringRef, StringRef Arg, RegexOpt& Value) {
@@ -172,24 +173,7 @@ cl::list<RegexOpt, bool, RegexOptParser> TorchLibraryInitPattern(
              "'^.*TORCH_LIBRARY_init_([^(]+)(\\(.*)?$'"),
     cl::ZeroOrMore);
 
-enum class OutputFormatType { Dot, PY, YAML };
-cl::opt<OutputFormatType> OutputFormat(
-    "format",
-    cl::desc("Output format."),
-    cl::values(clEnumValN(OutputFormatType::Dot, "dot", "print as dot"),
-               clEnumValN(OutputFormatType::PY, "py", "print as python source"),
-               clEnumValN(OutputFormatType::YAML, "yaml", "print as yaml")));
-
-cl::opt<bool> TransitiveClosure(
-    "closure",
-    cl::desc("Output transitive closure."),
-    cl::init(false));
-
-cl::opt<int> Verbose(
-    "v",
-    cl::desc("Verbose level"),
-    cl::Hidden,
-    cl::init(0));
+cl::opt<int> Verbose("v", cl::desc("Verbose level"), cl::Hidden, cl::init(0));
 
 cl::opt<bool> DebugPath(
     "debug_path",
@@ -204,8 +188,8 @@ using VALUE_SET = std::unordered_set<Value*>;
 // SRC -> Inverse "tree" from all reachable destinations back to SRC, e.g.:
 // (DEST-1 -> PREV_11, PREV_11 -> PREV_12, ..., PREV_1n -> SRC)
 // (DEST-2 -> PREV_21, PREV_21 -> PREV_22, ..., PREV_2n -> SRC)
-using PATH = std::unordered_map<std::string,
-                                std::unordered_map<std::string, std::string>>;
+using PATH = std::
+    unordered_map<std::string, std::unordered_map<std::string, std::string>>;
 
 // Referenced the logic in llvm-cxxfilt.cpp.
 std::string demangle(const std::string& mangled) {
@@ -213,7 +197,7 @@ std::string demangle(const std::string& mangled) {
   const char* decorated = mangled.c_str();
   size_t decoratedLength = mangled.length();
 
-  char *undecorated = itaniumDemangle(decorated, nullptr, nullptr, &status);
+  char* undecorated = itaniumDemangle(decorated, nullptr, nullptr, &status);
 
   if (!undecorated &&
       (decoratedLength > 6 && strncmp(decorated, "__imp_", 6) == 0)) {
@@ -225,7 +209,7 @@ std::string demangle(const std::string& mangled) {
 }
 
 // LLVM_DEBUG needs opt to be built with debug support.
-template<
+template <
     typename T,
     typename std::enable_if<std::is_base_of<Value, T>::value, int>::type = 0>
 std::ostream& operator<<(std::ostream& out, T& I) {
@@ -236,7 +220,7 @@ std::ostream& operator<<(std::ostream& out, T& I) {
 }
 
 class OpDependency : public ModulePass {
-public:
+ public:
   static char ID; // Pass identification, replacement for typeid
 
   OpDependency() : ModulePass(ID) {}
@@ -275,26 +259,15 @@ public:
     std::shared_ptr<PATH> path = DebugPath ? std::make_shared<PATH>() : nullptr;
     simplifyGraph(deps, keyNodes, &result, path.get());
 
-    switch (OutputFormat) {
-      case OutputFormatType::Dot:
-        printAsDot(std::cout, keyNodes, result);
-        break;
-      case OutputFormatType::PY:
-        printAsPython(std::cout, keyNodes, result);
-        break;
-      case OutputFormatType::YAML:
-        printAsYAML(std::cout, keyNodes, result, path.get());
-        break;
-      default:
-        break;
-    }
-
+    printAsYAML(std::cout, keyNodes, result, path.get());
     return false;
   }
 
-private:
+ private:
   static void insertRoot(
-      const VALUE_SET& visibleFuncs, GRAPH* deps, SET* keyNodes) {
+      const VALUE_SET& visibleFuncs,
+      GRAPH* deps,
+      SET* keyNodes) {
     if (!RootSymbolPatternLoc.pattern) {
       return;
     }
@@ -318,8 +291,11 @@ private:
   // Scan the entire IR graph to construct function -> function dependency graph
   // as well as instructions that might register or invoke operators.
   static void scanAllFunctions(
-      Module& M, GRAPH* deps, VALUE_SET* visibleFuncs,
-      VALUE_SET* opRegistrationInsts, VALUE_SET* opInvocationInsts) {
+      Module& M,
+      GRAPH* deps,
+      VALUE_SET* visibleFuncs,
+      VALUE_SET* opRegistrationInsts,
+      VALUE_SET* opInvocationInsts) {
     for (Function& F : M) {
       if (F.hasDefaultVisibility()) {
         visibleFuncs->insert(&F);
@@ -383,7 +359,8 @@ private:
   // called (which is fine for our use case). llvm::LazyCallGraph has similar
   // logic and we reuse its "visitReferences" method to traverse all operands.
   static void scanReferredFunctions(
-      Instruction& I, const std::function<void(Function*)>& CB) {
+      Instruction& I,
+      const std::function<void(Function*)>& CB) {
     SmallVector<Constant*, 16> worklist;
     SmallPtrSet<Constant*, 16> visited;
 
@@ -420,7 +397,8 @@ private:
   static void scanConnectedNodes(
       Value* src,
       const VALUE_SET& blocked,
-      const std::function<void(Value*)>& CB, VALUE_MAP* debugPath) {
+      const std::function<void(Value*)>& CB,
+      VALUE_MAP* debugPath) {
     std::deque<Value*> worklist;
     SmallPtrSet<Value*, 16> visited;
 
@@ -493,12 +471,15 @@ private:
   // to remove #2 from the graph while maintaining the transitive dependency
   // between #1. #1 is called "key nodes" in this method.
   static void simplifyGraph(
-      const GRAPH& input, SET& keyNodes, GRAPH* output, PATH* path) {
+      const GRAPH& input,
+      SET& keyNodes,
+      GRAPH* output,
+      PATH* path) {
     // Starting from every key node, use BFS to traverse all nodes that are
     // transitively reachable from the node in the sparse graph.
     for (auto& key : keyNodes) {
       std::deque<std::string> queue;
-      SET visited;  // has some runtime issue with std::unordered_set
+      SET visited; // has some runtime issue with std::unordered_set
       auto expand = [&](const std::string& curNode) -> void {
         auto it = input.find(curNode);
         if (it == input.end()) {
@@ -523,9 +504,7 @@ private:
           // Output links between key nodes.
           (*output)[key].insert(curNode);
           // Stop expanding key nodes.
-          if (!TransitiveClosure) {
-            continue;
-          }
+          continue;
         }
         expand(curNode);
       }
@@ -535,9 +514,11 @@ private:
   // Find out operator names and function pointers that are transitively
   // connected to the same 'src' instruction.
   static void scanOpSchemaStrAndFunction(
-      Instruction* src, const VALUE_SET& blocked,
+      Instruction* src,
+      const VALUE_SET& blocked,
       const std::string& contextualNamespace,
-      SET* visitedOps, SET* visitedFunctions) {
+      SET* visitedOps,
+      SET* visitedFunctions) {
     std::shared_ptr<VALUE_MAP> debugPath =
         (Verbose > 2 ? std::make_shared<VALUE_MAP>() : nullptr);
     auto callback = [&](Value* V) -> void {
@@ -619,7 +600,9 @@ private:
   //                  @c10::RegisterOperators::checkSchemaAndRegisterOp_(...
   //                  %"class.c10::RegisterOperators::Options"* ... %4090)
   static void scanOpRegistration(
-      VALUE_SET& instructions, SET* opSchemaStrs, GRAPH* schemaStrToFunctions) {
+      VALUE_SET& instructions,
+      SET* opSchemaStrs,
+      GRAPH* schemaStrToFunctions) {
     for (auto V : instructions) {
       auto I = dyn_cast<Instruction>(V);
       // We only need to process call/invoke instructions.
@@ -658,8 +641,8 @@ private:
         for (const auto& func : visitedFunctions) {
           (*schemaStrToFunctions)[op].insert(func);
           if (Verbose) {
-            std::cerr << "[DEBUG][OP_REG] " << op << " => "
-                      << demangle(func) << std::endl;
+            std::cerr << "[DEBUG][OP_REG] " << op << " => " << demangle(func)
+                      << std::endl;
           }
         }
       }
@@ -707,7 +690,9 @@ private:
   //                  %"struct.c10::OperatorName"* nonnull dereferenceable(16)
   //                  %18)
   static void scanOpInvocation(
-      VALUE_SET& instructions, SET* opSchemaStrs, GRAPH* functionToSchemaStrs) {
+      VALUE_SET& instructions,
+      SET* opSchemaStrs,
+      GRAPH* functionToSchemaStrs) {
     for (auto V : instructions) {
       auto I = dyn_cast<Instruction>(V);
       // We only need to process call/invoke instructions.
@@ -725,22 +710,23 @@ private:
         for (auto& op : visitedOps) {
           std::cerr << op << " ";
         }
-        std::cerr << ") in a invocation call in function: "
-                  << demangle(caller) << std::endl;
+        std::cerr << ") in a invocation call in function: " << demangle(caller)
+                  << std::endl;
       }
       for (const auto& op : visitedOps) {
         opSchemaStrs->insert(op);
         (*functionToSchemaStrs)[caller].insert(op);
         if (Verbose) {
-          std::cerr << "[DEBUG][OP_CALL] " << demangle(caller) << " => "
-                    << op << std::endl;
+          std::cerr << "[DEBUG][OP_CALL] " << demangle(caller) << " => " << op
+                    << std::endl;
         }
       }
     }
   }
 
   static void extractStringValue(
-      Value* V, const std::function<void(const std::string&)>& CB) {
+      Value* V,
+      const std::function<void(const std::string&)>& CB) {
     if (auto array = dyn_cast<ConstantDataArray>(V)) {
       // Normal case for c-style string literal and "std::basic_string".
       if (array->isCString()) {
@@ -756,7 +742,7 @@ private:
       // Seen this case for "std::__1::basic_string" ABI.
       uint64_t intValue = CI->getZExtValue();
       auto data = reinterpret_cast<const char*>(&intValue);
-      CB({data, data + sizeof(uint64_t)/sizeof(char)});
+      CB({data, data + sizeof(uint64_t) / sizeof(char)});
     } else if (auto C = dyn_cast<Constant>(V)) {
       // Short string literal might be in a constant vector, e.g.:
       // store <2 x i64> <i64 8, i64 4702103508586165345>, <2 x i64>* %25
@@ -769,7 +755,8 @@ private:
   }
 
   static std::shared_ptr<std::string> extractOpSchema(
-      const std::string& contextualNamespace, Value* V) {
+      const std::string& contextualNamespace,
+      Value* V) {
     std::vector<std::string> schemaStrs;
     extractStringValue(V, [&](const std::string& str) {
       const std::string& schemaStr =
@@ -792,12 +779,14 @@ private:
   }
 
   static void printDebugPath(
-      const VALUE_MAP* debugPath, Value* src, Value* dest) {
+      const VALUE_MAP* debugPath,
+      Value* src,
+      Value* dest) {
     if (!debugPath) {
       return;
     }
     int depth = 0;
-    for (auto N = dest; ; N = debugPath->at(N)) {
+    for (auto N = dest;; N = debugPath->at(N)) {
       std::cerr << "[DEBUG][PATH][" << ++depth << "]";
       printDebugValue(N);
       std::cerr << std::endl;
@@ -821,48 +810,10 @@ private:
     }
   }
 
-  static void printAsDot(
-      std::ostream& out, const SET& keys, const GRAPH& graph) {
-    out << "digraph {" << std::endl;
-    out << "layout=\"circo\";" << std::endl;
-    for (const auto& K : keys) {
-      auto it = graph.find(K);
-      if (it == graph.end()) {
-        continue;
-      }
-      auto key = demangle(K);
-      for (const auto& value : it->second) {
-        out << '"' << key << '"'
-            << " -> "
-            << '"' << demangle(value) << "\";"
-            << std::endl;
-      }
-    }
-    out << "}" << std::endl;
-  }
-
-  static void printAsPython(
-      std::ostream& out, const SET& keys, const GRAPH& graph) {
-    out << "{" << std::endl;
-    for (const auto& K : keys) {
-      auto it = graph.find(K);
-      if (it == graph.end() || it->second.empty()) {
-        continue;
-      }
-      out << "    \"" << demangle(K) << "\": [" << std::endl;
-      for (const auto& value : it->second) {
-        if (value == K) { // skip itself
-          continue;
-        }
-        out << "        \"" << demangle(value) << "\"," << std::endl;
-      }
-      out << "    ]," << std::endl;
-    }
-    out << "}" << std::endl;
-  }
-
   static void printAsYAML(
-      std::ostream& out, const SET& keys, const GRAPH& graph,
+      std::ostream& out,
+      const SET& keys,
+      const GRAPH& graph,
       const PATH* path) {
     for (const auto& K : keys) {
       out << "- name: " << demangle(K) << std::endl;
@@ -875,9 +826,9 @@ private:
         out << "  - name: " << demangle(value) << std::endl;
         if (path) {
           std::vector<std::string> rpath;
-          for (std::string prev = value;
-               rpath.push_back(prev), prev != K;
-               prev = path->at(K).at(prev));
+          for (std::string prev = value; rpath.push_back(prev), prev != K;
+               prev = path->at(K).at(prev))
+            ;
           out << "    path:" << std::endl;
           for (auto pit = rpath.rbegin(); pit != rpath.rend(); ++pit) {
             out << "    - " << demangle(*pit) << std::endl;

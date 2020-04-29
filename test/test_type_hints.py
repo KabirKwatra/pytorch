@@ -1,16 +1,20 @@
 from __future__ import print_function
-import unittest
-from torch.testing._internal.common_utils import TestCase, run_tests
-import tempfile
-import torch
-import re
-import os
-import sys
-import subprocess
+
 import inspect
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import unittest
+
+import torch
+from torch.testing._internal.common_utils import run_tests
+from torch.testing._internal.common_utils import TestCase
 
 try:
     import mypy  # noqa: F401
+
     HAVE_MYPY = True
 except ImportError:
     HAVE_MYPY = False
@@ -29,7 +33,7 @@ def get_examples_from_docstring(docstr):
     # and continue to add lines until we have a compileable Python statement.
     exampleline_re = re.compile(r"^\s+(?:>>>|\.\.\.) (.*)$")
     beginning = ""
-    for l in docstr.split('\n'):
+    for l in docstr.split("\n"):
         if beginning:
             m = exampleline_re.match(l)
             if m:
@@ -48,11 +52,11 @@ def get_examples_from_docstring(docstr):
                 complete = False
             if complete:
                 # found one
-                example_file_lines += beginning.split('\n')
+                example_file_lines += beginning.split("\n")
                 beginning = ""
             else:
                 beginning += "\n"
-    return ['    ' + l for l in example_file_lines]
+    return ["    " + l for l in example_file_lines]
 
 
 def get_all_examples():
@@ -63,12 +67,6 @@ def get_all_examples():
     """
     blacklist = {
         "_np",
-        "refine_names",
-        "rename",
-        "names",
-        "align_as",
-        "align_to",
-        "unflatten",
     }
     allexamples = ""
 
@@ -94,7 +92,8 @@ def get_all_examples():
         if docstr and fname not in blacklist:
             e = get_examples_from_docstring(docstr)
             if e:
-                example_file_lines.append("\n\ndef example_torch_{}():".format(fname))
+                example_file_lines.append(
+                    "\n\ndef example_torch_{}():".format(fname))
                 example_file_lines += e
 
     for fname in dir(torch.Tensor):
@@ -103,7 +102,8 @@ def get_all_examples():
         if docstr and fname not in blacklist:
             e = get_examples_from_docstring(docstr)
             if e:
-                example_file_lines.append("\n\ndef example_torch_tensor_{}():".format(fname))
+                example_file_lines.append(
+                    "\n\ndef example_torch_tensor_{}():".format(fname))
                 example_file_lines += e
 
     return "\n".join(example_file_lines)
@@ -115,7 +115,8 @@ class TestTypeHints(TestCase):
         """
         Run documentation examples through mypy.
         """
-        fn = os.path.join(os.path.dirname(__file__), 'generated_type_hints_smoketest.py')
+        fn = os.path.join(os.path.dirname(__file__),
+                          "generated_type_hints_smoketest.py")
         with open(fn, "w") as f:
             print(get_all_examples(), file=f)
 
@@ -152,23 +153,28 @@ class TestTypeHints(TestCase):
             try:
                 os.symlink(
                     os.path.dirname(torch.__file__),
-                    os.path.join(tmp_dir, 'torch'),
-                    target_is_directory=True
+                    os.path.join(tmp_dir, "torch"),
+                    target_is_directory=True,
                 )
             except OSError:
-                raise unittest.SkipTest('cannot symlink')
+                raise unittest.SkipTest("cannot symlink")
             try:
-                subprocess.run([
-                    sys.executable,
-                    '-mmypy',
-                    '--follow-imports', 'silent',
-                    '--check-untyped-defs',
-                    '--no-strict-optional',  # needed because of torch.lu_unpack, see gh-36584
-                    os.path.abspath(fn)],
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "-mmypy",
+                        "--follow-imports",
+                        "silent",
+                        "--check-untyped-defs",
+                        "--no-strict-optional",  # needed because of torch.lu_unpack, see gh-36584
+                        os.path.abspath(fn),
+                    ],
                     cwd=tmp_dir,
-                    check=True)
+                    check=True,
+                )
             except subprocess.CalledProcessError as e:
-                raise AssertionError("mypy failed.  Look above this error for mypy's output.")
+                raise AssertionError(
+                    "mypy failed.  Look above this error for mypy's output.")
 
     @unittest.skipIf(not HAVE_MYPY, "need mypy")
     def test_type_hint_examples(self):
@@ -182,15 +188,21 @@ class TestTypeHints(TestCase):
         for example in examples:
             try:
                 example_path = os.path.join(examples_folder, example)
-                subprocess.run([
-                    sys.executable,
-                    '-mmypy',
-                    '--follow-imports', 'silent',
-                    '--check-untyped-defs',
-                    example_path],
-                    check=True)
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "-mmypy",
+                        "--follow-imports",
+                        "silent",
+                        "--check-untyped-defs",
+                        example_path,
+                    ],
+                    check=True,
+                )
             except subprocess.CalledProcessError as e:
-                raise AssertionError("mypy failed for example {}.  Look above this error for mypy's output.".format(example))
+                raise AssertionError(
+                    "mypy failed for example {}.  Look above this error for mypy's output."
+                    .format(example))
 
     @unittest.skipIf(not HAVE_MYPY, "need mypy")
     def test_run_mypy(self):
@@ -199,29 +211,33 @@ class TestTypeHints(TestCase):
         Note that mypy.ini is not shipped in an installed version of PyTorch,
         so this test will only run mypy in a development setup or in CI.
         """
+
         def is_torch_mypyini(path_to_file):
-            with open(path_to_file, 'r') as f:
+            with open(path_to_file, "r") as f:
                 first_line = f.readline()
 
-            if first_line.startswith('# This is the PyTorch MyPy config file'):
+            if first_line.startswith("# This is the PyTorch MyPy config file"):
                 return True
 
             return False
 
         test_dir = os.path.dirname(os.path.realpath(__file__))
-        repo_rootdir = os.path.join(test_dir, '..')
-        mypy_inifile = os.path.join(repo_rootdir, 'mypy.ini')
-        if not (os.path.exists(mypy_inifile) and is_torch_mypyini(mypy_inifile)):
+        repo_rootdir = os.path.join(test_dir, "..")
+        mypy_inifile = os.path.join(repo_rootdir, "mypy.ini")
+        if not (os.path.exists(mypy_inifile)
+                and is_torch_mypyini(mypy_inifile)):
             self.skipTest(True)
 
         cwd = os.getcwd()
         try:
             os.chdir(repo_rootdir)
-            subprocess.run([sys.executable, '-mmypy'], check=True)
+            subprocess.run([sys.executable, "-mmypy"], check=True)
         except subprocess.CalledProcessError as e:
-            raise AssertionError("mypy failed. Look above this error for mypy's output.")
+            raise AssertionError(
+                "mypy failed. Look above this error for mypy's output.")
         finally:
             os.chdir(cwd)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     run_tests()

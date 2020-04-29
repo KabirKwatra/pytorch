@@ -221,6 +221,8 @@ struct TORCH_API Module : public Object {
       const std::string& filename,
       const ExtraFilesMap& extra_files = ExtraFilesMap()) const;
 
+  Module deepcopy() const;
+
   // Clones both the underlying `ClassType` and the module instance(data), this
   // function creates a new `ClassType` and returns a new instance that has the
   // same data as the current instance but with the new type, shared ClassType
@@ -285,9 +287,9 @@ struct slot_iterator_impl {
   slot_iterator_impl(
       Module root,
       bool recurse, // if true, do a depth-first search, otherwise, just look at
-                    // slots of root
+      // slots of root
       bool return_module) // if true include root itself as the first thing
-                          // visited (used in modules())
+      // visited (used in modules())
       : cursors_({SlotCursor{root, return_module ? -1 : 0}}),
         recurse_(recurse) {
     // advance iterator to first valid element (or the end, if empty)
