@@ -1,10 +1,16 @@
 
 import os
+import sys
 
 import numpy as np
 import torch
-import torch.distributed as c10d
 from torch import nn
+import torch.distributed as dist
+
+if not dist.is_available():
+    print("Distributed not available, skipping tests", file=sys.stderr)
+    sys.exit(0)
+
 from torch.distributed.algorithms.ddp_comm_hooks import (
     DDPCommHookType,
     register_ddp_comm_hook,
@@ -102,8 +108,8 @@ class DistributedDataParallelCommHookTest(MultiProcessTestCase):
         This unit test verifies the ``allreduce`` hook registered case gives same result
         with no hook registered case.
         """
-        store = c10d.FileStore(self.file_name, self.world_size)
-        process_group = c10d.ProcessGroupNCCL(store, self.rank, self.world_size)
+        store = dist.FileStore(self.file_name, self.world_size)
+        process_group = dist.ProcessGroupNCCL(store, self.rank, self.world_size)
 
         # No hook registered case, get the reference grads.
         reference_grads = self._get_grads(process_group, None)
@@ -119,8 +125,8 @@ class DistributedDataParallelCommHookTest(MultiProcessTestCase):
         This unit test verifies the ``fp16 compress`` hook registered case
         gives close result with no hook registered case.
         """
-        store = c10d.FileStore(self.file_name, self.world_size)
-        process_group = c10d.ProcessGroupNCCL(store, self.rank, self.world_size)
+        store = dist.FileStore(self.file_name, self.world_size)
+        process_group = dist.ProcessGroupNCCL(store, self.rank, self.world_size)
 
         # No hook registered case, get the reference grads.
         reference_grads = self._get_grads(process_group, None)
@@ -136,8 +142,8 @@ class DistributedDataParallelCommHookTest(MultiProcessTestCase):
         This unit test verifies the ``quantize per tensor`` hook registered case
         gives close result with no hook registered case.
         """
-        store = c10d.FileStore(self.file_name, self.world_size)
-        process_group = c10d.ProcessGroupNCCL(store, self.rank, self.world_size)
+        store = dist.FileStore(self.file_name, self.world_size)
+        process_group = dist.ProcessGroupNCCL(store, self.rank, self.world_size)
 
         # No hook registered case, get the reference grads.
         reference_grads = self._get_grads(process_group, None)
@@ -153,8 +159,8 @@ class DistributedDataParallelCommHookTest(MultiProcessTestCase):
         This unit test verifies the ``quantize per channel`` hook registered case
         gives close result with no hook registered case.
         """
-        store = c10d.FileStore(self.file_name, self.world_size)
-        process_group = c10d.ProcessGroupNCCL(store, self.rank, self.world_size)
+        store = dist.FileStore(self.file_name, self.world_size)
+        process_group = dist.ProcessGroupNCCL(store, self.rank, self.world_size)
 
         # No hook registered case, get the reference grads.
         reference_grads = self._get_grads(process_group, None)

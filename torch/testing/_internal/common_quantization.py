@@ -4,6 +4,7 @@ checking quantization api and properties of resulting modules.
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.nn.quantized as nnq
 import torch.nn.quantized.dynamic as nnqd
 from torch.nn.intrinsic import _FusedModule
@@ -13,12 +14,16 @@ from torch.testing._internal.common_utils import TestCase
 from torch.quantization import QuantWrapper, QuantStub, DeQuantStub, \
     default_qconfig, default_dynamic_qconfig, default_per_channel_qconfig, QConfig, default_observer, default_weight_observer, \
     propagate_qconfig_, convert, get_default_qconfig, quantize_dynamic_jit, quantize_jit, float_qparams_weight_only_qconfig, \
-    get_default_qat_qconfig, PerChannelMinMaxObserver, default_dynamic_quant_observer, QConfigDynamic, QuantType
+    get_default_qat_qconfig, PerChannelMinMaxObserver, default_dynamic_quant_observer, QConfigDynamic, QuantType, quantize
 from torch.quantization.quantization_mappings import (
     get_default_dynamic_quant_module_mappings,
     get_default_qconfig_propagation_list,
     get_default_qat_module_mappings,
 )
+from torch.testing._internal.common_quantized import (
+    override_quantized_engine,
+)
+from torch.jit.mobile import _load_for_lite_interpreter
 
 try:
     # graph mode quantization based on fx
@@ -27,6 +32,7 @@ try:
         prepare_qat_fx,
         convert_fx,
     )
+    from torch.quantization.ns.ns_types import NSSingleResultValuesType, NSSubgraph
     from torch.fx.graph import Node
     from torch.fx import GraphModule
     HAS_FX = True
@@ -42,7 +48,7 @@ import os
 import unittest
 import numpy as np
 from torch.testing import FileCheck
-from typing import Callable, Tuple, Dict, Any
+from typing import Callable, Tuple, Dict, Any, Union, Type
 
 class NodeSpec:
     ''' Used for checking GraphModule Node
@@ -260,6 +266,22 @@ def skipIfNoFBGEMM(fn):
     @functools.wraps(fn)
     def wrapper(*args, **kwargs):
         if 'fbgemm' not in torch.backends.quantized.supported_engines:
+            raise unittest.SkipTest(reason)
+        else:
+            fn(*args, **kwargs)
+    return wrapper
+
+def skipIfNoQNNPACK(fn):
+    reason = 'Quantized operations require QNNPACK.'
+    if isinstance(fn, type):
+        if 'qnnpack' not in torch.backends.quantized.supported_engines:
+            fn.__unittest_skip__ = True
+            fn.__unittest_skip_why__ = reason
+        return fn
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        if 'qnnpack' not in torch.backends.quantized.supported_engines:
             raise unittest.SkipTest(reason)
         else:
             fn(*args, **kwargs)
@@ -542,7 +564,7 @@ class QuantizationTestCase(TestCase):
         """
         nodes_in_graph = dict()
         node_list = []
-        modules = dict(graph_module.named_modules())
+        modules = dict(graph_module.named_modules(remove_duplicate=False))
         for node in graph_module.graph.nodes:
             n = None
             if node.op == 'call_function' or node.op == 'call_method':
@@ -610,7 +632,7 @@ class QuantizationTestCase(TestCase):
 
         def assert_types_for_matched_subgraph_pairs(
             self,
-            matched_subgraph_pairs: Dict[str, Tuple[Tuple[Node, Node], Tuple[Node, Node]]],
+            matched_subgraph_pairs: Dict[str, Tuple[NSSubgraph, NSSubgraph]],
             expected_types: Dict[str, Tuple[Tuple[Callable, Callable], Tuple[Callable, Callable]]],
             gm_a: GraphModule,
             gm_b: GraphModule,
@@ -628,12 +650,14 @@ class QuantizationTestCase(TestCase):
             instance checks.
             """
 
-            def _get_underlying_op_type(node: Node, gm: GraphModule) -> Callable:
+            def _get_underlying_op_type(
+                node: Node, gm: GraphModule
+            ) -> Union[Callable, str]:
                 if node.op == 'call_module':
                     mod = getattr(gm, node.target)
                     return type(mod)
                 else:
-                    assert node.op == 'call_function'
+                    assert node.op in ('call_function', 'call_method')
                     return node.target
 
             self.assertTrue(
@@ -645,14 +669,12 @@ class QuantizationTestCase(TestCase):
                 expected_types_a, expected_types_b = v
                 exp_type_start_a, exp_type_end_a = expected_types_a
                 exp_type_start_b, exp_type_end_b = expected_types_b
-                nodes_a, nodes_b = matched_subgraph_pairs[k]
-                node_start_a, node_end_a = nodes_a
-                node_start_b, node_end_b = nodes_b
+                subgraph_a, subgraph_b = matched_subgraph_pairs[k]
 
-                act_type_start_a = _get_underlying_op_type(node_start_a, gm_a)
-                act_type_start_b = _get_underlying_op_type(node_start_b, gm_b)
-                act_type_end_a = _get_underlying_op_type(node_end_a, gm_a)
-                act_type_end_b = _get_underlying_op_type(node_end_b, gm_b)
+                act_type_start_a = _get_underlying_op_type(subgraph_a.start_node, gm_a)
+                act_type_start_b = _get_underlying_op_type(subgraph_b.start_node, gm_b)
+                act_type_end_a = _get_underlying_op_type(subgraph_a.end_node, gm_a)
+                act_type_end_b = _get_underlying_op_type(subgraph_b.end_node, gm_b)
                 types_match = (exp_type_start_a is act_type_start_a) and \
                     (exp_type_end_a is act_type_end_a) and \
                     (exp_type_start_b is act_type_start_b) and \
@@ -674,23 +696,69 @@ class QuantizationTestCase(TestCase):
             2. number of seen tensors match
             3. shapes of each pair of seen tensors match
             """
-            for layer_name, layer_data in act_compare_dict.items():
-                self.assertTrue(
-                    len(layer_data) == 2,
-                    f"Layer {layer_name} does not have exactly two model results.")
-                model_name_0, model_name_1 = layer_data.keys()
-                self.assertTrue(
-                    layer_data[model_name_0]['type'] == layer_data[model_name_1]['type'],
-                    f"Layer {layer_name}, {model_name_0} and {model_name_1} do not have the same type.")
-                self.assertTrue(
-                    len(layer_data[model_name_0]['values']) ==
-                    len(layer_data[model_name_1]['values']),
-                    f"Layer {layer_name}, {model_name_0} and {model_name_1} do not have the same number of seen Tensors.")
-                for idx in range(len(layer_data[model_name_0]['values'])):
+            for layer_name, result_type_to_data in act_compare_dict.items():
+                for result_type, layer_data in result_type_to_data.items():
                     self.assertTrue(
-                        layer_data[model_name_0]['values'][idx].shape ==
-                        layer_data[model_name_1]['values'][idx].shape,
-                        f"Layer {layer_name}, {model_name_0} and {model_name_1} have a shape mismatch at idx {idx}.")
+                        len(layer_data) == 2,
+                        f"Layer {layer_name} does not have exactly two model results.")
+                    model_name_0, model_name_1 = layer_data.keys()
+                    for res_idx in range(len(layer_data[model_name_0])):
+                        layer_data_0 = layer_data[model_name_0][res_idx]
+                        layer_data_1 = layer_data[model_name_1][res_idx]
+                        self.assertTrue(
+                            layer_data_0['type'] == layer_data_0['type'],
+                            f"Layer {layer_name}, {model_name_0} and {model_name_1} do not have the same type.")
+
+                        self.assertTrue(
+                            len(layer_data_0['values']) ==
+                            len(layer_data_1['values']),
+                            f"Layer {layer_name}, {model_name_0} and {model_name_1} do not have the same number of seen Tensors.")
+
+                        # F.conv1d weight has rank 3, and toq.conv1d unpacked weight
+                        # has rank 4. For now, skip the length check for conv1d only.
+                        is_weight_functional_conv1d = (
+                            result_type == NSSingleResultValuesType.WEIGHT.value and
+                            (
+                                'conv1d' in layer_data_0['prev_node_target_type'] or
+                                'conv1d' in layer_data_1['prev_node_target_type']
+                            )
+                        )
+                        if not is_weight_functional_conv1d:
+                            for idx in range(len(layer_data_0['values'])):
+                                values_0 = layer_data_0['values'][idx]
+                                values_1 = layer_data_1['values'][idx]
+                                if isinstance(values_0, torch.Tensor):
+                                    self.assertTrue(
+                                        values_0.shape == values_1.shape,
+                                        f"Layer {layer_name}, {model_name_0} and {model_name_1} " +
+                                        f"have a shape mismatch at idx {idx}.")
+                                elif isinstance(values_0, list):
+                                    values_0 = values_0[0]
+                                    values_1 = values_1[0]
+                                    self.assertTrue(
+                                        values_0.shape == values_1.shape,
+                                        f"Layer {layer_name}, {model_name_0} and {model_name_1} " +
+                                        f"have a shape mismatch at idx {idx}.")
+                                else:
+                                    assert isinstance(values_0, tuple), \
+                                        f"unhandled type {type(values_0)}"
+                                    assert len(values_0) == 2
+                                    assert len(values_0[1]) == 2
+                                    assert values_0[0].shape == values_1[0].shape
+                                    assert values_0[1][0].shape == values_1[1][0].shape
+                                    assert values_0[1][1].shape == values_1[1][1].shape
+
+                        # verify that ref_node_name is valid
+                        ref_node_name_0 = layer_data_0['ref_node_name']
+                        ref_node_name_1 = layer_data_1['ref_node_name']
+                        prev_node_name_0 = layer_data_0['prev_node_name']
+                        prev_node_name_1 = layer_data_1['prev_node_name']
+                        if layer_data_0['type'] == NSSingleResultValuesType.NODE_OUTPUT.value:
+                            self.assertTrue(ref_node_name_0 == prev_node_name_0)
+                            self.assertTrue(ref_node_name_1 == prev_node_name_1)
+                        elif layer_data_0['type'] == NSSingleResultValuesType.NODE_INPUT.value:
+                            self.assertTrue(ref_node_name_0 != prev_node_name_0)
+                            self.assertTrue(ref_node_name_1 != prev_node_name_1)
 
         def checkGraphModeFxOp(self, model, inputs, quant_type,
                                expected_node=None,
@@ -852,6 +920,53 @@ class QuantizationTestCase(TestCase):
 
         self.assertTrue(expected_name in str(q_embeddingbag))
 
+class QuantizationLiteTestCase(QuantizationTestCase):
+
+    def setUp(self):
+        super().setUp()
+
+    def _create_quantized_model(self, model_class: Type[torch.nn.Module], **kwargs):
+        # Creates quantized model for testing mobile script modules
+        qengine = "qnnpack"
+        with override_quantized_engine(qengine):
+            qconfig = torch.quantization.get_default_qconfig(qengine)
+            model = model_class(**kwargs)
+            model = quantize(model, test_only_eval_fn, [self.calib_data])
+
+        return model
+
+    def _compare_script_and_mobile(self,
+                                   model: torch.nn.Module,
+                                   input: torch.Tensor):
+        # Compares the numerical outputs for script and lite modules
+        qengine = "qnnpack"
+        with override_quantized_engine(qengine):
+            script_module = torch.jit.script(model)
+            script_module_result = script_module(input)
+
+            max_retry = 5
+            for retry in range(1, max_retry + 1):
+                # retries `max_retry` times; breaks iff succeeds else throws exception
+                try:
+                    buffer = io.BytesIO(script_module._save_to_buffer_for_lite_interpreter())
+                    buffer.seek(0)
+                    mobile_module = _load_for_lite_interpreter(buffer)
+
+                    mobile_module_result = mobile_module(input)
+
+                    torch.testing.assert_allclose(script_module_result, mobile_module_result)
+                    mobile_module_forward_result = mobile_module.forward(input)
+                    torch.testing.assert_allclose(script_module_result, mobile_module_forward_result)
+
+                    mobile_module_run_method_result = mobile_module.run_method("forward", input)
+                    torch.testing.assert_allclose(script_module_result, mobile_module_run_method_result)
+                except AssertionError as e:
+                    if retry == max_retry:
+                        raise e
+                    else:
+                        continue
+                break
+
 
 # Below are a series of toy models to use in testing quantization
 
@@ -882,6 +997,18 @@ class SingleLayerLinearDynamicModel(torch.nn.Module):
 
     def forward(self, x):
         x = self.fc1(x)
+        return x
+
+class LinearAddModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.fc1 = torch.nn.Linear(5, 8).to(dtype=torch.float)
+        self.fc2 = torch.nn.Linear(8, 5).to(dtype=torch.float)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = torch.add(x, 5)
+        x = self.fc2(x)
         return x
 
 class RNNDynamicModel(torch.nn.Module):
@@ -1031,6 +1158,17 @@ class AnnotatedConvBnReLUModel(torch.nn.Module):
     def fuse_model(self):
         torch.quantization.fuse_modules(self, [['conv', 'bn', 'relu']], inplace=True)
 
+class TwoLayerConvModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = torch.nn.Conv2d(3, 5, 3, bias=False).to(dtype=torch.float)
+        self.conv2 = torch.nn.Conv2d(5, 5, 1, bias=False).to(dtype=torch.float)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        return x
+
 class TwoLayerLinearModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -1091,6 +1229,72 @@ class LinearReluModel(torch.nn.Module):
         x = self.relu(self.fc(x))
         return x
 
+class LinearReluLinearModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.fc1 = torch.nn.Linear(5, 8).to(dtype=torch.float)
+        self.relu = torch.nn.ReLU()
+        self.fc2 = torch.nn.Linear(8, 5).to(dtype=torch.float)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+        return x
+
+class LinearReluAddModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.fc1 = torch.nn.Linear(5, 5).to(dtype=torch.float)
+        self.relu = torch.nn.ReLU()
+        self.fc2 = torch.nn.Linear(5, 5).to(dtype=torch.float)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = torch.add(x, 5)
+        x = self.fc2(x)
+        self.relu = torch.nn.ReLU()
+        return x
+
+class ConvReluModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.fc = torch.nn.Conv2d(3, 5, 3).to(dtype=torch.float)
+        self.relu = torch.nn.ReLU()
+
+    def forward(self, x):
+        x = self.relu(self.fc(x))
+        return x
+
+class ConvReluConvModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.fc1 = torch.nn.Conv2d(3, 5, 3).to(dtype=torch.float)
+        self.relu = torch.nn.ReLU()
+        self.fc2 = torch.nn.Conv2d(5, 5, 1).to(dtype=torch.float)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = self.fc2(x)
+        return x
+
+class ConvReluAddModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.fc1 = torch.nn.Conv2d(3, 5, 3).to(dtype=torch.float)
+        self.relu = torch.nn.ReLU()
+        self.fc2 = torch.nn.Conv2d(5, 5, 1).to(dtype=torch.float)
+
+    def forward(self, x):
+        x = self.fc1(x)
+        x = self.relu(x)
+        x = torch.add(x, 5)
+        x = self.fc2(x)
+        self.relu = torch.nn.ReLU()
+        return x
+
 class NormalizationTestModel(torch.nn.Module):
     def __init__(self):
         super().__init__()
@@ -1106,7 +1310,7 @@ class NormalizationTestModel(torch.nn.Module):
         x = self.quant(x)
         x = self.fc1(x)
         x = self.layer_norm(x)
-        x = self.group_norm(x.unsqueeze(-1))
+        x = self.group_norm(x.unsqueeze(-1).repeat(1, 1, 3))
         x = self.instance_norm1d(x)
         x = self.instance_norm2d(x.unsqueeze(-1))
         x = self.instance_norm3d(x.unsqueeze(-1))
@@ -1222,6 +1426,126 @@ class InnerModule(torch.nn.Module):
                     fusable_layers.append([current_name,
                                            named_children[idx + 1][0]])
         torch.quantization.fuse_modules(self, fusable_layers, inplace=True)
+
+class FunctionalLinear(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.weight = torch.rand((5, 5))
+        self.bias = torch.zeros(5)
+
+    def forward(self, x):
+        return F.linear(x, self.weight, self.bias)
+
+class SingleLayerFunctionalLinearModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear1 = FunctionalLinear()
+
+    def forward(self, x):
+        x = self.linear1(x)
+        return x
+
+class TwoLayerFunctionalLinearModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear1 = FunctionalLinear()
+        self.linear2 = FunctionalLinear()
+
+    def forward(self, x):
+        x = self.linear1(x)
+        x = self.linear2(x)
+        return x
+
+class FunctionalLinearAddModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear1 = FunctionalLinear()
+        self.linear2 = FunctionalLinear()
+
+    def forward(self, x):
+        x = self.linear1(x)
+        x = torch.add(x, 5)
+        x = self.linear2(x)
+        return x
+
+class FunctionalLinearReluModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear = FunctionalLinear()
+
+    def forward(self, x):
+        x = self.linear(x)
+        x = F.relu(x)
+        return x
+
+class FunctionalLinearReluLinearModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.linear1 = FunctionalLinear()
+        self.relu = nn.ReLU()
+        self.linear2 = FunctionalLinear()
+
+    def forward(self, x):
+        x = self.linear1(x)
+        x = self.relu(x)
+        x = self.linear2(x)
+        return x
+
+class FunctionalConv2d(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.weight = torch.rand(3, 3, 3, 3)
+        self.bias = torch.rand(3)
+        self.stride = (1, 1)
+        self.padding = (0, 0)
+        self.dilation = (1, 1)
+        self.groups = 1
+
+    def forward(self, x):
+        return F.conv2d(x, self.weight, self.bias, self.stride, self.padding, self.dilation, self.groups)
+
+class SingleLayerFunctionalConvModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = FunctionalConv2d()
+
+    def forward(self, x):
+        x = self.conv1(x)
+        return x
+
+class TwoLayerFunctionalConvModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = FunctionalConv2d()
+        self.conv2 = FunctionalConv2d()
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.conv2(x)
+        return x
+
+class FunctionalConvReluModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv = FunctionalConv2d()
+
+    def forward(self, x):
+        x = self.conv(x)
+        x = F.relu(x)
+        return x
+
+class FunctionalConvReluConvModel(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.conv1 = FunctionalConv2d()
+        self.relu = nn.ReLU()
+        self.conv2 = FunctionalConv2d()
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.relu(x)
+        x = self.conv2(x)
+        return x
 
 class SkipQuantModel(torch.nn.Module):
     r"""We can skip quantization by explicitly

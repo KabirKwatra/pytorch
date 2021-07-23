@@ -3,13 +3,14 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <torch/csrc/deploy/interpreter/interpreter_impl.h>
-#include <iostream>
 
-#include <assert.h>
 #include <pybind11/embed.h>
-#include <stdio.h>
+#include <pybind11/functional.h>
 #include <torch/csrc/autograd/generated/variable_factories.h>
 #include <torch/csrc/jit/python/pybind_utils.h>
+
+#include <cassert>
+#include <cstdio>
 #include <iostream>
 #include <map>
 #include <thread>
@@ -31,8 +32,6 @@ using namespace py::literals;
 #elif (DEBUG == 0)
 #define PYOBJ_ASSERT(obj) assert(NULL != obj);
 #endif
-
-static wchar_t* program;
 
 #define FOREACH_LIBRARY(_) \
   _(array)                 \
@@ -107,33 +106,51 @@ FOREACH_LIBRARY(DECLARE_LIBRARY_INIT)
 #undef DECLARE_LIBRARY_INIT
 
 extern "C" PyObject* initModule(void);
-extern "C" PyObject* PyInit__C(void);
 extern "C" struct _frozen _PyImport_FrozenModules[];
 extern "C" struct _frozen _PyImport_FrozenModules_torch[];
 
-// We need to register a custom finder because we are registering `torch._C` as
-// a built-in module, and it will get skipped if target != None. This Finder
-// just ensures target == None.
 const char* startup = R"RAW(
 import sys
+import importlib.abc
+import linecache
 
+# We need to register a custom meta path finder because we are registering
+# `torch._C` as a builtin module.
+#
+# Normally, builtins will be found by the `BuiltinImporter` meta path finder.
+# However, `BuiltinImporter` is hard-coded to assume that all builtin modules
+# are top-level imports.  Since `torch._C` is a submodule of `torch`, the
+# BuiltinImporter skips it.
 class F:
     def find_spec(self, fullname, path, target=None):
         if fullname == 'torch._C':
-            return sys.meta_path[1].find_spec('torch._C', None, None)
-        elif fullname == 'maskrcnn_benchmark._C':
-            return sys.meta_path[1].find_spec('maskrcnn_benchmark._C', None, None)
+            # Load this module using `BuiltinImporter`, but set `path` to None
+            # in order to trick it into loading our module.
+            return sys.meta_path[1].find_spec('torch._C', path=None, target=None)
         return None
 sys.meta_path.insert(0, F())
-# make loader importable
 
-import sys
+class RegisterModuleImporter(importlib.abc.InspectLoader):
+    def __init__(self, find_module_source):
+        self.find_module_source = find_module_source
 
-import importlib.machinery
-import importlib.util
-spec = importlib.machinery.ModuleSpec('maskrcnn_benchmark', None, is_package=True)  # type: ignore
-r = importlib.util.module_from_spec(spec)
-sys.modules['maskrcnn_benchmark'] = r
+    def create_module(self, spec):
+        return None
+
+    def get_source(self, name):
+        return self.find_module_source(name)
+
+    def exec_module(self, module):
+        filename = f"_deploy_internal.{module.__name__}"
+        linecache.lazycache(filename, module.__dict__)
+        code = compile(self.get_source(module.__name__), filename, "exec", dont_inherit=True)
+        exec(code, module.__dict__)
+
+    def find_spec(self, fullname, path, target=None):
+        r = self.find_module_source(fullname)
+        if r is not None:
+            return importlib.util.spec_from_loader(fullname, self)
+        return None
 
 # print("exec_prefix:", sys.base_exec_prefix)
 # print("_base_executable:", sys._base_executable)
@@ -226,8 +243,8 @@ static py::object global_impl(const char* module, const char* name) {
 }
 
 using at::IValue;
-using torch::PickledObject;
-using torch::PythonObject;
+using torch::deploy::Obj;
+using torch::deploy::PickledObject;
 
 // Ensure GIL is held while this object is live,
 // note: we are not use py::gil_scoped_acquire here because
@@ -236,11 +253,12 @@ using torch::PythonObject;
 // for these objects together makes it easier to see what is happening.
 struct ScopedAcquire {
   ScopedAcquire() {
-    PyGILState_Ensure();
+    gstate = PyGILState_Ensure();
   }
   ~ScopedAcquire() {
-    PyEval_SaveThread();
+    PyGILState_Release(gstate);
   }
+  PyGILState_STATE gstate;
 };
 
 struct InitLockAcquire {
@@ -249,11 +267,13 @@ struct InitLockAcquire {
     // init_lock -> GIL. Otherwise, the GIL can be released by the python
     // interpreter during initalization tasks, and then re-acquired. If another
     // thread grabs the GIL to do non-initialization tasks, then it might start
-    // initializing (GIL -> init_lock). To avoid this, releasethe GIL before
+    // initializing (GIL -> init_lock). To avoid this, release the GIL before
     // trying to get the init_lock and then reacquire it afterward.
-    PyEval_SaveThread();
+    // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
+    PyThreadState* _save;
+    _save = PyEval_SaveThread();
     init_lock.lock();
-    PyGILState_Ensure();
+    PyEval_RestoreThread(_save);
   }
   ~InitLockAcquire() {
     init_lock_.unlock();
@@ -263,13 +283,12 @@ struct InitLockAcquire {
   std::mutex& init_lock_;
 };
 
-struct ConcreteInterpreterImpl : public torch::InterpreterImpl {
+struct ConcreteInterpreterImpl : public torch::deploy::InterpreterImpl {
   ConcreteInterpreterImpl() {
 #define APPEND_INIT(name) PyImport_AppendInittab(#name, PyInit_##name);
     FOREACH_LIBRARY(APPEND_INIT)
 #undef APPEND_INIT
     PyImport_AppendInittab("torch._C", initModule);
-    // PyImport_AppendInittab("maskrcnn_benchmark._C", PyInit__C);
 
     int ret = extendFrozenModules(
         _PyImport_FrozenModules, _PyImport_FrozenModules_torch);
@@ -296,6 +315,7 @@ struct ConcreteInterpreterImpl : public torch::InterpreterImpl {
     status = PyConfig_SetString(&config, &config.executable, L"torch_deploy");
     status = PyConfig_SetString(&config, &config.prefix, L"");
     config.module_search_paths_set = 1;
+    // NOLINTNEXTLINE(cppcoreguidelines-avoid-c-arrays,modernize-avoid-c-arrays)
     wchar_t* module_search_paths[0] = {};
     status = PyConfig_SetWideStringList(
         &config, &config.module_search_paths, 0, module_search_paths);
@@ -316,6 +336,7 @@ struct ConcreteInterpreterImpl : public torch::InterpreterImpl {
     // Release the GIL that PyInitialize acquires
     PyEval_SaveThread();
   }
+
   ~ConcreteInterpreterImpl() override {
     PyGILState_Ensure();
     // make sure pybind11 doesn't try to decref after we have destroyed python
@@ -329,9 +350,25 @@ struct ConcreteInterpreterImpl : public torch::InterpreterImpl {
       exit(1); // can't use TORCH_INTERNAL_ASSERT because we are in a
                // non-throwing destructor.
     }
-    PyMem_RawFree(program);
   }
-  torch::InterpreterSessionImpl* acquire_session() override;
+
+  void set_find_module(
+      std::function<at::optional<std::string>(const std::string&)> find_module)
+      override {
+    std::function<py::object(const std::string&)> wrapped_find_module =
+        [=](const std::string& name) -> py::object {
+      auto r = find_module(name);
+      return r ? py::cast(*r) : py::none();
+    };
+    py::object register_module_importer =
+        py::module::import("__main__")
+            .attr("RegisterModuleImporter")(wrapped_find_module);
+    py::module::import("sys")
+        .attr("meta_path")
+        .attr("append")(register_module_importer);
+  }
+
+  torch::deploy::InterpreterSessionImpl* acquire_session() override;
   py::object save_storage;
   py::object load_storage;
   py::object get_package;
@@ -339,24 +376,25 @@ struct ConcreteInterpreterImpl : public torch::InterpreterImpl {
   std::mutex init_lock_;
 };
 
-struct ConcreteInterpreterSessionImpl : public torch::InterpreterSessionImpl {
+struct ConcreteInterpreterSessionImpl
+    : public torch::deploy::InterpreterSessionImpl {
   ConcreteInterpreterSessionImpl(ConcreteInterpreterImpl* interp)
       : interp_(interp) {}
-  PythonObject global(const char* module, const char* name) override {
+  Obj global(const char* module, const char* name) override {
     return wrap(global_impl(module, name));
   }
 
-  PythonObject from_ivalue(IValue value) override {
+  Obj from_ivalue(IValue value) override {
     return wrap(torch::jit::toPyObject(value));
   }
-  PythonObject create_or_get_package_importer_from_container_file(
+  Obj create_or_get_package_importer_from_container_file(
       const std::shared_ptr<caffe2::serialize::PyTorchStreamReader>&
           container_file_) override {
     InitLockAcquire guard(interp_->init_lock_);
     return wrap(interp_->get_package(container_file_));
   }
 
-  PickledObject pickle(PythonObject container, PythonObject obj) override {
+  PickledObject pickle(Obj container, Obj obj) override {
     py::tuple result = interp_->save_storage(unwrap(container), unwrap(obj));
     py::bytes bytes = py::cast<py::bytes>(result[0]);
     py::list storages = py::cast<py::list>(result[1]);
@@ -378,7 +416,7 @@ struct ConcreteInterpreterSessionImpl : public torch::InterpreterSessionImpl {
         std::move(dtypes_c),
         std::move(container_file)};
   }
-  PythonObject unpickle_or_get(int64_t id, const PickledObject& obj) override {
+  Obj unpickle_or_get(int64_t id, const PickledObject& obj) override {
     py::dict objects = interp_->objects;
     py::object id_p = py::cast(id);
     if (objects.contains(id_p)) {
@@ -411,12 +449,11 @@ struct ConcreteInterpreterSessionImpl : public torch::InterpreterSessionImpl {
     }
   }
 
-  IValue toIValue(PythonObject obj) const override {
+  IValue toIValue(Obj obj) const override {
     return torch::jit::toTypeInferredIValue(unwrap(obj));
   }
 
-  PythonObject call(PythonObject obj, at::ArrayRef<PythonObject> args)
-      override {
+  Obj call(Obj obj, at::ArrayRef<Obj> args) override {
     py::tuple m_args(args.size());
     for (size_t i = 0, N = args.size(); i != N; ++i) {
       m_args[i] = unwrap(args[i]);
@@ -424,7 +461,7 @@ struct ConcreteInterpreterSessionImpl : public torch::InterpreterSessionImpl {
     return wrap(call(unwrap(obj), m_args));
   }
 
-  PythonObject call(PythonObject obj, at::ArrayRef<IValue> args) override {
+  Obj call(Obj obj, at::ArrayRef<IValue> args) override {
     py::tuple m_args(args.size());
     for (size_t i = 0, N = args.size(); i != N; ++i) {
       m_args[i] = torch::jit::toPyObject(args[i]);
@@ -432,25 +469,53 @@ struct ConcreteInterpreterSessionImpl : public torch::InterpreterSessionImpl {
     return wrap(call(unwrap(obj), m_args));
   }
 
-  PythonObject attr(PythonObject obj, const char* attr) override {
+  Obj call_kwargs(
+      Obj obj,
+      std::vector<at::IValue> args,
+      std::unordered_map<std::string, c10::IValue> kwargs) override {
+    py::tuple py_args(args.size());
+    for (size_t i = 0, N = args.size(); i != N; ++i) {
+      py_args[i] = torch::jit::toPyObject(args[i]);
+    }
+
+    py::dict py_kwargs;
+    for (auto kv : kwargs) {
+      py_kwargs[py::cast(std::get<0>(kv))] =
+          torch::jit::toPyObject(std::get<1>(kv));
+    }
+    return wrap(call(unwrap(obj), py_args, py_kwargs));
+  }
+
+  Obj call_kwargs(Obj obj, std::unordered_map<std::string, c10::IValue> kwargs)
+      override {
+    std::vector<at::IValue> args;
+    return call_kwargs(obj, args, kwargs);
+  }
+
+  Obj attr(Obj obj, const char* attr) override {
     return wrap(unwrap(obj).attr(attr));
   }
 
-  static py::object call(py::handle object, py::handle args) {
-    PyObject* result = PyObject_CallObject(object.ptr(), args.ptr());
+  static py::object call(
+      py::handle object,
+      py::handle args,
+      py::handle kwargs = nullptr) {
+    PyObject* result = PyObject_Call(object.ptr(), args.ptr(), kwargs.ptr());
     if (!result) {
       throw py::error_already_set();
     }
     return py::reinterpret_steal<py::object>(result);
   }
 
-  py::handle unwrap(PythonObject obj) const {
+  py::handle unwrap(Obj obj) const {
     return objects_.at(ID(obj));
   }
-  PythonObject wrap(py::object obj) {
+
+  Obj wrap(py::object obj) {
     objects_.emplace_back(std::move(obj));
-    return PythonObject(this, objects_.size() - 1);
+    return Obj(this, objects_.size() - 1);
   }
+
   ~ConcreteInterpreterSessionImpl() override {
     objects_.clear();
   }
@@ -459,11 +524,13 @@ struct ConcreteInterpreterSessionImpl : public torch::InterpreterSessionImpl {
   std::vector<py::object> objects_;
 };
 
-torch::InterpreterSessionImpl* ConcreteInterpreterImpl::acquire_session() {
+torch::deploy::InterpreterSessionImpl* ConcreteInterpreterImpl::
+    acquire_session() {
   return new ConcreteInterpreterSessionImpl(this);
 }
 
-extern "C" __attribute__((visibility("default"))) torch::InterpreterImpl*
+extern "C" __attribute__((visibility("default")))
+torch::deploy::InterpreterImpl*
 new_interpreter_impl(void) {
   return new ConcreteInterpreterImpl();
 }
